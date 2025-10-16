@@ -103,7 +103,8 @@ app.post(
         for (const key in req.files) {
           const fileData = req.files[key][0];
           uploads[key] =
-            fileData.path || fileData.url || fileData.secure_url || "";
+         //   fileData.path || fileData.url || fileData.secure_url || "";
+            uploads[key] = fileData.path;
         }
       }
 
