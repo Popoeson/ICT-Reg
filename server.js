@@ -80,51 +80,92 @@ const Student = mongoose.model('RegStudent', RegstudentSchema);
 // ====== Routes ======
 
 // Register student
-app.post('/api/students/register', upload.fields([
-  { name: 'fileOlevel' },
-  { name: 'fileJamb' },
-  { name: 'fileState' },
-  { name: 'fileBirth' },
-  { name: 'fileNin' },
-  { name: 'fileFee' }
-]), async (req, res) => {
-  try {
-    const body = req.body;
-    const uploads = {};
+app.post(
+  "/api/students/register",
+  upload.fields([
+    { name: "fileOlevel" },
+    { name: "fileJamb" },
+    { name: "fileState" },
+    { name: "fileBirth" },
+    { name: "fileNin" },
+    { name: "fileFee" },
+  ]),
+  async (req, res) => {
+    try {
+      const body = req.body;
+      const uploads = {};
 
-    // Multer + Cloudinary Storage: each file returns a path and a secure_url
-    if (req.files) {
-      for (const key in req.files) {
-        const fileData = req.files[key][0];
-        // Prefer secure_url if available
-        uploads[key] = fileData.path || fileData.secure_url || "";
+      // 🔍 Log the files to see Cloudinary response
+      console.log("Uploaded files:", req.files);
+
+      // ✅ Extract each uploaded image’s Cloudinary URL
+      if (req.files) {
+        for (const key in req.files) {
+          const fileData = req.files[key][0];
+          uploads[key] =
+            fileData.path || fileData.url || fileData.secure_url || "";
+        }
       }
+
+      // ✅ Parse O-Level data safely
+      const olevelArray =
+        typeof body.olevel === "string"
+          ? JSON.parse(body.olevel)
+          : body.olevel || [];
+
+      // ✅ Create the new student entry
+      const student = new Student({
+        surname: body.surname,
+        firstname: body.firstname,
+        middlename: body.middlename,
+        phone: body.phone,
+        email: body.email,
+        marital: body.marital,
+        disability: body.disability,
+        stateOrigin: body.stateOrigin,
+        lgaOrigin: body.lgaOrigin,
+        address: body.address,
+        lgaResidence: body.lgaResidence,
+        department: body.department,
+        regNo: body.regNo,
+        // Next of kin
+        nokSurname: body.nokSurname,
+        nokFirstname: body.nokFirstname,
+        nokMiddlename: body.nokMiddlename,
+        nokPhone: body.nokPhone,
+        nokMarital: body.nokMarital,
+        nokRelation: body.nokRelation,
+        nokAddress: body.nokAddress,
+        // Academic info
+        school: body.school,
+        olevel: olevelArray,
+        // Uploaded file URLs from Cloudinary
+        fileOlevel: uploads.fileOlevel,
+        fileJamb: uploads.fileJamb,
+        fileState: uploads.fileState,
+        fileBirth: uploads.fileBirth,
+        fileNin: uploads.fileNin,
+        fileFee: uploads.fileFee,
+      });
+
+      // ✅ Save to MongoDB
+      await student.save();
+
+      res.status(201).json({
+        success: true,
+        message: "✅ Student registered successfully",
+        student,
+      });
+    } catch (error) {
+      console.error("❌ Error registering student:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error while registering student",
+        error: error.message,
+      });
     }
-
-    // Parse O-Level if provided
-    const olevelArray = typeof body.olevel === 'string' ? JSON.parse(body.olevel) : body.olevel || [];
-
-    const student = new Student({
-      ...body,
-      ...uploads,
-      olevel: olevelArray
-    });
-
-    await student.save();
-    res.status(201).json({
-      success: true,
-      message: '✅ Student registered successfully',
-      student
-    });
-  } catch (error) {
-    console.error('❌ Error registering student:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while registering student',
-      error: error.message
-    });
   }
-});
+);
 
 // ====== Check Duplicate Route ======
 app.get('/api/students/check-duplicate', async (req, res) => {
