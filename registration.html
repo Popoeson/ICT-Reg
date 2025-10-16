@@ -109,31 +109,6 @@
   .close-btn { background: gray; color: white; }
   .confirm-btn { background: var(--green); color: white; }
 
-  /* Image preview */
-  .thumbs img {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    margin: 5px;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  .lightbox {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.9);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-  }
-  .lightbox img {
-    max-width: 90%;
-    max-height: 90%;
-    border: 3px solid white;
-    border-radius: 10px;
-  }
-
   /* Spinner Overlay */
   .loading-overlay {
     position: fixed;
@@ -170,57 +145,19 @@
 <form id="regForm">
   <h2>Personal Information</h2>
   <div class="grid">
-    <div>
-      <label>Surname</label>
-      <input required name="surname">
-    </div>
-    <div>
-      <label>First Name</label>
-      <input required name="firstname">
-    </div>
-    <div>
-      <label>Middle Name</label>
-      <input name="middlename">
-    </div>
-    <div>
-      <label>Phone Number</label>
-      <input type="tel" name="phone" required pattern="[0-9]{11}" placeholder="e.g. 09163836546" title="Enter 11 digits only (e.g. 09163836546)">
-    </div>
-    <div>
-      <label>Email</label>
-      <input type="email" name="email" required>
-    </div>
-    <div>
-      <label>Marital Status</label>
-      <select name="marital" required>
-        <option value="">Select</option>
-        <option>Single</option>
-        <option>Married</option>
-      </select>
-    </div>
-    <div>
-      <label>Disability</label>
-      <input type="checkbox" id="disabilityNone"> None
-      <input name="disability" placeholder="If any, please signify">
-    </div>
-    <div>
-      <label>State of Origin</label>
-      <input required name="stateOrigin">
-    </div>
-    <div>
-      <label>LGA (State of Origin)</label>
-      <input required name="lgaOrigin">
-    </div>
-    <div>
-      <label>Residential Address</label>
-      <input required name="address">
-    </div>
-    <div>
-      <label>LGA (Residential Address)</label>
-      <input required name="lgaResidence">
-    </div>
-    <div>
-      <label>Department</label>
+    <div><label>Surname</label><input required name="surname"></div>
+    <div><label>First Name</label><input required name="firstname"></div>
+    <div><label>Middle Name</label><input name="middlename"></div>
+    <div><label>Phone Number</label><input type="tel" name="phone" required pattern="[0-9]{11}" placeholder="e.g. 09163836546"></div>
+    <div><label>Email</label><input type="email" name="email" required></div>
+    <div><label>Marital Status</label>
+      <select name="marital" required><option value="">Select</option><option>Single</option><option>Married</option></select></div>
+    <div><label>Disability</label><input type="checkbox" id="disabilityNone"> None <input name="disability" placeholder="If any, please signify"></div>
+    <div><label>State of Origin</label><input required name="stateOrigin"></div>
+    <div><label>LGA (State of Origin)</label><input required name="lgaOrigin"></div>
+    <div><label>Residential Address</label><input required name="address"></div>
+    <div><label>LGA (Residential Address)</label><input required name="lgaResidence"></div>
+    <div><label>Department</label>
       <select name="department" id="department" required>
         <option value="">Select</option>
         <option value="COS">Computer Science</option>
@@ -231,12 +168,8 @@
         <option value="ELE">Electrical Engineering</option>
         <option value="EST">Estate Management</option>
         <option value="SLT">Science Lab Tech</option>
-      </select>
-    </div>
-    <div>
-      <label>Registration Number</label>
-      <input id="regNo" readonly placeholder="Auto-generated">
-    </div>
+      </select></div>
+    <div><label>Registration Number</label><input id="regNo" readonly placeholder="Auto-generated"></div>
   </div>
 
   <h2>Next of Kin</h2>
@@ -244,13 +177,10 @@
     <div><label>Surname</label><input required name="nokSurname"></div>
     <div><label>First Name</label><input required name="nokFirstname"></div>
     <div><label>Middle Name</label><input name="nokMiddlename"></div>
-    <div>
-      <label>Phone Number</label>
-      <input type="tel" name="nokPhone" required pattern="[0-9]{11}" placeholder="e.g. 09163836546" title="Enter 11 digits only (e.g. 09163836546)">
-    </div>
+    <div><label>Phone Number</label><input type="tel" name="nokPhone" required pattern="[0-9]{11}" placeholder="e.g. 09163836546"></div>
     <div><label>Marital Status</label><select name="nokMarital" required><option value="">Select</option><option>Single</option><option>Married</option></select></div>
     <div><label>Relationship</label><input required name="nokRelation"></div>
-    <div class="full"><label>Residential Address</label><input required name="nokAddress"></div>
+    <div><label>Residential Address</label><input required name="nokAddress"></div>
   </div>
 
   <h2>Academic Information</h2>
@@ -260,6 +190,7 @@
     <thead><tr><th>Exam Year</th><th>Reg. No</th><th>Subject</th><th>Grade</th></tr></thead>
     <tbody id="olevelBody"></tbody>
   </table>
+  <button type="button" id="addOlevel" style="margin-top:10px;background:#16a34a;color:white;border:none;padding:8px 15px;border-radius:5px;cursor:pointer;">+ Add Row</button>
 
   <h2>Uploads (Images Only)</h2>
   <label>Upload O'Level Result</label><input type="file" accept="image/*" id="fileOlevel" required>
@@ -271,7 +202,6 @@
 
   <button type="submit" class="submit-btn">Submit</button>
 </form>
-        
 
 <!-- Modal -->
 <div class="modal-overlay" id="previewModal">
@@ -283,126 +213,93 @@
   </div>
 </div>
 
-<!-- Lightbox -->
-<div class="lightbox" id="lightbox"><img src="" alt="Preview"></div>
-
 <!-- Loading Spinner -->
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="spinner"></div>
-</div>
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
 
 <script>
-const API_BASE_URL = "https://ict-reg.onrender.com"; // ✅ backend URL
-
+const API_BASE_URL = "https://ict-reg.onrender.com";
 const form = document.getElementById('regForm');
 const modal = document.getElementById('previewModal');
 const preview = document.getElementById('previewContent');
 const confirmBtn = document.getElementById('confirmBtn');
 const closeBtn = document.getElementById('closeBtn');
 const loadingOverlay = document.getElementById('loadingOverlay');
-
-// Generate Registration No.
 const dept = document.getElementById('department');
 const regNo = document.getElementById('regNo');
+
+// Generate Registration No.
 dept.addEventListener('change', () => {
-  if (dept.value) {
-    const num = String(Math.floor(Math.random() * 900) + 100);
-    regNo.value = `${dept.value}/ND/${num}`;
-  } else regNo.value = '';
+  if (dept.value) regNo.value = `${dept.value}/ND/${Math.floor(100 + Math.random() * 900)}`;
+  else regNo.value = '';
 });
 
-// Phone sanitization
-document.querySelectorAll('input[name="phone"], input[name="nokPhone"]').forEach(inp => {
-  inp.addEventListener('input', e => {
-    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 11);
-  });
+// Add O'Level row generator
+const olevelBody = document.getElementById('olevelBody');
+document.getElementById('addOlevel').addEventListener('click', () => {
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td><input required></td>
+    <td><input required></td>
+    <td><input required></td>
+    <td><input required></td>
+  `;
+  olevelBody.appendChild(row);
 });
 
-form.addEventListener('submit', e => {
-  e.preventDefault();
-  if (!form.checkValidity()) return form.reportValidity();
-  showPreview();
-});
+// === PREVIEW FUNCTION ===
+function showPreview() {
+  const formData = new FormData(form);
+  let html = "<table style='width:100%;border-collapse:collapse;' border='1' cellpadding='5'>";
+  formData.forEach((v,k)=>{ html += `<tr><td><b>${k}</b></td><td>${v}</td></tr>`; });
+  html += "</table>";
+  preview.innerHTML = html;
+  modal.style.display = 'flex';
+}
 
+// === FORM SUBMISSION ===
+form.addEventListener('submit', e => { e.preventDefault(); if (!form.checkValidity()) return form.reportValidity(); showPreview(); });
 closeBtn.onclick = () => modal.style.display = 'none';
-confirmBtn.onclick = async () => {
-  modal.style.display = 'none';
-  await checkDuplicateAndSubmit();
-};
+confirmBtn.onclick = async () => { modal.style.display = 'none'; await checkDuplicateAndSubmit(); };
 
-// === Duplicate Check then Submit ===
+// === CHECK DUPLICATE THEN SUBMIT ===
 async function checkDuplicateAndSubmit() {
   const email = form.querySelector('[name="email"]').value.trim();
   const phone = form.querySelector('[name="phone"]').value.trim();
-
-  // Show spinner + blur
   form.style.filter = 'blur(3px)';
   loadingOverlay.style.display = 'flex';
-
   try {
     const res = await fetch(`${API_BASE_URL}/api/students/check-duplicate?email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`);
     const data = await res.json();
-
-    if (data.exists) {
-      alert("⚠️ A student with this phone or email already exists!");
-      form.style.filter = 'none';
-      loadingOverlay.style.display = 'none';
-      return;
-    }
-
-    await submitRegistration();
-
+    if (data.exists) { alert("⚠️ A student with this phone or email already exists!"); }
+    else { await submitRegistration(); }
   } catch (err) {
     alert("Error checking duplicates.");
     console.error(err);
+  } finally {
     form.style.filter = 'none';
     loadingOverlay.style.display = 'none';
   }
 }
 
-// === Actual Submission ===
+// === ACTUAL SUBMISSION ===
 async function submitRegistration() {
   try {
     const formData = new FormData(form);
-
     const olevelData = [];
     document.querySelectorAll('#olevelBody tr').forEach(tr => {
-      const inputs = tr.querySelectorAll('input');
-      const row = {
-        year: inputs[0].value,
-        reg: inputs[1].value,
-        subject: inputs[2].value,
-        grade: inputs[3].value
-      };
-      if (Object.values(row).some(v => v.trim())) olevelData.push(row);
+      const [year, reg, subject, grade] = [...tr.querySelectorAll('input')].map(i=>i.value);
+      if (year && subject) olevelData.push({year, reg, subject, grade});
     });
     formData.append('olevel', JSON.stringify(olevelData));
     formData.append('regNo', regNo.value);
-
-    const response = await fetch(`${API_BASE_URL}/api/students/register`, {
-      method: "POST",
-      body: formData
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-      alert("✅ Student registered successfully!");
-      form.reset();
-      regNo.value = '';
-    } else {
-      alert("❌ " + result.message);
-    }
+    const res = await fetch(`${API_BASE_URL}/api/students/register`, { method: "POST", body: formData });
+    const result = await res.json();
+    if (result.success) { alert("✅ Student registered successfully!"); form.reset(); regNo.value=''; olevelBody.innerHTML=''; }
+    else { alert("❌ " + result.message); }
   } catch (err) {
-    console.error(err);
-    alert("⚠️ Submission failed.");
-  } finally {
-    // Always remove blur & spinner
-    form.style.filter = 'none';
-    loadingOverlay.style.display = 'none';
+    console.error(err); alert("⚠️ Submission failed.");
   }
 }
 </script>
 </body>
-  </html>
-
+                                                                                                                                 </html>
