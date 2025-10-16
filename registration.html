@@ -264,101 +264,151 @@
 <div class="lightbox" id="lightbox"><img src="" alt="Preview"></div>
 
 <script>
+const API_BASE_URL = "https://ict-reg.onrender.com"; // ✅ Your backend base URL
+
 const dept = document.getElementById('department');
 const regNo = document.getElementById('regNo');
-dept.addEventListener('change', ()=>{
-  if(dept.value){
-    const num = String(Math.floor(Math.random()*900)+100);
+dept.addEventListener('change', () => {
+  if (dept.value) {
+    const num = String(Math.floor(Math.random() * 900) + 100);
     regNo.value = `${dept.value}/ND/${num}`;
   } else regNo.value = '';
 });
 
-// Generate 10 editable rows
+// Generate editable O'Level rows
 const tbody = document.getElementById('olevelBody');
-for(let i=0;i<10;i++){
-  const tr=document.createElement('tr');
-  ['year','reg','subject','grade'].forEach(()=> {
-    const td=document.createElement('td');
-    const inp=document.createElement('input');
-    inp.style.width='100%';
+for (let i = 0; i < 10; i++) {
+  const tr = document.createElement('tr');
+  ['year', 'reg', 'subject', 'grade'].forEach(() => {
+    const td = document.createElement('td');
+    const inp = document.createElement('input');
+    inp.style.width = '100%';
     td.appendChild(inp);
     tr.appendChild(td);
   });
   tbody.appendChild(tr);
 }
 
-const form=document.getElementById('regForm');
-const modal=document.getElementById('previewModal');
-const preview=document.getElementById('previewContent');
-const confirmBtn=document.getElementById('confirmBtn');
-const closeBtn=document.getElementById('closeBtn');
-const lightbox=document.getElementById('lightbox');
-const lightImg=lightbox.querySelector('img');
+const form = document.getElementById('regForm');
+const modal = document.getElementById('previewModal');
+const preview = document.getElementById('previewContent');
+const confirmBtn = document.getElementById('confirmBtn');
+const closeBtn = document.getElementById('closeBtn');
+const lightbox = document.getElementById('lightbox');
+const lightImg = lightbox.querySelector('img');
 
-// Restrict phone input to digits only (11 max)
-document.querySelectorAll('input[name="phone"], input[name="nokPhone"]').forEach(inp=>{
-  inp.addEventListener('input', e=>{
-    e.target.value = e.target.value.replace(/\D/g,'').slice(0,11);
+document.querySelectorAll('input[name="phone"], input[name="nokPhone"]').forEach(inp => {
+  inp.addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 11);
   });
 });
 
-form.addEventListener('submit', e=>{
+form.addEventListener('submit', e => {
   e.preventDefault();
-  if(!form.checkValidity()){ form.reportValidity(); return; }
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
   showPreview();
 });
 
-function showPreview(){
-  const data=new FormData(form);
-  let html='<h4>Personal Information</h4>';
-  html+=`<p><strong>Name:</strong> ${data.get('surname')} ${data.get('firstname')} ${data.get('middlename')||''}</p>`;
-  html+=`<p><strong>Student Phone:</strong> ${data.get('phone')} | <strong>Email:</strong> ${data.get('email')}</p>`;
-  html+=`<p><strong>Department:</strong> ${dept.options[dept.selectedIndex].text} (${regNo.value})</p>`;
-  html+='<h4>Next of Kin</h4>';
-  html+=`<p><strong>Name:</strong> ${data.get('nokSurname')} ${data.get('nokFirstname')} ${data.get('nokMiddlename')||''}</p>`;
-  html+=`<p><strong>Relationship:</strong> ${data.get('nokRelation')}</p>`;
-  html+=`<p><strong>Next of Kin Phone:</strong> ${data.get('nokPhone')}</p>`;
-  html+=`<p><strong>Address:</strong> ${data.get('nokAddress')}</p>`;
-  html+='<h4>O’Level Details</h4><table><tr><th>Year</th><th>Reg</th><th>Subject</th><th>Grade</th></tr>';
-  document.querySelectorAll('#olevelBody tr').forEach(tr=>{
-    const vals=[...tr.querySelectorAll('input')].map(i=>i.value.trim());
-    if(vals.some(v=>v)) html+=`<tr>${vals.map(v=>`<td>${v}</td>`).join('')}</tr>`;
+// === PREVIEW MODAL ===
+function showPreview() {
+  const data = new FormData(form);
+  let html = '<h4>Personal Information</h4>';
+  html += `<p><strong>Name:</strong> ${data.get('surname')} ${data.get('firstname')} ${data.get('middlename') || ''}</p>`;
+  html += `<p><strong>Student Phone:</strong> ${data.get('phone')} | <strong>Email:</strong> ${data.get('email')}</p>`;
+  html += `<p><strong>Department:</strong> ${dept.options[dept.selectedIndex].text} (${regNo.value})</p>`;
+  html += '<h4>Next of Kin</h4>';
+  html += `<p><strong>Name:</strong> ${data.get('nokSurname')} ${data.get('nokFirstname')} ${data.get('nokMiddlename') || ''}</p>`;
+  html += `<p><strong>Relationship:</strong> ${data.get('nokRelation')}</p>`;
+  html += `<p><strong>Next of Kin Phone:</strong> ${data.get('nokPhone')}</p>`;
+  html += `<p><strong>Address:</strong> ${data.get('nokAddress')}</p>`;
+  html += '<h4>O’Level Details</h4><table><tr><th>Year</th><th>Reg</th><th>Subject</th><th>Grade</th></tr>';
+  document.querySelectorAll('#olevelBody tr').forEach(tr => {
+    const vals = [...tr.querySelectorAll('input')].map(i => i.value.trim());
+    if (vals.some(v => v)) html += `<tr>${vals.map(v => `<td>${v}</td>`).join('')}</tr>`;
   });
-  html+='</table>';
-  html+='<h4>Uploads</h4><div class="thumbs"></div>';
-  preview.innerHTML=html;
+  html += '</table>';
+  html += '<h4>Uploads</h4><div class="thumbs"></div>';
+  preview.innerHTML = html;
 
   const thumbsContainer = preview.querySelector('.thumbs');
-  const files=['fileOlevel','fileJamb','fileState','fileBirth','fileNin','fileFee'];
-  files.forEach(id=>{
-    const f=document.getElementById(id).files[0];
-    if(f){
-      const reader=new FileReader();
-      reader.onload=e=>{
-        const img=document.createElement('img');
-        img.src=e.target.result;
-        img.addEventListener('click',()=>openLightbox(img.src));
+  const files = ['fileOlevel', 'fileJamb', 'fileState', 'fileBirth', 'fileNin', 'fileFee'];
+  files.forEach(id => {
+    const f = document.getElementById(id).files[0];
+    if (f) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.addEventListener('click', () => openLightbox(img.src));
         thumbsContainer.appendChild(img);
       };
       reader.readAsDataURL(f);
     }
   });
 
-  modal.style.display='flex';
+  modal.style.display = 'flex';
 }
 
-closeBtn.onclick=()=>{ modal.style.display='none'; };
-confirmBtn.onclick=()=>{
-  modal.style.display='none';
-  alert('Registered Successfully!');
-  form.reset();
-  regNo.value='';
+// === CLOSE OR SUBMIT ===
+closeBtn.onclick = () => { modal.style.display = 'none'; };
+
+confirmBtn.onclick = async () => {
+  modal.style.display = 'none';
+  await submitRegistration();
 };
-function openLightbox(src){
-  lightImg.src=src;
-  lightbox.style.display='flex';
+
+// === SUBMIT TO BACKEND ===
+async function submitRegistration() {
+  try {
+    const formData = new FormData(form);
+
+    // Collect O'Level table data
+    const olevelData = [];
+    document.querySelectorAll('#olevelBody tr').forEach(tr => {
+      const inputs = tr.querySelectorAll('input');
+      const row = {
+        year: inputs[0].value,
+        reg: inputs[1].value,
+        subject: inputs[2].value,
+        grade: inputs[3].value
+      };
+      if (Object.values(row).some(v => v.trim())) olevelData.push(row);
+    });
+    formData.append('olevel', JSON.stringify(olevelData));
+
+    // Add reg number to the form data
+    formData.append('regNo', regNo.value);
+
+    const response = await fetch(`${API_BASE_URL}/api/students/register`, {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      alert("✅ Student registered successfully!");
+      form.reset();
+      regNo.value = '';
+    } else {
+      alert("❌ Error: " + result.message);
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("⚠️ Something went wrong while submitting the form.");
+  }
 }
-lightbox.addEventListener('click',()=>lightbox.style.display='none');
+
+// === LIGHTBOX PREVIEW ===
+function openLightbox(src) {
+  lightImg.src = src;
+  lightbox.style.display = 'flex';
+}
+lightbox.addEventListener('click', () => lightbox.style.display = 'none');
 </script>
 
 </body>
