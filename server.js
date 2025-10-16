@@ -92,24 +92,37 @@ app.post('/api/students/register', upload.fields([
     const body = req.body;
     const uploads = {};
 
-    // Map uploaded images to Cloudinary URLs
+    // Multer + Cloudinary Storage: each file returns a path and a secure_url
     if (req.files) {
       for (const key in req.files) {
-        uploads[key] = req.files[key][0].path;
+        const fileData = req.files[key][0];
+        // Prefer secure_url if available
+        uploads[key] = fileData.path || fileData.secure_url || "";
       }
     }
+
+    // Parse O-Level if provided
+    const olevelArray = typeof body.olevel === 'string' ? JSON.parse(body.olevel) : body.olevel || [];
 
     const student = new Student({
       ...body,
       ...uploads,
-      olevel: JSON.parse(body.olevel || '[]')
+      olevel: olevelArray
     });
 
     await student.save();
-    res.status(201).json({ success: true, message: 'Student registered successfully', student });
+    res.status(201).json({
+      success: true,
+      message: '✅ Student registered successfully',
+      student
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error('❌ Error registering student:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while registering student',
+      error: error.message
+    });
   }
 });
 
