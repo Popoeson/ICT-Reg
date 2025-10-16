@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📋 Registered Students - Admin Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      background: #0e0e0e;
+      color: white;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #111;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #1db954;
+    }
+
+    header h1 {
+      font-size: 1.3rem;
+      color: #1db954;
+      margin: 0;
+    }
+
+    .search-container {
+      margin: 20px;
+      text-align: right;
+    }
+
+    input[type="search"] {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      width: 250px;
+      font-size: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      background: #1a1a1a;
+      color: white;
+    }
+
+    th, td {
+      border: 1px solid #333;
+      padding: 10px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background: #1db954;
+      color: black;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tr:hover {
+      background: #222;
+    }
+
+    .container {
+      padding: 0 20px 40px;
+      overflow-x: auto;
+    }
+
+    .status {
+      text-align: center;
+      margin-top: 30px;
+      color: gray;
+    }
+
+    img {
+      max-width: 60px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Admin Dashboard</h1>
+    <span>Registered Students</span>
+  </header>
+
+  <div class="search-container">
+    <input type="search" id="searchInput" placeholder="Search by name, regNo, or department...">
+  </div>
+
+  <div class="container">
+    <table id="studentsTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Surname</th>
+          <th>Firstname</th>
+          <th>Reg No</th>
+          <th>Department</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Marital</th>
+          <th>Disability</th>
+          <th>State</th>
+          <th>LGA</th>
+          <th>Address</th>
+          <th>NOK (Full Name)</th>
+          <th>NOK Phone</th>
+          <th>NOK Relation</th>
+          <th>School</th>
+          <th>O-Level Subjects</th>
+          <th>Files</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div id="status" class="status">Loading students...</div>
+  </div>
+
+  <script>
+    const backendURL = "https://ict-reg.onrender.com/api/students";
+    const tableBody = document.querySelector("#studentsTable tbody");
+    const statusDiv = document.getElementById("status");
+    const searchInput = document.getElementById("searchInput");
+
+    // Fetch students
+    async function fetchStudents() {
+      try {
+        const res = await fetch(backendURL);
+        if (!res.ok) throw new Error("Network error");
+        const data = await res.json();
+
+        if (!data.success || !data.students.length) {
+          statusDiv.textContent = "No students found.";
+          return;
+        }
+
+        statusDiv.style.display = "none";
+        renderTable(data.students);
+
+        // Enable search
+        searchInput.addEventListener("input", () => {
+          const query = searchInput.value.toLowerCase();
+          const filtered = data.students.filter(stu =>
+            (stu.firstname + " " + stu.surname + " " + stu.regNo + " " + stu.department)
+            .toLowerCase()
+            .includes(query)
+          );
+          renderTable(filtered);
+        });
+      } catch (err) {
+        console.error(err);
+        statusDiv.textContent = "Failed to load students.";
+      }
+    }
+
+    function renderTable(students) {
+      tableBody.innerHTML = "";
+      students.forEach((s, i) => {
+        const row = document.createElement("tr");
+
+        // Build olevel subjects
+        const olevelText = (s.olevel || []).map(o => `${o.subject} (${o.grade})`).join(", ");
+
+        // Build file links
+        const filesHTML = `
+          ${s.fileOlevel ? `<a href="${s.fileOlevel}" target="_blank">Olevel</a>` : ""}
+          ${s.fileJamb ? ` | <a href="${s.fileJamb}" target="_blank">Jamb</a>` : ""}
+          ${s.fileBirth ? ` | <a href="${s.fileBirth}" target="_blank">Birth</a>` : ""}
+          ${s.fileState ? ` | <a href="${s.fileState}" target="_blank">State</a>` : ""}
+          ${s.fileNin ? ` | <a href="${s.fileNin}" target="_blank">NIN</a>` : ""}
+          ${s.fileFee ? ` | <a href="${s.fileFee}" target="_blank">Fee</a>` : ""}
+        `;
+
+        row.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${s.surname || "-"}</td>
+          <td>${s.firstname || "-"}</td>
+          <td>${s.regNo || "-"}</td>
+          <td>${s.department || "-"}</td>
+          <td>${s.email || "-"}</td>
+          <td>${s.phone || "-"}</td>
+          <td>${s.marital || "-"}</td>
+          <td>${s.disability || "-"}</td>
+          <td>${s.stateOrigin || "-"}</td>
+          <td>${s.lgaOrigin || "-"}</td>
+          <td>${s.address || "-"}</td>
+          <td>${(s.nokSurname || "") + " " + (s.nokFirstname || "")}</td>
+          <td>${s.nokPhone || "-"}</td>
+          <td>${s.nokRelation || "-"}</td>
+          <td>${s.school || "-"}</td>
+          <td>${olevelText || "-"}</td>
+          <td>${filesHTML}</td>
+        `;
+
+        tableBody.appendChild(row);
+      });
+    }
+
+    fetchStudents();
+  </script>
+</body>
+</html>
