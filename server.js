@@ -113,6 +113,19 @@ app.post('/api/students/register', upload.fields([
   }
 });
 
+// ====== Check Duplicate Route ======
+app.get('/api/students/check-duplicate', async (req, res) => {
+  try {
+    const { email, phone } = req.query;
+    const exists = await Student.findOne({
+      $or: [{ email }, { phone }]
+    });
+    res.json({ exists: !!exists });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 // Fetch all students
 app.get('/api/students', async (req, res) => {
   try {
