@@ -109,6 +109,31 @@
   .close-btn { background: gray; color: white; }
   .confirm-btn { background: var(--green); color: white; }
 
+  /* Image preview */
+  .thumbs img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    margin: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+  }
+  .lightbox img {
+    max-width: 90%;
+    max-height: 90%;
+    border: 3px solid white;
+    border-radius: 10px;
+  }
+
   /* Spinner Overlay */
   .loading-overlay {
     position: fixed;
@@ -213,6 +238,9 @@
   </div>
 </div>
 
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox"><img src="" alt="Preview"></div>
+
 <!-- Loading Spinner -->
 <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
 
@@ -226,6 +254,8 @@ const closeBtn = document.getElementById('closeBtn');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const dept = document.getElementById('department');
 const regNo = document.getElementById('regNo');
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = lightbox.querySelector('img');
 
 // Generate Registration No.
 dept.addEventListener('change', () => {
@@ -247,19 +277,75 @@ document.getElementById('addOlevel').addEventListener('click', () => {
 });
 
 // === PREVIEW FUNCTION ===
-function showPreview() {
-  const formData = new FormData(form);
-  let html = "<table style='width:100%;border-collapse:collapse;' border='1' cellpadding='5'>";
-  formData.forEach((v,k)=>{ html += `<tr><td><b>${k}</b></td><td>${v}</td></tr>`; });
-  html += "</table>";
-  preview.innerHTML = html;
-  modal.style.display = 'flex';
+function showPreview(){
+  const data=new FormData(form);
+  let html='<h4>Personal Information</h4>';
+  html+=`<p><strong>Name:</strong> ${data.get('surname')} ${data.get('firstname')} ${data.get('middlename')||''}</p>`;
+  html+=`<p><strong>Student Phone:</strong> ${data.get('phone')} | <strong>Email:</strong> ${data.get('email')}</p>`;
+  html+=`<p><strong>Department:</strong> ${dept.options[dept.selectedIndex].text} (${regNo.value})</p>`;
+  html+='<h4>Next of Kin</h4>';
+  html+=`<p><strong>Name:</strong> ${data.get('nokSurname')} ${data.get('nokFirstname')} ${data.get('nokMiddlename')||''}</p>`;
+  html+=`<p><strong>Relationship:</strong> ${data.get('nokRelation')}</p>`;
+  html+=`<p><strong>Next of Kin Phone:</strong> ${data.get('nokPhone')}</p>`;
+  html+=`<p><strong>Address:</strong> ${data.get('nokAddress')}</p>`;
+  html+='<h4>O’Level Details</h4><table><tr><th>Year</th><th>Reg</th><th>Subject</th><th>Grade</th></tr>';
+  document.querySelectorAll('#olevelBody tr').forEach(tr=>{
+    const vals=[...tr.querySelectorAll('input')].map(i=>i.value.trim());
+    if(vals.some(v=>v)) html+=`<tr>${vals.map(v=>`<td>${v}</td>`).join('')}</tr>`;
+  });
+  html+='</table>';
+  html+='<h4>Uploads</h4><div class="thumbs"></div>';
+  preview.innerHTML=html;
+
+  const thumbsContainer = preview.querySelector('.thumbs');
+  const files=['fileOlevel','fileJamb','fileState','fileBirth','fileNin','fileFee'];
+  files.forEach(id=>{
+    const f=document.getElementById(id).files[0];
+    if(f){
+      const reader=new FileReader();
+      reader.onload=e=>{
+        const img=document.createElement('img');
+        img.src=e.target.result;
+        img.addEventListener('click',()=>openLightbox(img.src));
+        thumbsContainer.appendChild(img);
+      };
+      reader.readAsDataURL(f);
+    }
+  });
+
+  modal.style.display='flex';
 }
 
+// === LIGHTBOX CONTROLS ===
+function openLightbox(src) {
+  lightboxImg.src = src;
+  lightbox.style.display = 'flex';
+}
+function closeLightbox() {
+  lightbox.style.display = 'none';
+  lightboxImg.src = '';
+}
+// Close when clicking outside the image
+lightbox.addEventListener('click', (e) => {
+  if (e.target === lightbox) closeLightbox();
+});
+// Close on ESC key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeLightbox();
+});
+
 // === FORM SUBMISSION ===
-form.addEventListener('submit', e => { e.preventDefault(); if (!form.checkValidity()) return form.reportValidity(); showPreview(); });
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  if (!form.checkValidity()) return form.reportValidity();
+  showPreview();
+});
+
 closeBtn.onclick = () => modal.style.display = 'none';
-confirmBtn.onclick = async () => { modal.style.display = 'none'; await checkDuplicateAndSubmit(); };
+confirmBtn.onclick = async () => {
+  modal.style.display = 'none';
+  await checkDuplicateAndSubmit();
+};
 
 // === CHECK DUPLICATE THEN SUBMIT ===
 async function checkDuplicateAndSubmit() {
@@ -270,8 +356,11 @@ async function checkDuplicateAndSubmit() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/students/check-duplicate?email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`);
     const data = await res.json();
-    if (data.exists) { alert("⚠️ A student with this phone or email already exists!"); }
-    else { await submitRegistration(); }
+    if (data.exists) {
+      alert("⚠️ A student with this phone or email already exists!");
+    } else {
+      await submitRegistration();
+    }
   } catch (err) {
     alert("Error checking duplicates.");
     console.error(err);
@@ -292,14 +381,26 @@ async function submitRegistration() {
     });
     formData.append('olevel', JSON.stringify(olevelData));
     formData.append('regNo', regNo.value);
-    const res = await fetch(`${API_BASE_URL}/api/students/register`, { method: "POST", body: formData });
+
+    const res = await fetch(`${API_BASE_URL}/api/students/register`, {
+      method: "POST",
+      body: formData
+    });
+
     const result = await res.json();
-    if (result.success) { alert("✅ Student registered successfully!"); form.reset(); regNo.value=''; olevelBody.innerHTML=''; }
-    else { alert("❌ " + result.message); }
+    if (result.success) {
+      alert("✅ Student registered successfully!");
+      form.reset();
+      regNo.value='';
+      olevelBody.innerHTML='';
+    } else {
+      alert("❌ " + result.message);
+    }
   } catch (err) {
-    console.error(err); alert("⚠️ Submission failed.");
+    console.error(err);
+    alert("⚠️ Submission failed.");
   }
 }
 </script>
 </body>
-                                                                                                                                 </html>
+  </html>
