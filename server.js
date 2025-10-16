@@ -34,7 +34,7 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 // ====== Student Schema ======
-const studentSchema = new mongoose.Schema({
+const RegstudentSchema = new mongoose.Schema({
   surname: String,
   firstname: String,
   middlename: String,
@@ -75,7 +75,7 @@ const studentSchema = new mongoose.Schema({
   fileFee: String,
 }, { timestamps: true });
 
-const Student = mongoose.model('Student', studentSchema);
+const Student = mongoose.model('RegStudent', RegstudentSchema);
 
 // ====== Routes ======
 
