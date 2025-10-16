@@ -15,6 +15,7 @@
     background: var(--gray);
     margin: 0;
     padding: 0;
+    position: relative;
   }
   header {
     display: flex;
@@ -37,6 +38,7 @@
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: filter 0.3s ease;
   }
   h2 { color: var(--green); border-bottom: 2px solid var(--green); padding-bottom: 5px; }
   label { font-weight: 500; display: block; margin-top: 10px; }
@@ -131,6 +133,26 @@
     border: 3px solid white;
     border-radius: 10px;
   }
+
+  /* Spinner Overlay */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1500;
+  }
+  .spinner {
+    border: 6px solid #ccc;
+    border-top: 6px solid var(--green);
+    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -249,6 +271,7 @@
 
   <button type="submit" class="submit-btn">Submit</button>
 </form>
+        
 
 <!-- Modal -->
 <div class="modal-overlay" id="previewModal">
@@ -263,9 +286,22 @@
 <!-- Lightbox -->
 <div class="lightbox" id="lightbox"><img src="" alt="Preview"></div>
 
-<script>
-const API_BASE_URL = "https://ict-reg.onrender.com"; // ✅ Your backend base URL
+<!-- Loading Spinner -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+</div>
 
+<script>
+const API_BASE_URL = "https://ict-reg.onrender.com"; // ✅ backend URL
+
+const form = document.getElementById('regForm');
+const modal = document.getElementById('previewModal');
+const preview = document.getElementById('previewContent');
+const confirmBtn = document.getElementById('confirmBtn');
+const closeBtn = document.getElementById('closeBtn');
+const loadingOverlay = document.getElementById('loadingOverlay');
+
+// Generate Registration No.
 const dept = document.getElementById('department');
 const regNo = document.getElementById('regNo');
 dept.addEventListener('change', () => {
@@ -275,28 +311,7 @@ dept.addEventListener('change', () => {
   } else regNo.value = '';
 });
 
-// Generate editable O'Level rows
-const tbody = document.getElementById('olevelBody');
-for (let i = 0; i < 10; i++) {
-  const tr = document.createElement('tr');
-  ['year', 'reg', 'subject', 'grade'].forEach(() => {
-    const td = document.createElement('td');
-    const inp = document.createElement('input');
-    inp.style.width = '100%';
-    td.appendChild(inp);
-    tr.appendChild(td);
-  });
-  tbody.appendChild(tr);
-}
-
-const form = document.getElementById('regForm');
-const modal = document.getElementById('previewModal');
-const preview = document.getElementById('previewContent');
-const confirmBtn = document.getElementById('confirmBtn');
-const closeBtn = document.getElementById('closeBtn');
-const lightbox = document.getElementById('lightbox');
-const lightImg = lightbox.querySelector('img');
-
+// Phone sanitization
 document.querySelectorAll('input[name="phone"], input[name="nokPhone"]').forEach(inp => {
   inp.addEventListener('input', e => {
     e.target.value = e.target.value.replace(/\D/g, '').slice(0, 11);
@@ -305,67 +320,51 @@ document.querySelectorAll('input[name="phone"], input[name="nokPhone"]').forEach
 
 form.addEventListener('submit', e => {
   e.preventDefault();
-  if (!form.checkValidity()) {
-    form.reportValidity();
-    return;
-  }
+  if (!form.checkValidity()) return form.reportValidity();
   showPreview();
 });
 
-// === PREVIEW MODAL ===
-function showPreview() {
-  const data = new FormData(form);
-  let html = '<h4>Personal Information</h4>';
-  html += `<p><strong>Name:</strong> ${data.get('surname')} ${data.get('firstname')} ${data.get('middlename') || ''}</p>`;
-  html += `<p><strong>Student Phone:</strong> ${data.get('phone')} | <strong>Email:</strong> ${data.get('email')}</p>`;
-  html += `<p><strong>Department:</strong> ${dept.options[dept.selectedIndex].text} (${regNo.value})</p>`;
-  html += '<h4>Next of Kin</h4>';
-  html += `<p><strong>Name:</strong> ${data.get('nokSurname')} ${data.get('nokFirstname')} ${data.get('nokMiddlename') || ''}</p>`;
-  html += `<p><strong>Relationship:</strong> ${data.get('nokRelation')}</p>`;
-  html += `<p><strong>Next of Kin Phone:</strong> ${data.get('nokPhone')}</p>`;
-  html += `<p><strong>Address:</strong> ${data.get('nokAddress')}</p>`;
-  html += '<h4>O’Level Details</h4><table><tr><th>Year</th><th>Reg</th><th>Subject</th><th>Grade</th></tr>';
-  document.querySelectorAll('#olevelBody tr').forEach(tr => {
-    const vals = [...tr.querySelectorAll('input')].map(i => i.value.trim());
-    if (vals.some(v => v)) html += `<tr>${vals.map(v => `<td>${v}</td>`).join('')}</tr>`;
-  });
-  html += '</table>';
-  html += '<h4>Uploads</h4><div class="thumbs"></div>';
-  preview.innerHTML = html;
-
-  const thumbsContainer = preview.querySelector('.thumbs');
-  const files = ['fileOlevel', 'fileJamb', 'fileState', 'fileBirth', 'fileNin', 'fileFee'];
-  files.forEach(id => {
-    const f = document.getElementById(id).files[0];
-    if (f) {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img = document.createElement('img');
-        img.src = e.target.result;
-        img.addEventListener('click', () => openLightbox(img.src));
-        thumbsContainer.appendChild(img);
-      };
-      reader.readAsDataURL(f);
-    }
-  });
-
-  modal.style.display = 'flex';
-}
-
-// === CLOSE OR SUBMIT ===
-closeBtn.onclick = () => { modal.style.display = 'none'; };
-
+closeBtn.onclick = () => modal.style.display = 'none';
 confirmBtn.onclick = async () => {
   modal.style.display = 'none';
-  await submitRegistration();
+  await checkDuplicateAndSubmit();
 };
 
-// === SUBMIT TO BACKEND ===
+// === Duplicate Check then Submit ===
+async function checkDuplicateAndSubmit() {
+  const email = form.querySelector('[name="email"]').value.trim();
+  const phone = form.querySelector('[name="phone"]').value.trim();
+
+  // Show spinner + blur
+  form.style.filter = 'blur(3px)';
+  loadingOverlay.style.display = 'flex';
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/students/check-duplicate?email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`);
+    const data = await res.json();
+
+    if (data.exists) {
+      alert("⚠️ A student with this phone or email already exists!");
+      form.style.filter = 'none';
+      loadingOverlay.style.display = 'none';
+      return;
+    }
+
+    await submitRegistration();
+
+  } catch (err) {
+    alert("Error checking duplicates.");
+    console.error(err);
+    form.style.filter = 'none';
+    loadingOverlay.style.display = 'none';
+  }
+}
+
+// === Actual Submission ===
 async function submitRegistration() {
   try {
     const formData = new FormData(form);
 
-    // Collect O'Level table data
     const olevelData = [];
     document.querySelectorAll('#olevelBody tr').forEach(tr => {
       const inputs = tr.querySelectorAll('input');
@@ -378,8 +377,6 @@ async function submitRegistration() {
       if (Object.values(row).some(v => v.trim())) olevelData.push(row);
     });
     formData.append('olevel', JSON.stringify(olevelData));
-
-    // Add reg number to the form data
     formData.append('regNo', regNo.value);
 
     const response = await fetch(`${API_BASE_URL}/api/students/register`, {
@@ -394,22 +391,18 @@ async function submitRegistration() {
       form.reset();
       regNo.value = '';
     } else {
-      alert("❌ Error: " + result.message);
+      alert("❌ " + result.message);
     }
-
   } catch (err) {
     console.error(err);
-    alert("⚠️ Something went wrong while submitting the form.");
+    alert("⚠️ Submission failed.");
+  } finally {
+    // Always remove blur & spinner
+    form.style.filter = 'none';
+    loadingOverlay.style.display = 'none';
   }
 }
-
-// === LIGHTBOX PREVIEW ===
-function openLightbox(src) {
-  lightImg.src = src;
-  lightbox.style.display = 'flex';
-}
-lightbox.addEventListener('click', () => lightbox.style.display = 'none');
 </script>
-
 </body>
-          </html>
+  </html>
+
