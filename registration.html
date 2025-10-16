@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owu College of Management Technology - Student Screening</title>
+<style>
+  :root {
+    --green: #16a34a;
+    --gray: #f2f2f2;
+    --border: #ccc;
+  }
+  * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+  body {
+    background: var(--gray);
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    padding: 10px 20px;
+    border-bottom: 2px solid var(--green);
+  }
+  header img { height: 50px; }
+  header div {
+    text-align: center;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  form {
+    background: white;
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  h2 { color: var(--green); border-bottom: 2px solid var(--green); padding-bottom: 5px; }
+  label { font-weight: 500; display: block; margin-top: 10px; }
+  input, select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    margin-top: 5px;
+  }
+  input:focus, select:focus { border-color: var(--green); outline: none; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media(max-width: 700px){ .grid{ grid-template-columns: 1fr; } }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 5px;
+    text-align: center;
+  }
+  .submit-btn {
+    background: var(--green);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 5px;
+    margin-top: 20px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .submit-btn:hover { background: #128d3c; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  .modal {
+    background: white;
+    max-width: 800px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .modal h3 { color: var(--green); border-bottom: 1px solid var(--green); }
+  .modal button {
+    margin-top: 10px;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .close-btn { background: gray; color: white; }
+  .confirm-btn { background: var(--green); color: white; }
+
+  /* Image preview */
+  .thumbs img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    margin: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+  }
+  .lightbox img {
+    max-width: 90%;
+    max-height: 90%;
+    border: 3px solid white;
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="left-logo.png" alt="Left Logo">
+  <div>
+    Owu College of Management Technology, Wasinmi<br>
+    Department of Computer Science and Technology<br>
+    <small>Online Student Screening</small>
+  </div>
+  <img src="right-logo.png" alt="Right Logo">
+</header>
+
+<form id="regForm">
+  <h2>Personal Information</h2>
+  <div class="grid">
+    <div>
+      <label>Surname</label>
+      <input required name="surname">
+    </div>
+    <div>
+      <label>First Name</label>
+      <input required name="firstname">
+    </div>
+    <div>
+      <label>Middle Name</label>
+      <input name="middlename">
+    </div>
+    <div>
+      <label>Phone Number</label>
+      <input type="tel" name="phone" required pattern="[0-9]{11}" placeholder="e.g. 09163836546" title="Enter 11 digits only (e.g. 09163836546)">
+    </div>
+    <div>
+      <label>Email</label>
+      <input type="email" name="email" required>
+    </div>
+    <div>
+      <label>Marital Status</label>
+      <select name="marital" required>
+        <option value="">Select</option>
+        <option>Single</option>
+        <option>Married</option>
+      </select>
+    </div>
+    <div>
+      <label>Disability</label>
+      <input type="checkbox" id="disabilityNone"> None
+      <input name="disability" placeholder="If any, please signify">
+    </div>
+    <div>
+      <label>State of Origin</label>
+      <input required name="stateOrigin">
+    </div>
+    <div>
+      <label>LGA (State of Origin)</label>
+      <input required name="lgaOrigin">
+    </div>
+    <div>
+      <label>Residential Address</label>
+      <input required name="address">
+    </div>
+    <div>
+      <label>LGA (Residential Address)</label>
+      <input required name="lgaResidence">
+    </div>
+    <div>
+      <label>Department</label>
+      <select name="department" id="department" required>
+        <option value="">Select</option>
+        <option value="COS">Computer Science</option>
+        <option value="COE">Computer Engineering</option>
+        <option value="BUS">Business Administration</option>
+        <option value="ACC">Accountancy</option>
+        <option value="MCM">Mass Communication</option>
+        <option value="ELE">Electrical Engineering</option>
+        <option value="EST">Estate Management</option>
+        <option value="SLT">Science Lab Tech</option>
+      </select>
+    </div>
+    <div>
+      <label>Registration Number</label>
+      <input id="regNo" readonly placeholder="Auto-generated">
+    </div>
+  </div>
+
+  <h2>Next of Kin</h2>
+  <div class="grid">
+    <div><label>Surname</label><input required name="nokSurname"></div>
+    <div><label>First Name</label><input required name="nokFirstname"></div>
+    <div><label>Middle Name</label><input name="nokMiddlename"></div>
+    <div>
+      <label>Phone Number</label>
+      <input type="tel" name="nokPhone" required pattern="[0-9]{11}" placeholder="e.g. 09163836546" title="Enter 11 digits only (e.g. 09163836546)">
+    </div>
+    <div><label>Marital Status</label><select name="nokMarital" required><option value="">Select</option><option>Single</option><option>Married</option></select></div>
+    <div><label>Relationship</label><input required name="nokRelation"></div>
+    <div class="full"><label>Residential Address</label><input required name="nokAddress"></div>
+  </div>
+
+  <h2>Academic Information</h2>
+  <label>Secondary School</label><input required name="school">
+  <label>O'Level Obtained</label>
+  <table>
+    <thead><tr><th>Exam Year</th><th>Reg. No</th><th>Subject</th><th>Grade</th></tr></thead>
+    <tbody id="olevelBody"></tbody>
+  </table>
+
+  <h2>Uploads (Images Only)</h2>
+  <label>Upload O'Level Result</label><input type="file" accept="image/*" id="fileOlevel" required>
+  <label>Upload JAMB Result</label><input type="file" accept="image/*" id="fileJamb" required>
+  <label>Upload State of Origin</label><input type="file" accept="image/*" id="fileState" required>
+  <label>Upload Birth Certificate</label><input type="file" accept="image/*" id="fileBirth" required>
+  <label>Upload NIN</label><input type="file" accept="image/*" id="fileNin" required>
+  <label>Upload School Acceptance Fee</label><input type="file" accept="image/*" id="fileFee" required>
+
+  <button type="submit" class="submit-btn">Submit</button>
+</form>
+
+<!-- Modal -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal">
+    <h3>Registration Preview</h3>
+    <div id="previewContent"></div>
+    <button class="confirm-btn" id="confirmBtn">Confirm & Submit</button>
+    <button class="close-btn" id="closeBtn">Edit Info</button>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox"><img src="" alt="Preview"></div>
+
+<script>
+const dept = document.getElementById('department');
+const regNo = document.getElementById('regNo');
+dept.addEventListener('change', ()=>{
+  if(dept.value){
+    const num = String(Math.floor(Math.random()*900)+100);
+    regNo.value = `${dept.value}/ND/${num}`;
+  } else regNo.value = '';
+});
+
+// Generate 10 editable rows
+const tbody = document.getElementById('olevelBody');
+for(let i=0;i<10;i++){
+  const tr=document.createElement('tr');
+  ['year','reg','subject','grade'].forEach(()=> {
+    const td=document.createElement('td');
+    const inp=document.createElement('input');
+    inp.style.width='100%';
+    td.appendChild(inp);
+    tr.appendChild(td);
+  });
+  tbody.appendChild(tr);
+}
+
+const form=document.getElementById('regForm');
+const modal=document.getElementById('previewModal');
+const preview=document.getElementById('previewContent');
+const confirmBtn=document.getElementById('confirmBtn');
+const closeBtn=document.getElementById('closeBtn');
+const lightbox=document.getElementById('lightbox');
+const lightImg=lightbox.querySelector('img');
+
+// Restrict phone input to digits only (11 max)
+document.querySelectorAll('input[name="phone"], input[name="nokPhone"]').forEach(inp=>{
+  inp.addEventListener('input', e=>{
+    e.target.value = e.target.value.replace(/\D/g,'').slice(0,11);
+  });
+});
+
+form.addEventListener('submit', e=>{
+  e.preventDefault();
+  if(!form.checkValidity()){ form.reportValidity(); return; }
+  showPreview();
+});
+
+function showPreview(){
+  const data=new FormData(form);
+  let html='<h4>Personal Information</h4>';
+  html+=`<p><strong>Name:</strong> ${data.get('surname')} ${data.get('firstname')} ${data.get('middlename')||''}</p>`;
+  html+=`<p><strong>Student Phone:</strong> ${data.get('phone')} | <strong>Email:</strong> ${data.get('email')}</p>`;
+  html+=`<p><strong>Department:</strong> ${dept.options[dept.selectedIndex].text} (${regNo.value})</p>`;
+  html+='<h4>Next of Kin</h4>';
+  html+=`<p><strong>Name:</strong> ${data.get('nokSurname')} ${data.get('nokFirstname')} ${data.get('nokMiddlename')||''}</p>`;
+  html+=`<p><strong>Relationship:</strong> ${data.get('nokRelation')}</p>`;
+  html+=`<p><strong>Next of Kin Phone:</strong> ${data.get('nokPhone')}</p>`;
+  html+=`<p><strong>Address:</strong> ${data.get('nokAddress')}</p>`;
+  html+='<h4>O’Level Details</h4><table><tr><th>Year</th><th>Reg</th><th>Subject</th><th>Grade</th></tr>';
+  document.querySelectorAll('#olevelBody tr').forEach(tr=>{
+    const vals=[...tr.querySelectorAll('input')].map(i=>i.value.trim());
+    if(vals.some(v=>v)) html+=`<tr>${vals.map(v=>`<td>${v}</td>`).join('')}</tr>`;
+  });
+  html+='</table>';
+  html+='<h4>Uploads</h4><div class="thumbs"></div>';
+  preview.innerHTML=html;
+
+  const thumbsContainer = preview.querySelector('.thumbs');
+  const files=['fileOlevel','fileJamb','fileState','fileBirth','fileNin','fileFee'];
+  files.forEach(id=>{
+    const f=document.getElementById(id).files[0];
+    if(f){
+      const reader=new FileReader();
+      reader.onload=e=>{
+        const img=document.createElement('img');
+        img.src=e.target.result;
+        img.addEventListener('click',()=>openLightbox(img.src));
+        thumbsContainer.appendChild(img);
+      };
+      reader.readAsDataURL(f);
+    }
+  });
+
+  modal.style.display='flex';
+}
+
+closeBtn.onclick=()=>{ modal.style.display='none'; };
+confirmBtn.onclick=()=>{
+  modal.style.display='none';
+  alert('Registered Successfully!');
+  form.reset();
+  regNo.value='';
+};
+function openLightbox(src){
+  lightImg.src=src;
+  lightbox.style.display='flex';
+}
+lightbox.addEventListener('click',()=>lightbox.style.display='none');
+</script>
+
+</body>
+</html>
