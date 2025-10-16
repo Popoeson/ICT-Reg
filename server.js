@@ -92,6 +92,10 @@ app.post(
   ]),
   async (req, res) => {
     try {
+
+      console.log("🟢 Incoming body:", req.body);
+console.log("🟣 Incoming files:", req.files);
+      
       const body = req.body;
       const uploads = {};
 
