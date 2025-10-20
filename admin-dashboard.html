@@ -1,211 +1,380 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📋 Registered Students - Admin Dashboard</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Poppins", sans-serif;
-      background: #f2f2f2;
-      color: white;
-      min-height: 100vh;
-    }
-
-    header {
-      background: #111;
-      padding: 15px 25px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid #1db954;
-    }
-
-    header h1 {
-      font-size: 1.3rem;
-      color: #1db954;
-      margin: 0;
-    }
-
-    .search-container {
-      margin: 20px;
-      text-align: right;
-    }
-
-    input[type="search"] {
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: none;
-      width: 250px;
-      font-size: 14px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 10px 0;
-      background: #1a1a1a;
-      color: white;
-    }
-
-    th, td {
-      border: 1px solid #333;
-      padding: 10px;
-      text-align: left;
-      font-size: 14px;
-    }
-
-    th {
-      background: #1db954;
-      color: black;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-
-    tr:hover {
-      background: #222;
-    }
-
-    .container {
-      padding: 0 20px 40px;
-      overflow-x: auto;
-    }
-
-    .status {
-      text-align: center;
-      margin-top: 30px;
-      color: gray;
-    }
-
-    img {
-      max-width: 60px;
-      border-radius: 8px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard - Registered Students</title>
+<style>
+  :root {
+    --green: #16a34a;
+    --gray: #f2f2f2;
+    --border: #ccc;
+  }
+  * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+  body { background: var(--gray); margin:0; padding:0; }
+  header {
+    background:white;
+    padding: 15px 20px;
+    border-bottom:2px solid var(--green);
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  header h1 { margin:0; font-size:1.5rem; color:var(--green); }
+  .container { max-width:1200px; margin:20px auto; padding:0 15px; }
+  .card {
+    background:white;
+    border-radius:10px;
+    padding:15px;
+    margin-bottom:15px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+  }
+  .card-header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:pointer;
+  }
+  .card-header h3 { margin:0; }
+  .arrow { font-size:1.2rem; transition: transform 0.3s; }
+  .arrow.expanded { transform: rotate(90deg); }
+  .card-body { display:none; margin-top:10px; }
+  table { width:100%; border-collapse: collapse; margin-top:10px; }
+  th,td { border:1px solid var(--border); padding:5px; text-align:center; }
+  .thumbs img {
+    width:80px; height:80px; object-fit:cover; margin:5px; border-radius:5px; cursor:pointer;
+  }
+  .lightbox {
+    position:fixed; inset:0; background: rgba(0,0,0,0.9); display:none; justify-content:center; align-items:center; z-index:2000;
+  }
+  .lightbox img { max-width:90%; max-height:90%; border:3px solid white; border-radius:10px; }
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset:0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  .modal {
+    background:white;
+    max-width:900px;
+    width:95%;
+    max-height:90vh;
+    overflow-y:auto;
+    border-radius:10px;
+    padding:20px;
+  }
+  .modal h2 { color:var(--green); border-bottom:2px solid var(--green); padding-bottom:5px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; }
+  @media(max-width:700px){ .grid{ grid-template-columns:1fr; } }
+  label { font-weight:500; display:block; margin-top:10px; }
+  input, select { width:100%; padding:8px; margin-top:5px; border-radius:5px; border:1px solid var(--border); }
+  .submit-btn { background:var(--green); color:white; padding:12px 25px; border:none; border-radius:5px; margin-top:15px; cursor:pointer; font-weight:600; }
+  .submit-btn:hover { background:#128d3c; }
+  .btn { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; font-weight:600; margin-left:5px; }
+  .edit-btn { background:#16a34a; color:white; }
+  .delete-btn { background:#dc2626; color:white; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Admin Dashboard</h1>
-    <span>Registered Students</span>
-  </header>
 
-  <div class="search-container">
-    <input type="search" id="searchInput" placeholder="Search by name, regNo, or department...">
+<header>
+  <h1>Admin Dashboard</h1>
+  <input type="text" id="searchInput" placeholder="Search by name or department..." style="padding:5px 10px;border:1px solid var(--border);border-radius:5px;">
+</header>
+
+<div class="container" id="studentsContainer">
+  <!-- Student cards injected here -->
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox"><img src="" alt="Preview"></div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h2>Edit Student</h2>
+    <form id="editForm">
+      <div class="grid">
+        <div><label>Surname</label><input name="surname" required></div>
+        <div><label>First Name</label><input name="firstname" required></div>
+        <div><label>Middle Name</label><input name="middlename"></div>
+        <div><label>Phone</label><input name="phone" required></div>
+        <div><label>Email</label><input name="email" type="email" required></div>
+        <div><label>Department</label>
+          <select name="department" required>
+            <option value="">Select</option>
+            <option value="COS">Computer Science</option>
+            <option value="COE">Computer Engineering</option>
+            <option value="BUS">Business Administration</option>
+            <option value="ACC">Accountancy</option>
+            <option value="MCM">Mass Communication</option>
+            <option value="ELE">Electrical Engineering</option>
+            <option value="EST">Estate Management</option>
+            <option value="SLT">Science Lab Tech</option>
+          </select>
+        </div>
+        <div><label>Registration Number</label><input name="regNo" readonly></div>
+      </div>
+      <h3>Next of Kin</h3>
+      <div class="grid">
+        <div><label>Surname</label><input name="nokSurname" required></div>
+        <div><label>First Name</label><input name="nokFirstname" required></div>
+        <div><label>Middle Name</label><input name="nokMiddlename"></div>
+        <div><label>Phone</label><input name="nokPhone" required></div>
+        <div><label>Relationship</label><input name="nokRelation" required></div>
+        <div><label>Marital Status</label><select name="nokMarital"><option>Single</option><option>Married</option></select></div>
+        <div><label>Address</label><input name="nokAddress" required></div>
+      </div>
+      <h3>Academic Info</h3>
+      <div class="grid">
+        <div><label>Secondary School</label><input name="school" required></div>
+      </div>
+      <h3>O'Level</h3>
+      <table>
+        <thead><tr><th>Year</th><th>Reg</th><th>Subject</th><th>Grade</th><th>Action</th></tr></thead>
+        <tbody id="editOlevelBody"></tbody>
+      </table>
+      <button type="button" id="addEditOlevel" class="submit-btn">+ Add Row</button>
+      <h3>Uploaded Files</h3>
+      <div class="grid">
+        <div><label>O'Level</label><input type="file" name="fileOlevel"><img id="preview_fileOlevel" class="thumbs"></div>
+        <div><label>JAMB</label><input type="file" name="fileJamb"><img id="preview_fileJamb" class="thumbs"></div>
+        <div><label>State</label><input type="file" name="fileState"><img id="preview_fileState" class="thumbs"></div>
+        <div><label>Birth</label><input type="file" name="fileBirth"><img id="preview_fileBirth" class="thumbs"></div>
+        <div><label>NIN</label><input type="file" name="fileNin"><img id="preview_fileNin" class="thumbs"></div>
+        <div><label>Fee</label><input type="file" name="fileFee"><img id="preview_fileFee" class="thumbs"></div>
+      </div>
+      <button type="submit" class="submit-btn">Save Changes</button>
+    </form>
   </div>
+</div>
 
-  <div class="container">
-    <table id="studentsTable">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Surname</th>
-          <th>Firstname</th>
-          <th>Reg No</th>
-          <th>Department</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Marital</th>
-          <th>Disability</th>
-          <th>State</th>
-          <th>LGA</th>
-          <th>Address</th>
-          <th>NOK (Full Name)</th>
-          <th>NOK Phone</th>
-          <th>NOK Relation</th>
-          <th>School</th>
-          <th>O-Level Subjects</th>
-          <th>Files</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+<script>
+const API_BASE_URL = "https://ict-reg.onrender.com";
+const studentsContainer = document.getElementById('studentsContainer');
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = lightbox.querySelector('img');
+const searchInput = document.getElementById('searchInput');
 
-    <div id="status" class="status">Loading students...</div>
-  </div>
+// Edit modal
+const editModal = document.getElementById('editModal');
+const editForm = document.getElementById('editForm');
+const editOlevelBody = document.getElementById('editOlevelBody');
+let currentEditId = null;
+let studentsData = [];
 
-  <script>
-    const backendURL = "https://ict-reg.onrender.com/api/students";
-    const tableBody = document.querySelector("#studentsTable tbody");
-    const statusDiv = document.getElementById("status");
-    const searchInput = document.getElementById("searchInput");
-
-    // Fetch students
-    async function fetchStudents() {
-      try {
-        const res = await fetch(backendURL);
-        if (!res.ok) throw new Error("Network error");
-        const data = await res.json();
-
-        if (!data.success || !data.students.length) {
-          statusDiv.textContent = "No students found.";
-          return;
-        }
-
-        statusDiv.style.display = "none";
-        renderTable(data.students);
-
-        // Enable search
-        searchInput.addEventListener("input", () => {
-          const query = searchInput.value.toLowerCase();
-          const filtered = data.students.filter(stu =>
-            (stu.firstname + " " + stu.surname + " " + stu.regNo + " " + stu.department)
-            .toLowerCase()
-            .includes(query)
-          );
-          renderTable(filtered);
-        });
-      } catch (err) {
-        console.error(err);
-        statusDiv.textContent = "Failed to load students.";
-      }
+// === Fetch Students ===
+async function fetchStudents() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/students`);
+    const data = await res.json();
+    if(data.success){
+      studentsData = data.students;
+      renderStudents(studentsData);
     }
+  } catch(err){ console.error(err); }
+}
 
-    function renderTable(students) {
-      tableBody.innerHTML = "";
-      students.forEach((s, i) => {
-        const row = document.createElement("tr");
+// === Render Students ===
+function renderStudents(students) {
+  studentsContainer.innerHTML='';
+  students.forEach((stu,index)=>{
+    const card=document.createElement('div');
+    card.classList.add('card');
+    card.innerHTML=`
+      <div class="card-header">
+        <h3>${index+1}. ${stu.surname} ${stu.firstname} ${stu.middlename||''}</h3>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="card-body">
+        <p><strong>Phone:</strong> ${stu.phone} | <strong>Email:</strong> ${stu.email}</p>
+        <p><strong>Department:</strong> ${stu.department} (${stu.regNo})</p>
+        <p><strong>Marital:</strong> ${stu.marital} | <strong>Disability:</strong> ${stu.disability||'None'}</p>
+        <h4>Next of Kin</h4>
+        <p><strong>Name:</strong> ${stu.nokSurname} ${stu.nokFirstname} ${stu.nokMiddlename||''}</p>
+        <p><strong>Relationship:</strong> ${stu.nokRelation} | <strong>Phone:</strong> ${stu.nokPhone}</p>
+        <p><strong>Address:</strong> ${stu.nokAddress}</p>
+        <h4>O’Level Details</h4>
+        <table><thead><tr><th>Year</th><th>Reg</th><th>Subject</th><th>Grade</th></tr></thead><tbody>
+        ${stu.olevel.map(o=>`<tr><td>${o.year}</td><td>${o.reg}</td><td>${o.subject}</td><td>${o.grade}</td></tr>`).join('')}
+        </tbody></table>
+        <h4>Uploaded Documents</h4>
+        <div class="thumbs">
+          ${['fileOlevel','fileJamb','fileState','fileBirth','fileNin','fileFee'].map(f=>stu[f]?`<img src="${stu[f]}" onclick="openLightbox('${stu[f]}')">`:'').join('')}
+        </div>
+        <div style="margin-top:10px;">
+          <button class="btn edit-btn" onclick="openEditModal('${stu._id}')">Edit</button>
+          <button class="btn delete-btn" onclick="deleteStudent('${stu._id}')">Delete</button>
+        </div>
+      </div>
+    `;
+    studentsContainer.appendChild(card);
 
-        // Build olevel subjects
-        const olevelText = (s.olevel || []).map(o => `${o.subject} (${o.grade})`).join(", ");
+    // Toggle body
+    const header = card.querySelector('.card-header');
+    const body = card.querySelector('.card-body');
+    const arrow = card.querySelector('.arrow');
+    header.addEventListener('click',()=>{ 
+      const expanded=body.style.display==='block';
+      body.style.display=expanded?'none':'block';
+      arrow.classList.toggle('expanded',!expanded);
+    });
+  });
+}
 
-        // Build file links
-        const filesHTML = `
-          ${s.fileOlevel ? `<a href="${s.fileOlevel}" target="_blank">Olevel</a>` : ""}
-          ${s.fileJamb ? ` | <a href="${s.fileJamb}" target="_blank">Jamb</a>` : ""}
-          ${s.fileBirth ? ` | <a href="${s.fileBirth}" target="_blank">Birth</a>` : ""}
-          ${s.fileState ? ` | <a href="${s.fileState}" target="_blank">State</a>` : ""}
-          ${s.fileNin ? ` | <a href="${s.fileNin}" target="_blank">NIN</a>` : ""}
-          ${s.fileFee ? ` | <a href="${s.fileFee}" target="_blank">Fee</a>` : ""}
-        `;
+// === Lightbox ===
+function openLightbox(src){
+  lightboxImg.src=src;
+  lightbox.style.display='flex';
+}
+function closeLightbox(){
+  lightbox.style.display='none';
+  lightboxImg.src='';
+}
+lightbox.addEventListener('click',e=>{ if(e.target===lightbox) closeLightbox(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeLightbox(); });
 
-        row.innerHTML = `
-          <td>${i + 1}</td>
-          <td>${s.surname || "-"}</td>
-          <td>${s.firstname || "-"}</td>
-          <td>${s.regNo || "-"}</td>
-          <td>${s.department || "-"}</td>
-          <td>${s.email || "-"}</td>
-          <td>${s.phone || "-"}</td>
-          <td>${s.marital || "-"}</td>
-          <td>${s.disability || "-"}</td>
-          <td>${s.stateOrigin || "-"}</td>
-          <td>${s.lgaOrigin || "-"}</td>
-          <td>${s.address || "-"}</td>
-          <td>${(s.nokSurname || "") + " " + (s.nokFirstname || "")}</td>
-          <td>${s.nokPhone || "-"}</td>
-          <td>${s.nokRelation || "-"}</td>
-          <td>${s.school || "-"}</td>
-          <td>${olevelText || "-"}</td>
-          <td>${filesHTML}</td>
-        `;
+// === Search Filter ===
+searchInput.addEventListener('input',()=>{
+  const term = searchInput.value.toLowerCase();
+  const filtered = studentsData.filter(s=>(
+    `${s.surname} ${s.firstname} ${s.middlename||''}`.toLowerCase().includes(term) ||
+    s.department.toLowerCase().includes(term)
+  ));
+  renderStudents(filtered);
+});
 
-        tableBody.appendChild(row);
-      });
+// === Delete Student ===
+async function deleteStudent(id){
+  if(!confirm('Are you sure you want to delete this student?')) return;
+  try{
+    const res = await fetch(`${API_BASE_URL}/api/students/${id}`,{ method:'DELETE' });
+    const data = await res.json();
+    if(data.success){ alert('Student deleted'); fetchStudents(); }
+    else alert('Failed to delete');
+  }catch(err){ console.error(err); alert('Error deleting student'); }
+}
+
+// === Open Edit Modal ===
+function openEditModal(id){
+  currentEditId = id;
+  const stu = studentsData.find(s=>s._id===id);
+  if(!stu) return;
+  editModal.style.display='flex';
+
+  // Fill personal info
+  editForm.surname.value=stu.surname;
+  editForm.firstname.value=stu.firstname;
+  editForm.middlename.value=stu.middlename||'';
+  editForm.phone.value=stu.phone;
+  editForm.email.value=stu.email;
+  editForm.department.value=stu.department;
+  editForm.regNo.value=stu.regNo;
+
+  // Next of kin
+  editForm.nokSurname.value=stu.nokSurname;
+  editForm.nokFirstname.value=stu.nokFirstname;
+  editForm.nokMiddlename.value=stu.nokMiddlename||'';
+  editForm.nokPhone.value=stu.nokPhone;
+  editForm.nokRelation.value=stu.nokRelation;
+  // Next of kin continued
+  editForm.nokAddress.value = stu.nokAddress;
+  editForm.nokMarital.value = stu.marital || 'Single';
+
+  // Academic info
+  editForm.school.value = stu.school || '';
+
+  // Populate O-Level table
+  editOlevelBody.innerHTML = '';
+  stu.olevel.forEach((o, i) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><input name="olevelYear" value="${o.year}" required></td>
+      <td><input name="olevelReg" value="${o.reg}" required></td>
+      <td><input name="olevelSubject" value="${o.subject}" required></td>
+      <td><input name="olevelGrade" value="${o.grade}" required></td>
+      <td><button type="button" onclick="removeOlevelRow(this)">Remove</button></td>
+    `;
+    editOlevelBody.appendChild(row);
+  });
+
+  // Show current uploaded files
+  ['fileOlevel','fileJamb','fileState','fileBirth','fileNin','fileFee'].forEach(f=>{
+    const preview = document.getElementById(`preview_${f}`);
+    preview.src = stu[f] || '';
+  });
+}
+
+// Close modal on outside click
+editModal.addEventListener('click', e => {
+  if(e.target === editModal) editModal.style.display = 'none';
+});
+
+// Add O-Level row
+document.getElementById('addEditOlevel').addEventListener('click', () => {
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td><input name="olevelYear" required></td>
+    <td><input name="olevelReg" required></td>
+    <td><input name="olevelSubject" required></td>
+    <td><input name="olevelGrade" required></td>
+    <td><button type="button" onclick="removeOlevelRow(this)">Remove</button></td>
+  `;
+  editOlevelBody.appendChild(row);
+});
+
+function removeOlevelRow(btn){ btn.closest('tr').remove(); }
+
+// Handle file previews
+['fileOlevel','fileJamb','fileState','fileBirth','fileNin','fileFee'].forEach(f=>{
+  editForm[f].addEventListener('change', e=>{
+    const file = e.target.files[0];
+    if(file){
+      const reader = new FileReader();
+      reader.onload = ev => {
+        document.getElementById(`preview_${f}`).src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
     }
+  });
+});
 
-    fetchStudents();
-  </script>
+// Submit edit form
+editForm.addEventListener('submit', async e=>{
+  e.preventDefault();
+  const formData = new FormData(editForm);
+
+  // Append O-Level as JSON
+  const olevelRows = Array.from(editOlevelBody.querySelectorAll('tr'));
+  const olevelData = olevelRows.map(r=>({
+    year: r.querySelector('input[name="olevelYear"]').value,
+    reg: r.querySelector('input[name="olevelReg"]').value,
+    subject: r.querySelector('input[name="olevelSubject"]').value,
+    grade: r.querySelector('input[name="olevelGrade"]').value
+  }));
+  formData.append('olevel', JSON.stringify(olevelData));
+
+  try{
+    const res = await fetch(`${API_BASE_URL}/api/students/${currentEditId}`,{
+      method: 'PUT',
+      body: formData
+    });
+    const data = await res.json();
+    if(data.success){
+      alert('Student updated successfully');
+      editModal.style.display='none';
+      fetchStudents();
+    } else alert('Failed to update student');
+  }catch(err){ console.error(err); alert('Error updating student'); }
+});
+
+// Initial fetch
+fetchStudents();
+</script>
 </body>
-</html>
+                                                                            </html>
