@@ -182,6 +182,124 @@ app.get('/api/students/check-duplicate', async (req, res) => {
   }
 });
 
+// Update student route
+app.put(
+  "/api/students/:id",
+  upload.fields([
+    { name: "fileOlevel" },
+    { name: "fileJamb" },
+    { name: "fileState" },
+    { name: "fileBirth" },
+    { name: "fileNin" },
+    { name: "fileFee" },
+  ]),
+  async (req, res) => {
+    try {
+      const studentId = req.params.id;
+      const existingStudent = await Student.findById(studentId);
+      if (!existingStudent) {
+        return res.status(404).json({ success: false, message: "Student not found" });
+      }
+
+      const body = req.body;
+      const uploads = {};
+
+      // Process uploaded files and preserve old URLs if no new file
+      ['fileOlevel','fileJamb','fileState','fileBirth','fileNin','fileFee'].forEach(f => {
+        if (req.files && req.files[f]) {
+          uploads[f] = req.files[f][0].path; // New Cloudinary URL
+        } else {
+          uploads[f] = existingStudent[f]; // Preserve old URL
+        }
+      });
+
+      // Parse O-Level data
+      const olevelArray = typeof body.olevel === "string" ? JSON.parse(body.olevel) : body.olevel || [];
+
+      // Update student fields
+      existingStudent.surname = body.surname;
+      existingStudent.firstname = body.firstname;
+      existingStudent.middlename = body.middlename;
+      existingStudent.phone = body.phone;
+      existingStudent.email = body.email;
+      existingStudent.marital = body.marital;
+      existingStudent.disability = body.disability;
+      existingStudent.stateOrigin = body.stateOrigin;
+      existingStudent.lgaOrigin = body.lgaOrigin;
+      existingStudent.address = body.address;
+      existingStudent.lgaResidence = body.lgaResidence;
+      existingStudent.department = body.department;
+      existingStudent.regNo = body.regNo;
+
+      // Next of Kin
+      existingStudent.nokSurname = body.nokSurname;
+      existingStudent.nokFirstname = body.nokFirstname;
+      existingStudent.nokMiddlename = body.nokMiddlename;
+      existingStudent.nokPhone = body.nokPhone;
+      existingStudent.nokMarital = body.nokMarital;
+      existingStudent.nokRelation = body.nokRelation;
+      existingStudent.nokAddress = body.nokAddress;
+
+      // Academic Info
+      existingStudent.school = body.school;
+      existingStudent.olevel = olevelArray;
+
+      // File URLs
+      existingStudent.fileOlevel = uploads.fileOlevel;
+      existingStudent.fileJamb = uploads.fileJamb;
+      existingStudent.fileState = uploads.fileState;
+      existingStudent.fileBirth = uploads.fileBirth;
+      existingStudent.fileNin = uploads.fileNin;
+      existingStudent.fileFee = uploads.fileFee;
+
+      await existingStudent.save();
+
+      res.json({ success: true, message: "Student updated successfully", student: existingStudent });
+    } catch (error) {
+      console.error("❌ Error updating student:", error);
+      res.status(500).json({ success: false, message: "Server error while updating student", error: error.message });
+    }
+  }
+);
+
+// Search students by name or department
+app.get('/api/students/search', async (req, res) => {
+  try {
+    const { q, department } = req.query;
+
+    const filter = {};
+    if (q) {
+      const regex = new RegExp(q, 'i'); // case-insensitive search
+      filter.$or = [
+        { surname: regex },
+        { firstname: regex },
+        { middlename: regex },
+      ];
+    }
+    if (department) filter.department = department;
+
+    const students = await Student.find(filter).sort({ createdAt: -1 });
+    res.json({ success: true, count: students.length, students });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Delete student
+app.delete('/api/students/:id', async (req, res) => {
+  try {
+    const studentId = req.params.id;
+    const student = await Student.findByIdAndDelete(studentId);
+    if (!student) return res.status(404).json({ success: false, message: "Student not found" });
+
+    res.json({ success: true, message: "Student deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // ====== Fetch All Students ======
 app.get('/api/students', async (req, res) => {
   try {
