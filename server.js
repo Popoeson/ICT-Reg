@@ -24,46 +24,47 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_SECRET,
 });
 
+// Multer Storage for Cloudinary
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'school_uploads',
-    allowed_formats: ['jpg', 'jpeg', 'png']
-  }
+    allowed_formats: ['jpg', 'jpeg', 'png'],
+  },
 });
 const upload = multer({ storage });
 
 // ====== Student Schema ======
 const RegstudentSchema = new mongoose.Schema({
-  surname: String,
-  firstname: String,
+  surname: { type: String, required: true },
+  firstname: { type: String, required: true },
   middlename: String,
-  phone: String,
-  email: String,
-  marital: String,
+  phone: { type: String, required: true },
+  email: { type: String, required: true },
+  marital: { type: String, required: true },
   disability: String,
-  stateOrigin: String,
-  lgaOrigin: String,
-  address: String,
-  lgaResidence: String,
-  department: String,
-  regNo: String,
+  stateOrigin: { type: String, required: true },
+  lgaOrigin: { type: String, required: true },
+  address: { type: String, required: true },
+  lgaResidence: { type: String, required: true },
+  department: { type: String, required: true },
+  regNo: { type: String, required: true, unique: true },
   // Next of Kin
-  nokSurname: String,
-  nokFirstname: String,
+  nokSurname: { type: String, required: true },
+  nokFirstname: { type: String, required: true },
   nokMiddlename: String,
-  nokPhone: String,
-  nokMarital: String,
-  nokRelation: String,
-  nokAddress: String,
+  nokPhone: { type: String, required: true },
+  nokMarital: { type: String, required: true },
+  nokRelation: { type: String, required: true },
+  nokAddress: { type: String, required: true },
   // Academic Info
-  school: String,
+  school: { type: String, required: true },
   olevel: [
     {
       year: String,
       reg: String,
       subject: String,
-      grade: String
+      grade: String,
     }
   ],
   // Uploaded files
@@ -92,68 +93,49 @@ app.post(
   ]),
   async (req, res) => {
     try {
-
-      console.log("🟢 Incoming body:", req.body);
-console.log("🟣 Incoming files:", req.files);
-      
       const body = req.body;
+
+      // ===== Required Fields Check =====
+      const requiredFields = [
+        'surname','firstname','phone','email','marital',
+        'stateOrigin','lgaOrigin','address','lgaResidence',
+        'department','regNo','nokSurname','nokFirstname',
+        'nokPhone','nokMarital','nokRelation','nokAddress',
+        'school'
+      ];
+
+      for (let field of requiredFields) {
+        if (!body[field]) return res.status(400).json({ success: false, message: `Missing required field: ${field}` });
+      }
+
+      // ===== Duplicate Email or Phone Check =====
+      const existing = await Student.findOne({ $or: [{ email: body.email }, { phone: body.phone }] });
+      if (existing) return res.status(400).json({ success: false, message: 'A student with this email or phone already exists.' });
+
+      // ===== Parse O-Level Data =====
+      const olevelArray = typeof body.olevel === "string" ? JSON.parse(body.olevel) : body.olevel || [];
+
+      // ===== Process Uploaded Files =====
       const uploads = {};
-
-      // 🔍 Log the files to see Cloudinary response
-      console.log("Uploaded files:", req.files);
-
-      // ✅ Extract each uploaded image’s Cloudinary URL
       if (req.files) {
         for (const key in req.files) {
           const fileData = req.files[key][0];
-          uploads[key] =
-         //   fileData.path || fileData.url || fileData.secure_url || "";
-            uploads[key] = fileData.path;
+          uploads[key] = fileData.path || fileData.url || '';
         }
       }
 
-      // ✅ Parse O-Level data safely
-      const olevelArray =
-        typeof body.olevel === "string"
-          ? JSON.parse(body.olevel)
-          : body.olevel || [];
-
-      // ✅ Create the new student entry
+      // ===== Create Student Entry =====
       const student = new Student({
-        surname: body.surname,
-        firstname: body.firstname,
-        middlename: body.middlename,
-        phone: body.phone,
-        email: body.email,
-        marital: body.marital,
-        disability: body.disability,
-        stateOrigin: body.stateOrigin,
-        lgaOrigin: body.lgaOrigin,
-        address: body.address,
-        lgaResidence: body.lgaResidence,
-        department: body.department,
-        regNo: body.regNo,
-        // Next of kin
-        nokSurname: body.nokSurname,
-        nokFirstname: body.nokFirstname,
-        nokMiddlename: body.nokMiddlename,
-        nokPhone: body.nokPhone,
-        nokMarital: body.nokMarital,
-        nokRelation: body.nokRelation,
-        nokAddress: body.nokAddress,
-        // Academic info
-        school: body.school,
+        ...body,
         olevel: olevelArray,
-        // Uploaded file URLs from Cloudinary
-        fileOlevel: uploads.fileOlevel,
-        fileJamb: uploads.fileJamb,
-        fileState: uploads.fileState,
-        fileBirth: uploads.fileBirth,
-        fileNin: uploads.fileNin,
-        fileFee: uploads.fileFee,
+        fileOlevel: uploads.fileOlevel || '',
+        fileJamb: uploads.fileJamb || '',
+        fileState: uploads.fileState || '',
+        fileBirth: uploads.fileBirth || '',
+        fileNin: uploads.fileNin || '',
+        fileFee: uploads.fileFee || '',
       });
 
-      // ✅ Save to MongoDB
       await student.save();
 
       res.status(201).json({
@@ -161,6 +143,7 @@ console.log("🟣 Incoming files:", req.files);
         message: "✅ Student registered successfully",
         student,
       });
+
     } catch (error) {
       console.error("❌ Error registering student:", error);
       res.status(500).json({
@@ -176,16 +159,15 @@ console.log("🟣 Incoming files:", req.files);
 app.get('/api/students/check-duplicate', async (req, res) => {
   try {
     const { email, phone } = req.query;
-    const exists = await Student.findOne({
-      $or: [{ email }, { phone }]
-    });
+    const exists = await Student.findOne({ $or: [{ email }, { phone }] });
     res.json({ exists: !!exists });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
-// Fetch all students
+
+// ====== Fetch All Students ======
 app.get('/api/students', async (req, res) => {
   try {
     const students = await Student.find().sort({ createdAt: -1 });
