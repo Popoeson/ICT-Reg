@@ -275,46 +275,6 @@ document.getElementById('addOlevel').addEventListener('click', () => {
   olevelBody.appendChild(row);
 });
 
-// === PREVIEW FUNCTION ===
-function showPreview(){
-  const data=new FormData(form);
-  let html='<h4>Personal Information</h4>';
-  html+=`<p><strong>Name:</strong> ${data.get('surname')} ${data.get('firstname')} ${data.get('middlename')||''}</p>`;
-  html+=`<p><strong>Student Phone:</strong> ${data.get('phone')} | <strong>Email:</strong> ${data.get('email')}</p>`;
-  html+=`<p><strong>Department:</strong> ${dept.options[dept.selectedIndex].text} (${regNo.value})</p>`;
-  html+='<h4>Next of Kin</h4>';
-  html+=`<p><strong>Name:</strong> ${data.get('nokSurname')} ${data.get('nokFirstname')} ${data.get('nokMiddlename')||''}</p>`;
-  html+=`<p><strong>Relationship:</strong> ${data.get('nokRelation')}</p>`;
-  html+=`<p><strong>Next of Kin Phone:</strong> ${data.get('nokPhone')}</p>`;
-  html+=`<p><strong>Address:</strong> ${data.get('nokAddress')}</p>`;
-  html+='<h4>O’Level Details</h4><table><tr><th>Year</th><th>Reg</th><th>Subject</th><th>Grade</th></tr>';
-  document.querySelectorAll('#olevelBody tr').forEach(tr=>{
-    const vals=[...tr.querySelectorAll('input')].map(i=>i.value.trim());
-    if(vals.some(v=>v)) html+=`<tr>${vals.map(v=>`<td>${v}</td>`).join('')}</tr>`;
-  });
-  html+='</table>';
-  html+='<h4>Uploads</h4><div class="thumbs"></div>';
-  preview.innerHTML=html;
-
-  const thumbsContainer = preview.querySelector('.thumbs');
-  const files=['fileOlevel','fileJamb','fileState','fileBirth','fileNin','fileFee'];
-  files.forEach(id=>{
-    const f=document.getElementById(id).files[0];
-    if(f){
-      const reader=new FileReader();
-      reader.onload=e=>{
-        const img=document.createElement('img');
-        img.src=e.target.result;
-        img.addEventListener('click',()=>openLightbox(img.src));
-        thumbsContainer.appendChild(img);
-      };
-      reader.readAsDataURL(f);
-    }
-  });
-
-  modal.style.display='flex';
-}
-
 // === LIGHTBOX CONTROLS ===
 function openLightbox(src) {
   lightboxImg.src = src;
@@ -324,82 +284,139 @@ function closeLightbox() {
   lightbox.style.display = 'none';
   lightboxImg.src = '';
 }
-// Close when clicking outside the image
 lightbox.addEventListener('click', (e) => {
   if (e.target === lightbox) closeLightbox();
 });
-// Close on ESC key
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeLightbox();
-});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
 
-// === FORM SUBMISSION ===
-form.addEventListener('submit', e => {
-  e.preventDefault();
-  if (!form.checkValidity()) return form.reportValidity();
-  showPreview();
-});
-
-closeBtn.onclick = () => modal.style.display = 'none';
-confirmBtn.onclick = async () => {
-  modal.style.display = 'none';
-  await checkDuplicateAndSubmit();
-};
-
-// === CHECK DUPLICATE THEN SUBMIT ===
-async function checkDuplicateAndSubmit() {
-  const email = form.querySelector('[name="email"]').value.trim();
-  const phone = form.querySelector('[name="phone"]').value.trim();
-  form.style.filter = 'blur(3px)';
+// === PREVIEW FUNCTION ===
+async function showPreview(){
+  preview.innerHTML = '<p>Uploading images...</p>';
+  modal.style.display = 'flex';
   loadingOverlay.style.display = 'flex';
+
+  const files = ['fileOlevel','fileJamb','fileState','fileBirth','fileNin','fileFee'];
+  const uploadedUrls = {};
+
   try {
-    const res = await fetch(`${API_BASE_URL}/api/students/check-duplicate?email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`);
-    const data = await res.json();
-    if (data.exists) {
-      alert("⚠️ A student with this phone or email already exists!");
-    } else {
-      await submitRegistration();
+    // Upload images to backend Cloudinary endpoint
+    for (let key of files) {
+      const fileInput = document.getElementById(key);
+      if (fileInput.files.length > 0) {
+        const fileData = new FormData();
+        fileData.append(key, fileInput.files[0]);
+
+        const res = await fetch(`${API_BASE_URL}/api/students/upload-single`, {
+          method: 'POST',
+          body: fileData
+        });
+        const data = await res.json();
+        if (data.success) uploadedUrls[key] = data.url;
+        else throw new Error(`${key} upload failed`);
+      }
     }
+
+    // Prepare preview HTML
+    const formData = new FormData(form);
+    let html = '<h4>Personal Information</h4>';
+    html += `<p><strong>Name:</strong> ${formData.get('surname')} ${formData.get('firstname')} ${formData.get('middlename')||''}</p>`;
+    html += `<p><strong>Phone:</strong> ${formData.get('phone')} | <strong>Email:</strong> ${formData.get('email')}</p>`;
+    html += `<p><strong>Department:</strong> ${dept.options[dept.selectedIndex].text} (${regNo.value})</p>`;
+    html += '<h4>Next of Kin</h4>';
+    html += `<p><strong>Name:</strong> ${formData.get('nokSurname')} ${formData.get('nokFirstname')} ${formData.get('nokMiddlename')||''}</p>`;
+    html += `<p><strong>Relationship:</strong> ${formData.get('nokRelation')}</p>`;
+    html += `<p><strong>Phone:</strong> ${formData.get('nokPhone')}</p>`;
+    html += `<p><strong>Address:</strong> ${formData.get('nokAddress')}</p>`;
+    html += '<h4>O’Level Details</h4><table><tr><th>Year</th><th>Reg</th><th>Subject</th><th>Grade</th></tr>';
+    document.querySelectorAll('#olevelBody tr').forEach(tr=>{
+      const vals=[...tr.querySelectorAll('input')].map(i=>i.value.trim());
+      if(vals.some(v=>v)) html+=`<tr>${vals.map(v=>`<td>${v}</td>`).join('')}</tr>`;
+    });
+    html += '</table>';
+    html += '<h4>Uploaded Documents</h4><div class="thumbs">';
+    for (let key in uploadedUrls) {
+      html += `<img src="${uploadedUrls[key]}" onclick="openLightbox('${uploadedUrls[key]}')">`;
+    }
+    html += '</div>';
+    preview.innerHTML = html;
+
+    // Store uploaded URLs in a hidden object for final submission
+    window.uploadedFiles = uploadedUrls;
+
   } catch (err) {
-    alert("Error checking duplicates.");
     console.error(err);
+    alert("⚠️ Image upload failed. Check console.");
+    modal.style.display = 'none';
   } finally {
-    form.style.filter = 'none';
     loadingOverlay.style.display = 'none';
   }
 }
 
-// === ACTUAL SUBMISSION ===
+// === FORM SUBMISSION ===
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!form.checkValidity()) return form.reportValidity();
+  await showPreview();
+});
+
+closeBtn.onclick = () => modal.style.display = 'none';
+
+confirmBtn.onclick = async () => {
+  modal.style.display = 'none';
+  await submitRegistration();
+};
+
+// === SUBMIT FINAL FORM TO BACKEND ===
 async function submitRegistration() {
+  const formData = new FormData(form);
+
+  // Append O-Level JSON
+  const olevelData = [];
+  document.querySelectorAll('#olevelBody tr').forEach(tr => {
+    const [year, reg, subject, grade] = [...tr.querySelectorAll('input')].map(i=>i.value);
+    if (year && subject) olevelData.push({year, reg, subject, grade});
+  });
+  formData.append('olevel', JSON.stringify(olevelData));
+  formData.append('regNo', regNo.value);
+
+  // Append uploaded file URLs
+  if (window.uploadedFiles) {
+    for (let key in window.uploadedFiles) {
+      formData.append(key, window.uploadedFiles[key]);
+    }
+  }
+
+  // Check for duplicates before saving
+  loadingOverlay.style.display = 'flex';
   try {
-    const formData = new FormData(form);
-    const olevelData = [];
-    document.querySelectorAll('#olevelBody tr').forEach(tr => {
-      const [year, reg, subject, grade] = [...tr.querySelectorAll('input')].map(i=>i.value);
-      if (year && subject) olevelData.push({year, reg, subject, grade});
-    });
-    formData.append('olevel', JSON.stringify(olevelData));
-    formData.append('regNo', regNo.value);
+    const email = formData.get('email');
+    const phone = formData.get('phone');
+    const check = await fetch(`${API_BASE_URL}/api/students/check-duplicate?email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`);
+    const exists = await check.json();
+    if (exists.exists) {
+      alert("⚠️ A student with this email or phone already exists!");
+      return;
+    }
 
-    const res = await fetch(`${API_BASE_URL}/api/students/register`, {
-      method: "POST",
-      body: formData
-    });
-
+    // Submit to backend
+    const res = await fetch(`${API_BASE_URL}/api/students/register`, { method: 'POST', body: formData });
     const result = await res.json();
     if (result.success) {
       alert("✅ Student registered successfully!");
       form.reset();
       regNo.value='';
       olevelBody.innerHTML='';
+      window.uploadedFiles = {};
     } else {
       alert("❌ " + result.message);
     }
-  } catch (err) {
+  } catch(err) {
     console.error(err);
     alert("⚠️ Submission failed.");
+  } finally {
+    loadingOverlay.style.display = 'none';
   }
-}
+};
 </script>
 </body>
-  </html>
+        </html>
