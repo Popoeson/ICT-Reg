@@ -84,16 +84,15 @@ const Student = mongoose.model('RegStudent', RegstudentSchema);
 // ====== Routes ======
 
 // Upload single file to Cloudinary
-app.post('/api/students/upload-single', upload.any(), async (req, res) => {
+app.post('/api/students/upload-single', upload.single('file'), async (req, res) => {
   try {
-    if (!req.files || req.files.length === 0)
+    if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
-
-    // multer-storage-cloudinary attaches path
-    const url = req.files[0].path || req.files[0].url;
+    }
+    const url = req.file.path || req.file.url;
     res.json({ success: true, url });
   } catch (err) {
-    console.error(err);
+    console.error('❌ Upload error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
