@@ -252,9 +252,32 @@ function renderStudents(students) {
   });
 }
 // === Download PDF ===
-function downloadPDF(studentId) {
-  window.open(`${API_BASE_URL}/api/students/${studentId}/download`, "_blank");
-}
+async function downloadPDF(studentId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/students/${studentId}/download`);
+    if (!res.ok) throw new Error('Failed to fetch PDF');
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+
+    // Optional: generate a filename using student name or regNo
+    const student = studentsData.find(s => s._id === studentId);
+    const filename = student ? `${student.surname}_${student.firstname}_Registration.pdf` : 'student.pdf';
+
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url); // clean up
+  } catch (err) {
+    console.error(err);
+    alert('Error downloading PDF');
+  }
+  }
 
 // === Lightbox ===  
 function openLightbox(src){  
