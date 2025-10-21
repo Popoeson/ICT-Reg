@@ -382,10 +382,13 @@ app.get("/api/students/:id/download", async (req, res) => {
     if (!student) return res.status(404).json({ message: "Student not found" });
 
     const doc = new PDFDocument({ margin: 40 });
-    const filePath = path.join(__dirname, `${student.regNo}.pdf`);
 
-    const writeStream = fs.createWriteStream(filePath);
-    doc.pipe(writeStream);
+    // Set headers so browser knows it's a file attachment
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${student.regNo}.pdf`);
+
+    // Pipe PDF directly to response
+    doc.pipe(res);
 
     // ========== HEADER ==========
     doc.fontSize(20).text("STUDENT REGISTRATION INFORMATION", { align: "center" });
@@ -457,21 +460,13 @@ app.get("/api/students/:id/download", async (req, res) => {
       }
     });
 
-    doc.end();
-
-    writeStream.on("finish", () => {
-      res.download(filePath, `${student.regNo}.pdf`, err => {
-        if (err) console.error(err);
-        fs.unlinkSync(filePath); // delete temp file after download
-      });
-    });
+    doc.end(); // Finish and send PDF
 
   } catch (error) {
     console.error("Error generating PDF:", error);
     res.status(500).json({ message: "Error generating PDF" });
   }
 });
-
 // ====== Start Server ======
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
