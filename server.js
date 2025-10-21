@@ -98,7 +98,7 @@ app.post('/api/students/upload-single', upload.any(), async (req, res) => {
   }
 });
 
-// Register student
+// ===== Register Student =====
 app.post(
   "/api/students/register",
   upload.fields([
@@ -123,22 +123,36 @@ app.post(
       ];
 
       for (let field of requiredFields) {
-        if (!body[field]) return res.status(400).json({ success: false, message: `Missing required field: ${field}` });
+        if (!body[field]) {
+          return res.status(400).json({
+            success: false,
+            message: `Missing required field: ${field}`,
+          });
+        }
       }
 
       // ===== Duplicate Email or Phone Check =====
-      const existing = await Student.findOne({ $or: [{ email: body.email }, { phone: body.phone }] });
-      if (existing) return res.status(400).json({ success: false, message: 'A student with this email or phone already exists.' });
+      const existing = await Student.findOne({
+        $or: [{ email: body.email }, { phone: body.phone }],
+      });
+      if (existing)
+        return res.status(400).json({
+          success: false,
+          message: "A student with this email or phone already exists.",
+        });
 
       // ===== Parse O-Level Data =====
-      const olevelArray = typeof body.olevel === "string" ? JSON.parse(body.olevel) : body.olevel || [];
+      const olevelArray =
+        typeof body.olevel === "string"
+          ? JSON.parse(body.olevel)
+          : body.olevel || [];
 
       // ===== Process Uploaded Files =====
       const uploads = {};
       if (req.files) {
         for (const key in req.files) {
           const fileData = req.files[key][0];
-          uploads[key] = fileData.path || fileData.url || '';
+          uploads[key] = fileData.path || fileData.url || "";
         }
       }
 
@@ -146,31 +160,28 @@ app.post(
       const student = new Student({
         ...body,
         olevel: olevelArray,
-        fileOlevel: uploads.fileOlevel || '',
-        fileJamb: uploads.fileJamb || '',
-        fileState: uploads = body.nokPhone;
-      existingStudent.nokMarital = body.nokMarital;
-      existingStudent.nokRelation = body.nokRelation;
-      existingStudent.nokAddress = body.nokAddress;
+        fileOlevel: uploads.fileOlevel || "",
+        fileJamb: uploads.fileJamb || "",
+        fileState: uploads.fileState || "",
+        fileBirth: uploads.fileBirth || "",
+        fileNin: uploads.fileNin || "",
+        fileFee: uploads.fileFee || "",
+      });
 
-      // Academic Info
-      existingStudent.school = body.school;
-      existingStudent.olevel = olevelArray;
+      await student.save();
 
-      // File URLs
-      existingStudent.fileOlevel = uploads.fileOlevel;
-      existingStudent.fileJamb = uploads.fileJamb;
-      existingStudent.fileState = uploads.fileState;
-      existingStudent.fileBirth = uploads.fileBirth;
-      existingStudent.fileNin = uploads.fileNin;
-      existingStudent.fileFee = uploads.fileFee;
-
-      await existingStudent.save();
-
-      res.json({ success: true, message: "Student updated successfully", student: existingStudent });
+      res.json({
+        success: true,
+        message: "✅ Student registered successfully",
+        student,
+      });
     } catch (error) {
-      console.error("❌ Error updating student:", error);
-      res.status(500).json({ success: false, message: "Server error while updating student", error: error.message });
+      console.error("❌ Error registering student:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error while registering student",
+        error: error.message,
+      });
     }
   }
 );
