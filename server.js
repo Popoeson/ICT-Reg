@@ -6,6 +6,9 @@ import cors from "cors";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
+const PDFDocument = require("pdfkit");
+const fs = require("fs");
+const path = require("path");
 
 dotenv.config();
 const app = express();
@@ -359,6 +362,103 @@ app.get("/api/students", async (req, res) => {
     res.json({ success: true, count: students.length, students });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+//====== Download Students Info (PDF) ==========
+app.get("/api/students/:id/download", async (req, res) => {
+  try {
+    const student = await Regstudent.findById(req.params.id);
+    if (!student) return res.status(404).json({ message: "Student not found" });
+
+    const doc = new PDFDocument({ margin: 40 });
+    const filePath = path.join(__dirname, `${student.regNo}.pdf`);
+
+    const writeStream = fs.createWriteStream(filePath);
+    doc.pipe(writeStream);
+
+    // ========== HEADER ==========
+    doc.fontSize(20).text("STUDENT REGISTRATION INFORMATION", { align: "center" });
+    doc.moveDown();
+
+    // ========== PERSONAL INFO ==========
+    doc.fontSize(14).text("Personal Information", { underline: true });
+    doc.fontSize(12);
+    doc.text(`Surname: ${student.surname}`);
+    doc.text(`Firstname: ${student.firstname}`);
+    doc.text(`Middlename: ${student.middlename || "N/A"}`);
+    doc.text(`Phone: ${student.phone}`);
+    doc.text(`Email: ${student.email}`);
+    doc.text(`Marital Status: ${student.marital}`);
+    doc.text(`Disability: ${student.disability || "None"}`);
+    doc.text(`State of Origin: ${student.stateOrigin}`);
+    doc.text(`LGA of Origin: ${student.lgaOrigin}`);
+    doc.text(`Address: ${student.address}`);
+    doc.text(`LGA of Residence: ${student.lgaResidence}`);
+    doc.text(`Department: ${student.department}`);
+    doc.text(`Registration Number: ${student.regNo}`);
+    doc.moveDown();
+
+    // ========== NEXT OF KIN ==========
+    doc.fontSize(14).text("Next of Kin Information", { underline: true });
+    doc.fontSize(12);
+    doc.text(`Surname: ${student.nokSurname}`);
+    doc.text(`Firstname: ${student.nokFirstname}`);
+    doc.text(`Middlename: ${student.nokMiddlename || "N/A"}`);
+    doc.text(`Phone: ${student.nokPhone}`);
+    doc.text(`Marital Status: ${student.nokMarital}`);
+    doc.text(`Relationship: ${student.nokRelation}`);
+    doc.text(`Address: ${student.nokAddress}`);
+    doc.moveDown();
+
+    // ========== ACADEMIC INFO ==========
+    doc.fontSize(14).text("Academic Information", { underline: true });
+    doc.fontSize(12);
+    doc.text(`School: ${student.school}`);
+    doc.moveDown();
+
+    if (student.olevel && student.olevel.length > 0) {
+      doc.fontSize(12).text("O'Level Results:");
+      student.olevel.forEach((item, i) => {
+        doc.text(`${i + 1}. Subject: ${item.subject}, Grade: ${item.grade}, Year: ${item.year}, Reg: ${item.reg}`);
+      });
+    } else {
+      doc.text("No O'Level result provided.");
+    }
+    doc.moveDown();
+
+    // ========== UPLOADED FILES ==========
+    doc.fontSize(14).text("Uploaded Documents", { underline: true });
+    doc.fontSize(12);
+    const fileFields = [
+      { label: "O'Level", key: "fileOlevel" },
+      { label: "JAMB", key: "fileJamb" },
+      { label: "State of Origin", key: "fileState" },
+      { label: "Birth Certificate", key: "fileBirth" },
+      { label: "NIN", key: "fileNin" },
+      { label: "Fee Receipt", key: "fileFee" },
+    ];
+
+    fileFields.forEach(f => {
+      if (student[f.key]) {
+        doc.text(`${f.label}: ${student[f.key]}`, { link: student[f.key], underline: true });
+      } else {
+        doc.text(`${f.label}: Not uploaded`);
+      }
+    });
+
+    doc.end();
+
+    writeStream.on("finish", () => {
+      res.download(filePath, `${student.regNo}.pdf`, err => {
+        if (err) console.error(err);
+        fs.unlinkSync(filePath); // delete temp file after download
+      });
+    });
+
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    res.status(500).json({ message: "Error generating PDF" });
   }
 });
 
