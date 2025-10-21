@@ -36,27 +36,29 @@ const upload = multer({ storage });
 
 // ====== Student Schema ======
 const RegstudentSchema = new mongoose.Schema({
-  surname: { type: String, required: true },
-  firstname: { type: String, required: true },
-  middlename: String,
-  phone: { type: String, required: true },
-  email: { type: String, required: true },
+  surname: { type: String, required: true, trim: true },
+  firstname: { type: String, required: true, trim: true },
+  middlename: { type: String, trim: true },
+  phone: { type: String, required: true, trim: true },
+  email: { type: String, required: true, trim: true, lowercase: true },
   marital: { type: String, required: true },
-  disability: String,
+  disability: { type: String, default: "None" },
   stateOrigin: { type: String, required: true },
   lgaOrigin: { type: String, required: true },
   address: { type: String, required: true },
   lgaResidence: { type: String, required: true },
   department: { type: String, required: true },
-  regNo: { type: String, required: true, unique: true },
+  regNo: { type: String, required: true, unique: true, uppercase: true },
+
   // Next of Kin
   nokSurname: { type: String, required: true },
   nokFirstname: { type: String, required: true },
-  nokMiddlename: String,
+  nokMiddlename: { type: String },
   nokPhone: { type: String, required: true },
   nokMarital: { type: String, required: true },
   nokRelation: { type: String, required: true },
   nokAddress: { type: String, required: true },
+
   // Academic Info
   school: { type: String, required: true },
   olevel: [
@@ -65,17 +67,18 @@ const RegstudentSchema = new mongoose.Schema({
       reg: String,
       subject: String,
       grade: String,
-    }
+    },
   ],
-  // Uploaded files
-  fileOlevel: String,
-  fileJamb: String,
-  fileState: String,
-  fileBirth: String,
-  fileNin: String,
-  fileFee: String,
-}, { timestamps: true });
 
+  // Uploaded files (URLs from Cloudinary)
+  fileOlevel: { type: String },
+  fileJamb: { type: String },
+  fileState: { type: String },
+  fileBirth: { type: String },
+  fileNin: { type: String },
+  fileFee: { type: String },
+}, { timestamps: true });
+  
 const Student = mongoose.model('RegStudent', RegstudentSchema);
 
 // ====== Routes ======
@@ -173,106 +176,7 @@ app.post(
 );
 
 // ======= Update Student Info Route =========
-app.put(
-  "/api/students/:id",
-  upload.fields([
-    { name: "fileOlevel" },
-    { name: "fileJamb" },
-    { name: "fileState" },
-    { name: "fileBirth" },
-    { name: "fileNin" },
-    { name: "fileFee" },
-  ]),
-  async (req, res) => {
-    try {
-      const studentId = req.params.id;
-      const existingStudent = await Student.findById(studentId);
-      if (!existingStudent)
-        return res.status(404).json({ success: false, message: "Student not found" });
-
-      const body = req.body;
-
-      // ✅ Safely parse O-Level data
-      let olevelArray = [];
-      try {
-        olevelArray =
-          typeof body.olevel === "string"
-            ? JSON.parse(body.olevel)
-            : body.olevel || [];
-      } catch {
-        olevelArray = existingStudent.olevel;
-      }
-
-      // ✅ Handle uploaded files
-      const uploads = {};
-      const fileFields = [
-        "fileOlevel",
-        "fileJamb",
-        "fileState",
-        "fileBirth",
-        "fileNin",
-        "fileFee",
-      ];
-
-      fileFields.forEach((f) => {
-        if (req.files && req.files[f]) {
-          uploads[f] = req.files[f][0].path; // new file uploaded
-        } else {
-          uploads[f] = existingStudent[f]; // keep existing file URL
-        }
-      });
-
-      // ✅ Text-based fields (preserve old if not changed)
-      const textFields = [
-        "surname",
-        "firstname",
-        "middlename",
-        "phone",
-        "email",
-        "marital",
-        "disability",
-        "stateOrigin",
-        "lgaOrigin",
-        "address",
-        "lgaResidence",
-        "department",
-        "regNo",
-        "nokSurname",
-        "nokFirstname",
-        "nokMiddlename",
-        "nokPhone",
-        "nokMarital",
-        "nokRelation",
-        "nokAddress",
-        "school",
-      ];
-
-      textFields.forEach((f) => {
-        existingStudent[f] = body[f] || existingStudent[f];
-      });
-
-      // ✅ Replace O-Level & file URLs
-      existingStudent.olevel = olevelArray;
-      Object.assign(existingStudent, uploads);
-
-      await existingStudent.save();
-
-      res.json({
-        success: true,
-        message: "✅ Student updated successfully",
-        student: existingStudent,
-      });
-    } catch (error) {
-      console.error("❌ Error updating student:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error while updating student",
-        error: error.message,
-      });
-    }
-  }
-);
-
+gh
 // Search students by name or department
 app.get('/api/students/search', async (req, res) => {
   try {
