@@ -375,7 +375,7 @@ app.get("/api/students", async (req, res) => {
 //====== Download Students Info (PDF) ==========
 app.get("/api/students/:id/download", async (req, res) => {
   try {
-    const student = await Regstudent.findById(req.params.id);
+    const student = await Student.findById(req.params.id);
     if (!student) return res.status(404).json({ message: "Student not found" });
 
     const doc = new PDFDocument({ margin: 40 });
