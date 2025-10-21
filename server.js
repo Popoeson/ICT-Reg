@@ -6,9 +6,9 @@ import cors from "cors";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
-const PDFDocument = require("pdfkit");
-const fs = require("fs");
-const path = require("path");
+import PDFDocument = require("pdfkit");
+import fs = require("fs");
+import path = require("path");
 
 dotenv.config();
 const app = express();
