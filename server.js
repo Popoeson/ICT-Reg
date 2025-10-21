@@ -176,7 +176,105 @@ app.post(
 );
 
 // ======= Update Student Info Route =========
-gh
+app.put(
+  "/api/students/:id",
+  upload.fields([
+    { name: "fileOlevel" },
+    { name: "fileJamb" },
+    { name: "fileState" },
+    { name: "fileBirth" },
+    { name: "fileNin" },
+    { name: "fileFee" },
+  ]),
+  async (req, res) => {
+    try {
+      const studentId = req.params.id;
+      const existingStudent = await Student.findById(studentId);
+      if (!existingStudent)
+        return res.status(404).json({ success: false, message: "Student not found" });
+
+      const body = req.body;
+
+      // ✅ Parse O-Level safely
+      let olevelArray = [];
+      try {
+        olevelArray =
+          typeof body.olevel === "string"
+            ? JSON.parse(body.olevel)
+            : body.olevel || [];
+      } catch {
+        olevelArray = existingStudent.olevel;
+      }
+
+      // ✅ Handle uploaded files (preserve old URLs if no new upload)
+      const uploads = {};
+      const fileFields = [
+        "fileOlevel",
+        "fileJamb",
+        "fileState",
+        "fileBirth",
+        "fileNin",
+        "fileFee",
+      ];
+
+      fileFields.forEach((f) => {
+        if (req.files && req.files[f]) {
+          uploads[f] = req.files[f][0].path; // new file
+        } else {
+          uploads[f] = existingStudent[f]; // old URL
+        }
+      });
+
+      // ✅ Update all text fields if provided
+      const textFields = [
+        "surname",
+        "firstname",
+        "middlename",
+        "phone",
+        "email",
+        "marital",
+        "disability",
+        "stateOrigin",
+        "lgaOrigin",
+        "address",
+        "lgaResidence",
+        "department",
+        "regNo",
+        "nokSurname",
+        "nokFirstname",
+        "nokMiddlename",
+        "nokPhone",
+        "nokMarital",
+        "nokRelation",
+        "nokAddress",
+        "school",
+      ];
+
+      textFields.forEach((f) => {
+        existingStudent[f] = body[f] || existingStudent[f];
+      });
+
+      // ✅ Assign O-Level and files
+      existingStudent.olevel = olevelArray;
+      Object.assign(existingStudent, uploads);
+
+      await existingStudent.save();
+
+      res.json({
+        success: true,
+        message: "✅ Student updated successfully",
+        student: existingStudent,
+      });
+    } catch (error) {
+      console.error("❌ Error updating student:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error while updating student",
+        error: error.message,
+      });
+    }
+  }
+);
 // Search students by name or department
 app.get('/api/students/search', async (req, res) => {
   try {
