@@ -1,11 +1,11 @@
-// server.js
-import express from 'express';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import multer from 'multer';
-import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
+// ====== server.js ======
+import express from "express";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import cors from "cors";
+import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 dotenv.config();
 const app = express();
@@ -13,9 +13,10 @@ app.use(express.json());
 app.use(cors());
 
 // ====== Database Connection ======
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('❌ MongoDB Error:', err));
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB Error:", err));
 
 // ====== Cloudinary Setup ======
 cloudinary.config({
@@ -24,80 +25,98 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_SECRET,
 });
 
-// Multer Storage for Cloudinary
+// ====== Multer Storage (Cloudinary) ======
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: 'school_uploads',
-    allowed_formats: ['jpg', 'jpeg', 'png'],
+    folder: "school_uploads",
+    allowed_formats: ["jpg", "jpeg", "png", "pdf"],
   },
 });
 const upload = multer({ storage });
 
 // ====== Student Schema ======
-const RegstudentSchema = new mongoose.Schema({
-  surname: { type: String, required: true, trim: true },
-  firstname: { type: String, required: true, trim: true },
-  middlename: { type: String, trim: true },
-  phone: { type: String, required: true, trim: true },
-  email: { type: String, required: true, trim: true, lowercase: true },
-  marital: { type: String, required: true },
-  disability: { type: String, default: "None" },
-  stateOrigin: { type: String, required: true },
-  lgaOrigin: { type: String, required: true },
-  address: { type: String, required: true },
-  lgaResidence: { type: String, required: true },
-  department: { type: String, required: true },
-  regNo: { type: String, required: true, unique: true, uppercase: true },
+const RegstudentSchema = new mongoose.Schema(
+  {
+    surname: { type: String, required: true, trim: true },
+    firstname: { type: String, required: true, trim: true },
+    middlename: { type: String, trim: true },
+    phone: { type: String, required: true, trim: true },
+    email: { type: String, required: true, trim: true, lowercase: true },
+    marital: { type: String, required: true },
+    disability: { type: String, default: "None" },
+    stateOrigin: { type: String, required: true },
+    lgaOrigin: { type: String, required: true },
+    address: { type: String, required: true },
+    lgaResidence: { type: String, required: true },
+    department: { type: String, required: true },
+    regNo: { type: String, required: true, unique: true, uppercase: true },
 
-  // Next of Kin
-  nokSurname: { type: String, required: true },
-  nokFirstname: { type: String, required: true },
-  nokMiddlename: { type: String },
-  nokPhone: { type: String, required: true },
-  nokMarital: { type: String, required: true },
-  nokRelation: { type: String, required: true },
-  nokAddress: { type: String, required: true },
+    // Next of Kin
+    nokSurname: { type: String, required: true },
+    nokFirstname: { type: String, required: true },
+    nokMiddlename: { type: String },
+    nokPhone: { type: String, required: true },
+    nokMarital: { type: String, required: true },
+    nokRelation: { type: String, required: true },
+    nokAddress: { type: String, required: true },
 
-  // Academic Info
-  school: { type: String, required: true },
-  olevel: [
-    {
-      year: String,
-      reg: String,
-      subject: String,
-      grade: String,
-    },
-  ],
+    // Academic Info
+    school: { type: String, required: true },
+    olevel: [
+      {
+        year: String,
+        reg: String,
+        subject: String,
+        grade: String,
+      },
+    ],
 
-  // Uploaded files (URLs from Cloudinary)
-  fileOlevel: { type: String },
-  fileJamb: { type: String },
-  fileState: { type: String },
-  fileBirth: { type: String },
-  fileNin: { type: String },
-  fileFee: { type: String },
-}, { timestamps: true });
-  
-const Student = mongoose.model('RegStudent', RegstudentSchema);
+    // Uploaded files (URLs)
+    fileOlevel: String,
+    fileJamb: String,
+    fileState: String,
+    fileBirth: String,
+    fileNin: String,
+    fileFee: String,
+  },
+  { timestamps: true }
+);
 
-// ====== Routes ======
+const Student = mongoose.model("RegStudent", RegstudentSchema);
 
-// Upload single file to Cloudinary
-app.post('/api/students/upload-single', upload.single('file'), async (req, res) => {
+// ====== Upload Single File ======
+app.post("/api/students/upload-single", upload.any(), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    if (!req.files || !req.files.length) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
     }
-    const url = req.file.path || req.file.url;
+
+    const fileData = req.files[0];
+    const url = fileData.path || fileData.url;
     res.json({ success: true, url });
   } catch (err) {
-    console.error('❌ Upload error:', err);
+    console.error("❌ Upload error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// ===== Register Student =====
+// ====== Check Duplicate ======
+app.get("/api/students/check-duplicate", async (req, res) => {
+  try {
+    const { email, phone } = req.query;
+    const exists = await Student.findOne({
+      $or: [{ email }, { phone }],
+    });
+    res.json({ exists: !!exists });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ====== Register Student ======
 app.post(
   "/api/students/register",
   upload.fields([
@@ -112,13 +131,26 @@ app.post(
     try {
       const body = req.body;
 
-      // ===== Required Fields Check =====
+      // Required field check
       const requiredFields = [
-        'surname','firstname','phone','email','marital',
-        'stateOrigin','lgaOrigin','address','lgaResidence',
-        'department','regNo','nokSurname','nokFirstname',
-        'nokPhone','nokMarital','nokRelation','nokAddress',
-        'school'
+        "surname",
+        "firstname",
+        "phone",
+        "email",
+        "marital",
+        "stateOrigin",
+        "lgaOrigin",
+        "address",
+        "lgaResidence",
+        "department",
+        "regNo",
+        "nokSurname",
+        "nokFirstname",
+        "nokPhone",
+        "nokMarital",
+        "nokRelation",
+        "nokAddress",
+        "school",
       ];
 
       for (let field of requiredFields) {
@@ -130,7 +162,7 @@ app.post(
         }
       }
 
-      // ===== Duplicate Email or Phone Check =====
+      // Duplicate check
       const existing = await Student.findOne({
         $or: [{ email: body.email }, { phone: body.phone }],
       });
@@ -140,13 +172,13 @@ app.post(
           message: "A student with this email or phone already exists.",
         });
 
-      // ===== Parse O-Level Data =====
+      // Parse O-Level data
       const olevelArray =
         typeof body.olevel === "string"
           ? JSON.parse(body.olevel)
           : body.olevel || [];
 
-      // ===== Process Uploaded Files =====
+      // Uploaded files
       const uploads = {};
       if (req.files) {
         for (const key in req.files) {
@@ -155,7 +187,7 @@ app.post(
         }
       }
 
-      // ===== Create Student Entry =====
+      // Create new student
       const student = new Student({
         ...body,
         olevel: olevelArray,
@@ -168,24 +200,17 @@ app.post(
       });
 
       await student.save();
-
-      res.json({
-        success: true,
-        message: "✅ Student registered successfully",
-        student,
-      });
+      res.json({ success: true, message: "Student registered successfully" });
     } catch (error) {
-      console.error("❌ Error registering student:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error while registering student",
-        error: error.message,
-      });
+      console.error("❌ Registration error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Server error", error: error.message });
     }
   }
 );
 
-// ======= Update Student Info Route =========
+// ====== Update Student ======
 app.put(
   "/api/students/:id",
   upload.fields([
@@ -201,11 +226,13 @@ app.put(
       const studentId = req.params.id;
       const existingStudent = await Student.findById(studentId);
       if (!existingStudent)
-        return res.status(404).json({ success: false, message: "Student not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Student not found" });
 
       const body = req.body;
 
-      // ✅ Parse O-Level safely
+      // Parse O-Level
       let olevelArray = [];
       try {
         olevelArray =
@@ -216,7 +243,7 @@ app.put(
         olevelArray = existingStudent.olevel;
       }
 
-      // ✅ Handle uploaded files (preserve old URLs if no new upload)
+      // Handle file updates
       const uploads = {};
       const fileFields = [
         "fileOlevel",
@@ -235,7 +262,7 @@ app.put(
         }
       });
 
-      // ✅ Update all text fields if provided
+      // Update text fields
       const textFields = [
         "surname",
         "firstname",
@@ -264,7 +291,6 @@ app.put(
         existingStudent[f] = body[f] || existingStudent[f];
       });
 
-      // ✅ Assign O-Level and files
       existingStudent.olevel = olevelArray;
       Object.assign(existingStudent, uploads);
 
@@ -285,14 +311,14 @@ app.put(
     }
   }
 );
-// Search students by name or department
-app.get('/api/students/search', async (req, res) => {
+
+// ====== Search Students ======
+app.get("/api/students/search", async (req, res) => {
   try {
     const { q, department } = req.query;
-
     const filter = {};
     if (q) {
-      const regex = new RegExp(q, 'i'); // case-insensitive search
+      const regex = new RegExp(q, "i");
       filter.$or = [
         { surname: regex },
         { firstname: regex },
@@ -309,12 +335,15 @@ app.get('/api/students/search', async (req, res) => {
   }
 });
 
-// Delete student
-app.delete('/api/students/:id', async (req, res) => {
+// ====== Delete Student ======
+app.delete("/api/students/:id", async (req, res) => {
   try {
     const studentId = req.params.id;
     const student = await Student.findByIdAndDelete(studentId);
-    if (!student) return res.status(404).json({ success: false, message: "Student not found" });
+    if (!student)
+      return res
+        .status(404)
+        .json({ success: false, message: "Student not found" });
 
     res.json({ success: true, message: "Student deleted successfully" });
   } catch (err) {
@@ -324,7 +353,7 @@ app.delete('/api/students/:id', async (req, res) => {
 });
 
 // ====== Fetch All Students ======
-app.get('/api/students', async (req, res) => {
+app.get("/api/students", async (req, res) => {
   try {
     const students = await Student.find().sort({ createdAt: -1 });
     res.json({ success: true, count: students.length, students });
@@ -333,6 +362,6 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
-// ====== Server Start ======
+// ====== Start Server ======
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
