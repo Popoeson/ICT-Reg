@@ -387,13 +387,13 @@ const clearFeesBtn = document.getElementById('clearFeesBtn');
 const feesList = document.getElementById('feesList');
 
 /* passport hero elements */
-const passportImg = document.getElementById('passportImg');
-const fullNameEl = document.getElementById('fullName');
-const regNoEl = document.getElementById('regNo');
-const regNoText = document.getElementById('regNoText');
-const deptText = document.getElementById('deptText');
-const levelText = document.getElementById('levelText');
-const contactText = document.getElementById('contactText');
+const passportImg = document.getElementById("passportImg");
+const fullNameEl = document.getElementById("fullNameEl");
+const regNoText = document.getElementById("regNoText");
+const deptText = document.getElementById("deptText");
+const levelText = document.getElementById("levelText");
+const contactText = document.getElementById("contactText");
+  
 
   // Select elements properly
   const dept = document.getElementById('department');
@@ -492,51 +492,66 @@ async function bulkUpload(listOfIds) {
   return result;
 }
 
-
 /* ---------- Prefill / Fetch Profile ---------- */
 async function fetchProfileAndPrefill(){
   showLoading();
   try {
-    // try localStorage hints
     const sid = localStorage.getItem('studentId') || localStorage.getItem('student_id') || null;
     const regHint = localStorage.getItem('studentRegNo') || localStorage.getItem('regNo') || null;
     const emailHint = localStorage.getItem('studentEmail') || null;
 
-    // if we have exact id, try dedicated endpoint (not available in current backend version)
+    let found = null;
+
+    // 1️⃣ Fetch by ID
     if (sid) {
-      try {
-        const r = await fetch(`${API_BASE}/api/students/${sid}`);
-        if (r.ok) {
-          const d = await r.json();
-          if (d.student || d.success) {
-            const profile = d.student || d;
-            populateForm(profile);
-            return;
-          }
+      const r = await fetch(`${API_BASE}/api/students/${sid}`);
+      if (r.ok) {
+        const d = await r.json();
+        if (d.student || d.success) {
+          found = d.student || d;
         }
-      } catch(e){}
+      }
     }
 
-    // fallback: fetch all students and attempt to find by reg/email/phone
-    const rAll = await fetch(`${API_BASE}/api/students`);
-    if (!rAll.ok) throw new Error('Unable to fetch students');
-    const all = await rAll.json();
-    const list = all.students || all.data || [];
-    let found = null;
-    if (regHint) found = list.find(s => s.regNo === regHint || s.regNo === (regHint.toUpperCase?.()||''));
-    if (!found && emailHint) found = list.find(s => s.email === emailHint);
-    if (!found && sid) found = list.find(s => s._id === sid);
+    // 2️⃣ Fallback: fetch all students and match
     if (!found) {
-      // no prefill available — leave blank
-      return;
+      const rAll = await fetch(`${API_BASE}/api/students`);
+      if (rAll.ok) {
+        const all = await rAll.json();
+        const list = all.students || all.data || [];
+        if (regHint) found = list.find(s => s.regNo === regHint || s.regNo === regHint.toUpperCase());
+        if (!found && emailHint) found = list.find(s => s.email === emailHint);
+        if (!found && sid) found = list.find(s => s._id === sid);
+      }
     }
-    populateForm(found);
+
+    if (found) {
+      populateForm(found);
+
+      // 👇 Update hero section immediately
+      const passportUrl = found.passport || found.passportUrl || found.filePassport || '';
+      passportImg.src = passportUrl && passportUrl.startsWith('http')
+        ? passportUrl
+        : 'placeholder-passport.png';
+
+      fullNameEl.textContent = `${found.surname || ''} ${found.firstname || ''} ${found.middlename || ''}`.trim() || '—';
+      regNoText.textContent = `Reg No: ${found.regNo || '—'}`;
+      deptText.textContent = `Department: ${found.department || '—'}`;
+      levelText.textContent = `Level: ${found.level || '—'}`;
+      contactText.textContent = `Email: ${found.email || '—'} | ${found.phone || '—'}`;
+    } else {
+      console.warn("No matching profile found for prefill.");
+    }
+
   } catch (err) {
-    console.warn('Prefill error:', err);
+    console.error("Prefill error:", err);
   } finally {
     hideLoading();
   }
 }
+
+// Run when page loads
+window.addEventListener("DOMContentLoaded", fetchProfileAndPrefill);
 
 function populateForm(profile){
   try {
