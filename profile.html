@@ -128,23 +128,23 @@
           <input name="jambScore" id="jambScore" type="number" min="0" max="400" placeholder="e.g. 180">
         </div>
         <div>
-          <label>Department</label>
-          <select name="department" id="department" required>
-            <option value="">Select</option>
-            <option value="COS">Computer Science</option>
-            <option value="COE">Computer Engineering</option>
-            <option value="BUS">Business Administration</option>
-            <option value="ACC">Accountancy</option>
-            <option value="MCM">Mass Communication</option>
-            <option value="ELE">Electrical Engineering</option>
-            <option value="EST">Estate Management</option>
-            <option value="SLT">Science Lab Tech</option>
-          </select>
-        </div>
-        <div>
-          <label>Reg. No (auto or saved)</label>
-          <input id="regNo" name="regNo" type="text" readonly placeholder="Auto-generated or saved">
-        </div>
+  <label>Department</label>
+  <select name="department" id="department" required>
+    <option value="">Select</option>
+    <option value="COS">Computer Science</option>
+    <option value="COE">Computer Engineering</option>
+    <option value="BUS">Business Administration</option>
+    <option value="ACC">Accountancy</option>
+    <option value="MCM">Mass Communication</option>
+    <option value="ELE">Electrical Engineering</option>
+    <option value="EST">Estate Management</option>
+    <option value="SLT">Science Lab Tech</option>
+  </select>
+</div>
+<div>
+  <label>Reg. No (auto or saved)</label>
+  <input id="regNo" name="regNo" type="text" readonly placeholder="Auto-generated or saved">
+          </div>
       </div>
     </div>
 
@@ -395,11 +395,18 @@ const deptText = document.getElementById('deptText');
 const levelText = document.getElementById('levelText');
 const contactText = document.getElementById('contactText');
 
+  // Select elements properly
+  const dept = document.getElementById('department');
+  const regNo = document.getElementById('regNo');
+
   // Generate Registration No.
-dept.addEventListener('change', () => {
-  if (dept.value) regNo.value = `${dept.value}/ND/${Math.floor(100 + Math.random() * 900)}`;
-  else regNo.value = '';
-});
+  dept.addEventListener('change', () => {
+    if (dept.value) {
+      regNo.value = `${dept.value}/ND/${Math.floor(100 + Math.random() * 900)}`;
+    } else {
+      regNo.value = '';
+    }
+  });
   
 /* Store uploaded files' URLs here after preview uploads */
 window.uploadedFiles = {}; // { fieldName: url, ... }
