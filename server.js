@@ -194,60 +194,18 @@ app.post(
     { name: "fileNin" },
     { name: "fileFee" },
     { name: "passport" },
-    // You can still upload any extra docs dynamically
   ]),
   async (req, res) => {
     try {
       const body = req.body;
 
-      // Required field validation
-      const requiredFields = [
-        "surname",
-        "firstname",
-        "phone",
-        "email",
-        "marital",
-        "stateOrigin",
-        "lgaOrigin",
-        "address",
-        "lgaResidence",
-        "department",
-        "regNo",
-        "nokSurname",
-        "nokFirstname",
-        "nokPhone",
-        "nokMarital",
-        "nokRelation",
-        "nokAddress",
-        "school",
-      ];
-
-      for (let field of requiredFields) {
-        if (!body[field]) {
-          return res.status(400).json({
-            success: false,
-            message: `Missing required field: ${field}`,
-          });
-        }
-      }
-
-      // Check duplicate
-      const existing = await Profile.findOne({
-        $or: [{ email: body.email }, { phone: body.phone }],
-      });
-      if (existing)
-        return res.status(400).json({
-          success: false,
-          message: "A student with this email or phone already exists.",
-        });
-
-      // Parse O-level data
+      // 🔹 Parse O-Level data if sent
       const olevelArray =
         typeof body.olevel === "string"
           ? JSON.parse(body.olevel)
           : body.olevel || [];
 
-      // Define known file keys
+      // 🔹 Define known upload fields
       const fileKeys = [
         "fileOlevel",
         "fileJamb",
@@ -261,7 +219,7 @@ app.post(
       const uploads = {};
       const documents = [];
 
-      // Loop through uploaded files
+      // 🔹 Upload any provided files to Cloudinary
       if (req.files) {
         for (const field in req.files) {
           const file = req.files[field][0];
@@ -277,20 +235,42 @@ app.post(
         }
       }
 
-      // Save to MongoDB
-      const profile = new Profile({
+      // 🔹 Check if a profile with this email or regNo already exists
+      const existing = await Profile.findOne({
+        $or: [{ email: body.email }, { regNo: body.regNo }],
+      });
+
+      if (existing) {
+        // ✅ Update existing profile
+        Object.assign(existing, body, uploads);
+        existing.documents = [
+          ...(existing.documents || []),
+          ...documents,
+        ];
+        existing.olevel = olevelArray.length ? olevelArray : existing.olevel;
+        await existing.save();
+
+        return res.json({
+          success: true,
+          message: "Profile updated successfully",
+          profile: existing,
+        });
+      }
+
+      // ✅ Otherwise, create a new profile
+      const newProfile = new Profile({
         ...body,
         olevel: olevelArray,
         ...uploads,
         documents,
       });
 
-      await profile.save();
+      await newProfile.save();
 
       res.json({
         success: true,
         message: "Profile created successfully",
-        profile,
+        profile: newProfile,
       });
     } catch (error) {
       console.error("❌ Profile creation error:", error);
