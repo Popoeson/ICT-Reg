@@ -48,8 +48,22 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage });
 
+//======= Student Schema ==[[[[[[[[[
+
+const studentSchema = new mongoose.Schema({
+  surname: { type: String, required: true },
+  firstname: { type: String, required: true },
+  middlename: String,
+  phone: { type: String, required: true },
+  email: { type: String, required: true },
+  passport: { type: String, required: true }, // Cloudinary URL
+  dateRegistered: { type: Date, default: Date.now },
+});
+
+const Student = mongoose.model("Student", studentSchema);
+
 // ====== Student Schema ======
-const RegstudentSchema = new mongoose.Schema(
+const profileSchema = new mongoose.Schema(
   {
     surname: { type: String, required: true, trim: true },
     firstname: { type: String, required: true, trim: true },
@@ -96,7 +110,7 @@ const RegstudentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const Student = mongoose.model("RegStudent", RegstudentSchema);
+const Profile = mongoose.model("Profile", profileSchema);
 
 // ====== Upload Single File ======
 app.post("/api/students/upload-single", upload.any(), async (req, res) => {
@@ -129,9 +143,46 @@ app.get("/api/students/check-duplicate", async (req, res) => {
   }
 });
 
-// ====== Register Student ======
+
+
+//======== Register Student ===========
+app.post("/api/students/register", upload.single("passport"), async (req, res) => {
+  try {
+    const { surname, firstname, middlename, phone, email } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ message: "Please upload a passport image" });
+    }
+
+    // Upload to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: "student_passports",
+    });
+
+    // Delete temp file
+    fs.unlinkSync(req.file.path);
+
+    // Save to MongoDB
+    const newStudent = new Student({
+      surname,
+      firstname,
+      middlename,
+      phone,
+      email,
+      passport: uploadResult.secure_url,
+    });
+
+    await newStudent.save();
+    res.json({ message: "Registration successful", student: newStudent });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// ====== Profile Setup ======
 app.post(
-  "/api/students/register",
+  "/api/students/profile",
   upload.fields([
     { name: "fileOlevel" },
     { name: "fileJamb" },
@@ -176,7 +227,7 @@ app.post(
       }
 
       // Duplicate check
-      const existing = await Student.findOne({
+      const existing = await Profile.findOne({
         $or: [{ email: body.email }, { phone: body.phone }],
       });
       if (existing)
@@ -200,8 +251,8 @@ app.post(
         }
       }
 
-      // Create new student
-      const student = new Student({
+      // Create Profile
+      const profile = new profile({
         ...body,
         olevel: olevelArray,
         fileOlevel: uploads.fileOlevel || "",
@@ -212,8 +263,8 @@ app.post(
         fileFee: uploads.fileFee || "",
       });
 
-      await student.save();
-      res.json({ success: true, message: "Student registered successfully" });
+      await profile.save();
+      res.json({ success: true, message: "Profile created successfully" });
     } catch (error) {
       console.error("❌ Registration error:", error);
       res
