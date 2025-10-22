@@ -150,32 +150,25 @@ app.post("/api/students/register", upload.single("passport"), async (req, res) =
   try {
     const { surname, firstname, middlename, phone, email } = req.body;
 
-    if (!req.file) {
+    if (!req.file || !req.file.path) {
       return res.status(400).json({ message: "Please upload a passport image" });
     }
 
-    // Upload to Cloudinary
-    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-      folder: "student_passports",
-    });
-
-    // Delete temp file
-    fs.unlinkSync(req.file.path);
-
-    // Save to MongoDB
+    // Save directly to MongoDB
     const newStudent = new Student({
       surname,
       firstname,
       middlename,
       phone,
       email,
-      passport: uploadResult.secure_url,
+      passport: req.file.path, // Cloudinary automatically provides a secure URL here
     });
 
     await newStudent.save();
+
     res.json({ message: "Registration successful", student: newStudent });
   } catch (error) {
-    console.error(error);
+    console.error("❌ Registration error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
