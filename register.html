@@ -196,69 +196,83 @@
   </div>
 
   <script>
-    const form = document.getElementById("registerForm");
-    const passportInput = document.getElementById("passport");
-    const previewDiv = document.getElementById("preview");
-    const spinnerOverlay = document.getElementById("spinnerOverlay");
+const form = document.getElementById("registerForm");
+const passportInput = document.getElementById("passport");
+const previewDiv = document.getElementById("preview");
+const spinnerOverlay = document.getElementById("spinnerOverlay");
 
-    // 🔹 Preview passport
-    passportInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          previewDiv.innerHTML = `<img src="${reader.result}" alt="Preview" />`;
-        };
-        reader.readAsDataURL(file);
-      }
+// 🔹 Preview passport
+passportInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      previewDiv.innerHTML = `<img src="${reader.result}" alt="Preview" />`;
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+// 🔹 Submit form
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const formData = new FormData();
+  formData.append("surname", document.getElementById("surname").value);
+  formData.append("firstname", document.getElementById("firstname").value);
+  formData.append("middlename", document.getElementById("middlename").value);
+  formData.append("phone", document.getElementById("phone").value);
+  formData.append("email", document.getElementById("email").value);
+  formData.append("passport", passportInput.files[0]);
+
+  try {
+    // 🔹 Show loading spinner
+    document.body.classList.add("blur");
+    spinnerOverlay.classList.add("active");
+
+    const res = await fetch("https://ict-reg.onrender.com/api/students/register", {
+      method: "POST",
+      body: formData,
     });
 
-    // 🔹 Submit form
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    const result = await res.json();
 
-      const formData = new FormData();
-      formData.append("surname", document.getElementById("surname").value);
-      formData.append("firstname", document.getElementById("firstname").value);
-      formData.append("middlename", document.getElementById("middlename").value);
-      formData.append("phone", document.getElementById("phone").value);
-      formData.append("email", document.getElementById("email").value);
-      formData.append("passport", passportInput.files[0]);
+    // 🔹 Hide spinner
+    document.body.classList.remove("blur");
+    spinnerOverlay.classList.remove("active");
 
-      try {
-        // 🔹 Show loading spinner
-        document.body.classList.add("blur");
-        spinnerOverlay.classList.add("active");
+    if (res.ok) {
+      // ✅ Save student info to localStorage for profile.html
+      // backend might return { student: {...} } or { student } or { data } etc.
+      const student = result.student || result.data || result || null;
 
-        const res = await fetch("https://ict-reg.onrender.com/api/students/register", {
-          method: "POST",
-          body: formData,
-        });
+      if (student && (student._id || student.regNo || student.email)) {
+        try {
+          localStorage.setItem("studentId", student._id || student.id || "");
+          localStorage.setItem("studentRegNo", student.regNo || student.regno || "");
+          localStorage.setItem("studentEmail", student.email || "");
+        } catch (err) {
+          console.warn("Unable to write to localStorage:", err);
+        }
+      }
 
-        const result = await res.json();
-        
-        // 🔹 Hide spinner
-document.body.classList.remove("blur");
-spinnerOverlay.classList.remove("active");
+      alert("Registration successful!");
+      form.reset();
+      previewDiv.innerHTML = "";
 
-if (res.ok) {
-  // ✅ Save student info to localStorage for profile.html
-  if (result.student || result.data) {
-    const student = result.student || result.data;
-    localStorage.setItem("studentId", student._id || "");
-    localStorage.setItem("studentRegNo", student.regNo || "");
-    localStorage.setItem("studentEmail", student.email || "");
-  }
-
-  alert("Registration successful!");
-  form.reset();
-  previewDiv.innerHTML = "";
-
-  // ✅ Redirect to profile page
-  window.location.href = "profile.html";
-} else {
-  alert(result.message || "Registration failed.");
+      // ✅ Redirect to profile page
+      window.location.href = "profile.html";
+    } else {
+      alert(result.message || "Registration failed.");
     }
-  </script>
+  } catch (err) {
+    // Ensure spinner/blur are removed on error
+    document.body.classList.remove("blur");
+    spinnerOverlay.classList.remove("active");
+    console.error("Registration error:", err);
+    alert("Error submitting registration form.");
+  }
+});
+      </script>
 </body>
 </html>
