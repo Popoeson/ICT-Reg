@@ -236,26 +236,29 @@
         });
 
         const result = await res.json();
-
+        
         // 🔹 Hide spinner
-        document.body.classList.remove("blur");
-        spinnerOverlay.classList.remove("active");
+document.body.classList.remove("blur");
+spinnerOverlay.classList.remove("active");
 
-        if (res.ok) {
-          alert("Registration successful!");
-          form.reset();
-          previewDiv.innerHTML = "";
-          window.location.href = "profile.html"; // redirect after success
-        } else {
-          alert(result.message || "Registration failed.");
-        }
-      } catch (err) {
-        document.body.classList.remove("blur");
-        spinnerOverlay.classList.remove("active");
-        console.error(err);
-        alert("Error submitting registration form.");
-      }
-    });
+if (res.ok) {
+  // ✅ Save student info to localStorage for profile.html
+  if (result.student || result.data) {
+    const student = result.student || result.data;
+    localStorage.setItem("studentId", student._id || "");
+    localStorage.setItem("studentRegNo", student.regNo || "");
+    localStorage.setItem("studentEmail", student.email || "");
+  }
+
+  alert("Registration successful!");
+  form.reset();
+  previewDiv.innerHTML = "";
+
+  // ✅ Redirect to profile page
+  window.location.href = "profile.html";
+} else {
+  alert(result.message || "Registration failed.");
+    }
   </script>
 </body>
 </html>
