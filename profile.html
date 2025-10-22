@@ -395,6 +395,12 @@ const deptText = document.getElementById('deptText');
 const levelText = document.getElementById('levelText');
 const contactText = document.getElementById('contactText');
 
+  // Generate Registration No.
+dept.addEventListener('change', () => {
+  if (dept.value) regNo.value = `${dept.value}/ND/${Math.floor(100 + Math.random() * 900)}`;
+  else regNo.value = '';
+});
+  
 /* Store uploaded files' URLs here after preview uploads */
 window.uploadedFiles = {}; // { fieldName: url, ... }
 window.courseFiles = {};
