@@ -62,14 +62,15 @@ const studentSchema = new mongoose.Schema({
 
 const Student = mongoose.model("Student", studentSchema);
 
-// ====== Student Schema ======
+// ====== Student Profile Schema ======
 const profileSchema = new mongoose.Schema(
   {
+    // Personal Info
     surname: { type: String, required: true, trim: true },
     firstname: { type: String, required: true, trim: true },
     middlename: { type: String, trim: true },
-    phone: { type: String, required: true, trim: true },
-    email: { type: String, required: true, trim: true, lowercase: true },
+    phone: { type: String, required: true, trim: true, unique: true },
+    email: { type: String, required: true, trim: true, lowercase: true, unique: true },
     marital: { type: String, required: true },
     disability: { type: String, default: "None" },
     stateOrigin: { type: String, required: true },
@@ -99,13 +100,22 @@ const profileSchema = new mongoose.Schema(
       },
     ],
 
-    // Uploaded files (URLs)
+    // Core uploads
     fileOlevel: String,
     fileJamb: String,
     fileState: String,
     fileBirth: String,
     fileNin: String,
     fileFee: String,
+    passport: String,
+
+    // Dynamic extra uploads
+    documents: [
+      {
+        label: String, // e.g. "Admission Letter"
+        url: String,
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -183,12 +193,14 @@ app.post(
     { name: "fileBirth" },
     { name: "fileNin" },
     { name: "fileFee" },
+    { name: "passport" },
+    // You can still upload any extra docs dynamically
   ]),
   async (req, res) => {
     try {
       const body = req.body;
 
-      // Required field check
+      // Required field validation
       const requiredFields = [
         "surname",
         "firstname",
@@ -219,7 +231,7 @@ app.post(
         }
       }
 
-      // Duplicate check
+      // Check duplicate
       const existing = await Profile.findOne({
         $or: [{ email: body.email }, { phone: body.phone }],
       });
@@ -229,40 +241,64 @@ app.post(
           message: "A student with this email or phone already exists.",
         });
 
-      // Parse O-Level data
+      // Parse O-level data
       const olevelArray =
         typeof body.olevel === "string"
           ? JSON.parse(body.olevel)
           : body.olevel || [];
 
-      // Uploaded files
+      // Define known file keys
+      const fileKeys = [
+        "fileOlevel",
+        "fileJamb",
+        "fileState",
+        "fileBirth",
+        "fileNin",
+        "fileFee",
+        "passport",
+      ];
+
       const uploads = {};
+      const documents = [];
+
+      // Loop through uploaded files
       if (req.files) {
-        for (const key in req.files) {
-          const fileData = req.files[key][0];
-          uploads[key] = fileData.path || fileData.url || "";
+        for (const field in req.files) {
+          const file = req.files[field][0];
+          const result = await cloudinary.uploader.upload(file.path, {
+            folder: "student_profiles",
+          });
+
+          if (fileKeys.includes(field)) {
+            uploads[field] = result.secure_url;
+          } else {
+            documents.push({ label: field, url: result.secure_url });
+          }
         }
       }
 
-      // Create Profile
-      const profile = new profile({
+      // Save to MongoDB
+      const profile = new Profile({
         ...body,
         olevel: olevelArray,
-        fileOlevel: uploads.fileOlevel || "",
-        fileJamb: uploads.fileJamb || "",
-        fileState: uploads.fileState || "",
-        fileBirth: uploads.fileBirth || "",
-        fileNin: uploads.fileNin || "",
-        fileFee: uploads.fileFee || "",
+        ...uploads,
+        documents,
       });
 
       await profile.save();
-      res.json({ success: true, message: "Profile created successfully" });
+
+      res.json({
+        success: true,
+        message: "Profile created successfully",
+        profile,
+      });
     } catch (error) {
-      console.error("❌ Registration error:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Server error", error: error.message });
+      console.error("❌ Profile creation error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error",
+        error: error.message,
+      });
     }
   }
 );
