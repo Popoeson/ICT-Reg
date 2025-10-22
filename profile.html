@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Student Profile — Editable</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#1e73be;
+    --bg:#ffffff;
+    --soft:#f5f8ff;
+    --border:#e6eef8;
+    --muted:#666;
+  }
+  *{box-sizing:border-box;font-family:'Poppins',sans-serif}
+  body{margin:0;background:var(--soft);color:#222}
+  header{display:flex;align-items:center;justify-content:space-between;background:#fff;padding:10px 18px;border-bottom:3px solid var(--blue)}
+  header img{height:48px}
+  header .title{text-align:center;font-weight:600;line-height:1.1}
+  main{max-width:1100px;margin:22px auto;padding:0 16px}
+  .card{background:#fff;border-radius:10px;padding:18px;box-shadow:0 6px 18px rgba(17,24,39,0.05);margin-bottom:18px}
+  .hero{display:flex;gap:18px;align-items:center}
+  .passport{width:120px;height:120px;border-radius:10px;object-fit:cover;border:3px solid var(--blue)}
+  .hero .info h2{color:var(--blue);margin:0 0 6px 0}
+  .hero .info p{margin:3px 0;color:var(--muted)}
+  form .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media(max-width:800px){ .hero{flex-direction:column;align-items:flex-start} .form-grid{grid-template-columns:1fr} }
+  label{display:block;font-weight:600;margin-bottom:6px}
+  input[type="text"],input[type="email"],input[type="tel"],select,input[type="number"]{
+    width:100%;padding:10px;border:1px solid var(--border);border-radius:7px;background:#fff;
+  }
+  input:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,115,190,0.06)}
+  .section-title{color:var(--blue);border-bottom:2px solid var(--border);padding-bottom:6px;margin-bottom:12px;font-weight:700}
+  .row{display:flex;gap:12px;align-items:center}
+  .small{font-size:13px;color:var(--muted)}
+  .btn{background:var(--blue);color:#fff;padding:10px 14px;border:none;border-radius:7px;cursor:pointer;font-weight:600}
+  .btn.secondary{background:#f2f7fb;color:var(--blue);border:1px solid var(--blue)}
+  .btn.danger{background:#e53e3e}
+  /* O'level table */
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border:1px solid var(--border);padding:8px;text-align:center;font-size:14px}
+  .thumbs img{width:84px;height:84px;object-fit:cover;border-radius:6px;margin:6px;cursor:pointer;border:2px solid #eee}
+  /* Upload grid */
+  .upload-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:900px){ .upload-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){ .upload-grid{grid-template-columns:1fr} .grid{grid-template-columns:1fr} }
+  /* School fees list */
+  .fees-list{margin-top:10px}
+  .fee-item{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;border:1px dashed var(--border);margin-bottom:8px}
+  .fee-item select,.fee-item input[type="file"]{flex:1}
+  .small-muted{font-size:13px;color:#666}
+  /* Modal & overlays */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;justify-content:center;align-items:center;z-index:2500}
+  .modal{background:#fff;padding:20px;border-radius:8px;max-width:900px;width:95%;max-height:85vh;overflow:auto}
+  .loading-overlay{position:fixed;inset:0;display:none;justify-content:center;align-items:center;background:rgba(255,255,255,0.8);z-index:3000}
+  .spinner{width:64px;height:64px;border-radius:50%;border:6px solid #e6eef8;border-top:6px solid var(--blue);animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+  .muted{color:var(--muted);font-size:13px}
+  .note{font-size:13px;color:#666;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <img src="left-logo.png" alt="Left Logo">
+  <div class="title">
+    Owu College of Management Technology<br>
+    <small class="muted">Student Profile — Editable</small>
+  </div>
+  <img src="right-logo.png" alt="Right Logo">
+</header>
+
+<main>
+  <!-- HERO / PROFILE CARD -->
+  <section class="card" id="profileCard">
+    <div class="hero">
+      <img id="passportImg" class="passport" src="placeholder-passport.png" alt="Passport">
+      <div class="info">
+        <h2 id="fullName">—</h2>
+        <p id="regNoText" class="small">Reg No: —</p>
+        <p id="deptText" class="small">Department: —</p>
+        <p id="levelText" class="small">Level: —</p>
+        <p id="contactText" class="small">Email / Phone: —</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORM -->
+  <form id="profileForm" class="card">
+    <div>
+      <div class="section-title">Personal Information</div>
+      <div class="grid form-grid">
+        <div>
+          <label>Surname</label>
+          <input name="surname" id="surname" type="text" required>
+        </div>
+        <div>
+          <label>First Name</label>
+          <input name="firstname" id="firstname" type="text" required>
+        </div>
+        <div>
+          <label>Middle Name</label>
+          <input name="middlename" id="middlename" type="text">
+        </div>
+        <div>
+          <label>Phone</label>
+          <input name="phone" id="phone" type="tel" required>
+        </div>
+        <div>
+          <label>Email</label>
+          <input name="email" id="email" type="email" required>
+        </div>
+        <div>
+          <label>JAMB Score</label>
+          <input name="jambScore" id="jambScore" type="number" min="0" max="400" placeholder="e.g. 180">
+        </div>
+        <div>
+          <label>Department</label>
+          <select name="department" id="department" required>
+            <option value="">Select</option>
+            <option value="COS">Computer Science</option>
+            <option value="COE">Computer Engineering</option>
+            <option value="BUS">Business Administration</option>
+            <option value="ACC">Accountancy</option>
+            <option value="MCM">Mass Communication</option>
+            <option value="ELE">Electrical Engineering</option>
+            <option value="EST">Estate Management</option>
+            <option value="SLT">Science Lab Tech</option>
+          </select>
+        </div>
+        <div>
+          <label>Reg. No (auto or saved)</label>
+          <input id="regNo" name="regNo" type="text" readonly placeholder="Auto-generated or saved">
+        </div>
+      </div>
+    </div>
+
+    <!-- Next of Kin -->
+    <div style="margin-top:14px">
+      <div class="section-title">Next of Kin</div>
+      <div class="grid">
+        <div>
+          <label>NK Surname</label>
+          <input name="nokSurname" id="nokSurname" type="text" required>
+        </div>
+        <div>
+          <label>NK Firstname</label>
+          <input name="nokFirstname" id="nokFirstname" type="text" required>
+        </div>
+        <div>
+          <label>NK Middle</label>
+          <input name="nokMiddlename" id="nokMiddlename" type="text">
+        </div>
+        <div>
+          <label>NK Phone</label>
+          <input name="nokPhone" id="nokPhone" type="tel" required>
+        </div>
+        <div>
+          <label>NK Marital</label>
+          <select name="nokMarital" id="nokMarital" required><option value="">Select</option><option>Single</option><option>Married</option></select>
+        </div>
+        <div>
+          <label>NK Relationship</label>
+          <input name="nokRelation" id="nokRelation" type="text" required>
+        </div>
+        <div style="grid-column:1/3">
+          <label>NK Address</label>
+          <input name="nokAddress" id="nokAddress" type="text" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- Academic info & O'Level -->
+    <div style="margin-top:14px">
+      <div class="section-title">Academic Information</div>
+      <div class="grid">
+        <div>
+          <label>Secondary School</label>
+          <input name="school" id="school" type="text" required>
+        </div>
+        <div>
+          <label>State of Origin</label>
+          <input name="stateOrigin" id="stateOrigin" type="text" required>
+        </div>
+        <div>
+          <label>LGA (Origin)</label>
+          <input name="lgaOrigin" id="lgaOrigin" type="text" required>
+        </div>
+        <div>
+          <label>Residential Address</label>
+          <input name="address" id="address" type="text" required>
+        </div>
+        <div style="grid-column:1/3">
+          <label>O'Level Results</label>
+          <table>
+            <thead><tr><th>Year</th><th>Reg No</th><th>Subject</th><th>Grade</th></tr></thead>
+            <tbody id="olevelBody"></tbody>
+          </table>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button type="button" id="addOlevelRow" class="btn secondary">+ Add Row</button>
+            <button type="button" id="removeOlevelRow" class="btn secondary">− Remove Last Row</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UPLOADS -->
+    <div style="margin-top:14px">
+      <div class="section-title">Uploads (images / scanned documents)</div>
+
+      <!-- Top Uploads (single fields) -->
+      <div class="upload-grid">
+        <div>
+          <label>WAEC Result</label>
+          <input type="file" id="waecFile" accept="image/*">
+        </div>
+        <div>
+          <label>JAMB Result</label>
+          <input type="file" id="jambFile" accept="image/*">
+        </div>
+        <div>
+          <label>JAMB Admission Letter</label>
+          <input type="file" id="jambAdmissionFile" accept="image/*">
+        </div>
+
+        <div>
+          <label>Application Form</label>
+          <input type="file" id="applicationFormFile" accept="image/*">
+        </div>
+        <div>
+          <label>Acceptance Form</label>
+          <input type="file" id="acceptanceFormFile" accept="image/*">
+        </div>
+        <div>
+          <label>Guarantor's Form</label>
+          <input type="file" id="guarantorFormFile" accept="image/*">
+        </div>
+
+        <div>
+          <label>Code of Conduct</label>
+          <input type="file" id="codeConductFile" accept="image/*">
+        </div>
+        <div>
+          <label>Acceptance Fee Upload</label>
+          <input type="file" id="acceptanceFeeFile" accept="image/*">
+        </div>
+        <div>
+          <label>State of Origin</label>
+          <input type="file" id="stateOriginFile" accept="image/*">
+        </div>
+
+        <div>
+          <label>NIN</label>
+          <input type="file" id="ninFile" accept="image/*">
+        </div>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
+
+      <!-- Course forms (4) -->
+      <div>
+        <label>Course Forms (ND1 1st, ND1 2nd, ND2 1st, ND2 2nd)</label>
+        <div class="upload-grid">
+          <div><input type="file" id="courseForm_nd1_1" accept="image/*"></div>
+          <div><input type="file" id="courseForm_nd1_2" accept="image/*"></div>
+          <div><input type="file" id="courseForm_nd2_1" accept="image/*"></div>
+          <div><input type="file" id="courseForm_nd2_2" accept="image/*"></div>
+        </div>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
+
+      <!-- ICT receipts (4) -->
+      <div>
+        <label>ICT Receipts (ND1 1st, ND1 2nd, ND2 1st, ND2 2nd)</label>
+        <div class="upload-grid">
+          <div><input type="file" id="ictReceipt_nd1_1" accept="image/*"></div>
+          <div><input type="file" id="ictReceipt_nd1_2" accept="image/*"></div>
+          <div><input type="file" id="ictReceipt_nd2_1" accept="image/*"></div>
+          <div><input type="file" id="ictReceipt_nd2_2" accept="image/*"></div>
+        </div>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
+
+      <!-- Departmental fees (4) -->
+      <div>
+        <label>Departmental Fees (ND1 1st, ND1 2nd, ND2 1st, ND2 2nd)</label>
+        <div class="upload-grid">
+          <div><input type="file" id="deptFee_nd1_1" accept="image/*"></div>
+          <div><input type="file" id="deptFee_nd1_2" accept="image/*"></div>
+          <div><input type="file" id="deptFee_nd2_1" accept="image/*"></div>
+          <div><input type="file" id="deptFee_nd2_2" accept="image/*"></div>
+        </div>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
+
+      <!-- School fees - dynamic -->
+      <div>
+        <label>School Fees Receipts <span class="small-muted">(Add multiple receipts; mark Part/Balance/Full and Level/Semester)</span></label>
+        <div class="fees-list" id="feesList"></div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button type="button" id="addFeeBtn" class="btn secondary">+ Add School Fee Receipt</button>
+          <button type="button" id="clearFeesBtn" class="btn secondary">Clear All Fees</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="actions">
+      <button type="button" id="previewBtn" class="btn secondary">Preview / Upload Files</button>
+      <button type="submit" class="btn">Save Profile</button>
+    </div>
+    <p class="note">Files are uploaded to Cloudinary during preview. Final save sends collected URLs to the backend.</p>
+  </form>
+</main>
+
+<!-- Preview Modal -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal">
+    <h3 style="color:var(--blue)">Preview & Confirm</h3>
+    <div id="previewContent" style="margin-top:12px"></div>
+    <div style="text-align:right;margin-top:12px">
+      <button id="closePreview" class="btn secondary">Edit</button>
+      <button id="confirmSubmit" class="btn">Confirm & Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+
+<!-- Lightbox for images -->
+<div class="modal-overlay" id="lightbox" style="display:none;background:rgba(0,0,0,0.9)">
+  <div class="modal" style="max-width:800px; background:transparent; box-shadow:none; border-radius:0; padding:0">
+    <img id="lightboxImg" src="" style="width:100%;height:auto;display:block;border-radius:8px" alt="preview">
+  </div>
+</div>
+
+<script>
+/*
+  profile.html
+  - Prefills from backend: https://ict-reg.onrender.com
+  - Upload preview uses: POST /api/students/upload-single (returns { success: true, url })
+  - Final submit uses: POST /api/students/profile (same endpoint in your backend)
+  - Uses localStorage.studentId, localStorage.studentRegNo, or localStorage.studentEmail to prefill. If none, attempts to fetch all students and match.
+*/
+
+/* ---------- Config ---------- */
+const API_BASE = "https://ict-reg.onrender.com";
+const previewModal = document.getElementById('previewModal');
+const previewContent = document.getElementById('previewContent');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+
+const form = document.getElementById('profileForm');
+const previewBtn = document.getElementById('previewBtn');
+const confirmSubmit = document.getElementById('confirmSubmit');
+const closePreview = document.getElementById('closePreview');
+
+const olevelBody = document.getElementById('olevelBody');
+const addOlevelRowBtn = document.getElementById('addOlevelRow');
+const removeOlevelRowBtn = document.getElementById('removeOlevelRow');
+
+const addFeeBtn = document.getElementById('addFeeBtn');
+const clearFeesBtn = document.getElementById('clearFeesBtn');
+const feesList = document.getElementById('feesList');
+
+/* passport hero elements */
+const passportImg = document.getElementById('passportImg');
+const fullNameEl = document.getElementById('fullName');
+const regNoEl = document.getElementById('regNo');
+const regNoText = document.getElementById('regNoText');
+const deptText = document.getElementById('deptText');
+const levelText = document.getElementById('levelText');
+const contactText = document.getElementById('contactText');
+
+/* Store uploaded files' URLs here after preview uploads */
+window.uploadedFiles = {}; // { fieldName: url, ... }
+window.courseFiles = {};
+window.ictFiles = {};
+window.deptFiles = {};
+window.schoolFees = []; // array of { url, type, level, semester }
+
+/* ---------- Helpers ---------- */
+function showLoading() { loadingOverlay.style.display = 'flex'; }
+function hideLoading() { loadingOverlay.style.display = 'none'; }
+
+function showPreviewModal() { previewModal.style.display = 'flex'; }
+function hidePreviewModal() { previewModal.style.display = 'none'; }
+
+function openLightbox(src){ lightbox.style.display = 'flex'; lightboxImg.src = src; }
+function closeLightboxF(){ lightbox.style.display = 'none'; lightboxImg.src = ''; }
+lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightboxF(); });
+
+/* Add initial single O'level row for UX */
+function addOlevelRow(values = {}) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" placeholder="Year" value="${values.year||''}" required></td>
+    <td><input type="text" placeholder="Reg No" value="${values.reg||''}" required></td>
+    <td><input type="text" placeholder="Subject" value="${values.subject||''}" required></td>
+    <td><input type="text" placeholder="Grade" value="${values.grade||''}" required></td>
+  `;
+  olevelBody.appendChild(tr);
+}
+function removeOlevelRow() {
+  if (olevelBody.lastElementChild) olevelBody.removeChild(olevelBody.lastElementChild);
+}
+
+/* Add a school fee entry block */
+function addFeeItem(data = {}) {
+  const id = Date.now().toString(36);
+  const div = document.createElement('div');
+  div.className = 'fee-item';
+  div.dataset.id = id;
+  div.innerHTML = `
+    <input type="file" accept="image/*" class="fee-file" />
+    <select class="fee-type"><option value="Full">Full</option><option value="Part">Part</option><option value="Balance">Balance</option></select>
+    <select class="fee-level"><option value="ND1">ND1</option><option value="ND2">ND2</option></select>
+    <select class="fee-sem"><option value="1st">1st</option><option value="2nd">2nd</option></select>
+    <button type="button" class="btn secondary remove-fee">Remove</button>
+  `;
+  if (data.type) div.querySelector('.fee-type').value = data.type;
+  if (data.level) div.querySelector('.fee-level').value = data.level;
+  if (data.semester) div.querySelector('.fee-sem').value = data.semester;
+  feesList.appendChild(div);
+
+  div.querySelector('.remove-fee').addEventListener('click', () => div.remove());
+}
+
+/* Utility: upload a single File object to your backend upload endpoint and return URL */
+async function uploadSingleFile(fieldName, fileInput) {
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) return null;
+  const file = fileInput.files[0];
+  const fd = new FormData();
+  fd.append(fieldName, file);
+  const res = await fetch(`${API_BASE}/api/students/upload-single`, { method: 'POST', body: fd });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Upload failed for ${fieldName}: ${err}`);
+  }
+  const data = await res.json();
+  if (!data.success) throw new Error(`Upload failed for ${fieldName}`);
+  return data.url || data.path || data.url || data.secure_url || data.path;
+}
+
+/* Bulk upload helper for a list of file input ids -> returns mapping */
+async function bulkUpload(listOfIds) {
+  const result = {};
+  for (const id of listOfIds) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    if (el.files && el.files.length > 0) {
+      const url = await uploadSingleFile(id, el);
+      result[id] = url;
+    }
+  }
+  return result;
+}
+
+
+/* ---------- Prefill / Fetch Profile ---------- */
+async function fetchProfileAndPrefill(){
+  showLoading();
+  try {
+    // try localStorage hints
+    const sid = localStorage.getItem('studentId') || localStorage.getItem('student_id') || null;
+    const regHint = localStorage.getItem('studentRegNo') || localStorage.getItem('regNo') || null;
+    const emailHint = localStorage.getItem('studentEmail') || null;
+
+    // if we have exact id, try dedicated endpoint (not available in current backend version)
+    if (sid) {
+      try {
+        const r = await fetch(`${API_BASE}/api/students/${sid}`);
+        if (r.ok) {
+          const d = await r.json();
+          if (d.student || d.success) {
+            const profile = d.student || d;
+            populateForm(profile);
+            return;
+          }
+        }
+      } catch(e){}
+    }
+
+    // fallback: fetch all students and attempt to find by reg/email/phone
+    const rAll = await fetch(`${API_BASE}/api/students`);
+    if (!rAll.ok) throw new Error('Unable to fetch students');
+    const all = await rAll.json();
+    const list = all.students || all.data || [];
+    let found = null;
+    if (regHint) found = list.find(s => s.regNo === regHint || s.regNo === (regHint.toUpperCase?.()||''));
+    if (!found && emailHint) found = list.find(s => s.email === emailHint);
+    if (!found && sid) found = list.find(s => s._id === sid);
+    if (!found) {
+      // no prefill available — leave blank
+      return;
+    }
+    populateForm(found);
+  } catch (err) {
+    console.warn('Prefill error:', err);
+  } finally {
+    hideLoading();
+  }
+}
+
+function populateForm(profile){
+  try {
+    // fill basic fields if present
+    document.getElementById('surname').value = profile.surname || '';
+    document.getElementById('firstname').value = profile.firstname || '';
+    document.getElementById('middlename').value = profile.middlename || '';
+    document.getElementById('phone').value = profile.phone || '';
+    document.getElementById('email').value = profile.email || '';
+    document.getElementById('school').value = profile.school || '';
+    document.getElementById('stateOrigin').value = profile.stateOrigin || '';
+    document.getElementById('lgaOrigin').value = profile.lgaOrigin || '';
+    document.getElementById('address').value = profile.address || '';
+    document.getElementById('regNo').value = profile.regNo || '';
+    document.getElementById('department').value = profile.department || '';
+    document.getElementById('jambScore').value = profile.jambScore || '';
+
+    // next of kin
+    document.getElementById('nokSurname').value = profile.nokSurname || '';
+    document.getElementById('nokFirstname').value = profile.nokFirstname || '';
+    document.getElementById('nokMiddlename').value = profile.nokMiddlename || '';
+    document.getElementById('nokPhone').value = profile.nokPhone || '';
+    document.getElementById('nokMarital').value = profile.nokMarital || '';
+    document.getElementById('nokRelation').value = profile.nokRelation || '';
+    document.getElementById('nokAddress').value = profile.nokAddress || '';
+
+    // O'level (replace rows)
+    olevelBody.innerHTML = '';
+    const olevel = profile.olevel || [];
+    if (olevel.length) {
+      olevel.forEach(row => addOlevelRow(row));
+    } else {
+      addOlevelRow(); // blank row
+    }
+
+    // show passport
+    const passportUrl = profile.passport || profile.passportUrl || profile.filePassport || '';
+    if (passportUrl) passportImg.src = passportUrl;
+
+    // show top-header summary
+    fullNameEl.textContent = `${profile.surname || ''} ${profile.firstname || ''} ${profile.middlename || ''}`.trim() || '—';
+    regNoText.textContent = `Reg No: ${profile.regNo || '—'}`;
+    deptText.textContent = `Department: ${profile.department || '—'}`;
+    levelText.textContent = `Level: ${profile.level || '—'}`;
+    contactText.textContent = `Email: ${profile.email || '—'} | ${profile.phone || '—'}`;
+
+    // if profile contains file urls, set them into window.uploadedFiles so they persist on save
+    const fileFields = ['fileOlevel','fileJamb','fileState','fileBirth','fileNin','fileFee',
+      'fileJambResult','fileJambAdmission','applicationForm','acceptanceForm','guarantorForm','codeConduct',
+      'courseForm_nd1_1','courseForm_nd1_2','courseForm_nd2_1','courseForm_nd2_2',
+      'ictReceipt_nd1_1','ictReceipt_nd1_2','ictReceipt_nd2_1','ictReceipt_nd2_2',
+      'deptFee_nd1_1','deptFee_nd1_2','deptFee_nd2_1','deptFee_nd2_2','acceptanceFee','stateOriginFile','ninFile'
+    ];
+    fileFields.forEach(f => {
+      if (profile[f]) window.uploadedFiles[f] = profile[f];
+    });
+
+    // if schoolFees array present use it
+    if (Array.isArray(profile.schoolFees) && profile.schoolFees.length) {
+      feesList.innerHTML = '';
+      profile.schoolFees.forEach(sf => {
+        addFeeItem({ type: sf.type, level: sf.level, semester: sf.semester });
+        // store uploaded url for that last added fee item
+        const last = feesList.lastElementChild;
+        if (last) {
+          last.dataset.url = sf.url || '';
+          // (we do not set file input because it's not possible)
+          const info = document.createElement('div'); info.className='small-muted'; info.textContent = sf.url ? 'Uploaded' : 'Not uploaded';
+          last.appendChild(info);
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('populateForm error', err);
+  }
+}
+
+/* ---------- UI Events ---------- */
+addOlevelRowBtn.addEventListener('click', () => addOlevelRow());
+removeOlevelRowBtn.addEventListener('click', () => removeOlevelRow());
+
+addFeeBtn.addEventListener('click', () => addFeeItem());
+clearFeesBtn.addEventListener('click', () => feesList.innerHTML = '');
+
+document.querySelectorAll('.thumbs img').forEach(img => img.addEventListener('click', e => openLightbox(e.target.src)));
+
+previewBtn.addEventListener('click', async () => {
+  // When preview clicked, upload all files to Cloudinary via /upload-single and show preview.
+  if (!form.checkValidity()) { form.reportValidity(); return; }
+
+  showLoading();
+  try {
+    // list of single-file ids to upload:
+    const singleFileIds = [
+      'waecFile','jambFile','jambAdmissionFile','applicationFormFile','acceptanceFormFile',
+      'guarantorFormFile','codeConductFile','acceptanceFeeFile','stateOriginFile','ninFile'
+    ];
+    const uploaded = await bulkUpload(singleFileIds);
+    Object.assign(window.uploadedFiles, uploaded);
+
+    // course forms
+    const courseIds = ['courseForm_nd1_1','courseForm_nd1_2','courseForm_nd2_1','courseForm_nd2_2'];
+    const uploadedCourses = await bulkUpload(courseIds);
+    Object.assign(window.courseFiles, uploadedCourses);
+
+    // ICT receipts
+    const ictIds = ['ictReceipt_nd1_1','ictReceipt_nd1_2','ictReceipt_nd2_1','ictReceipt_nd2_2'];
+    const uploadedIct = await bulkUpload(ictIds);
+    Object.assign(window.ictFiles, uploadedIct);
+
+    // Dept fees
+    const deptIds = ['deptFee_nd1_1','deptFee_nd1_2','deptFee_nd2_1','deptFee_nd2_2'];
+    const uploadedDept = await bulkUpload(deptIds);
+    Object.assign(window.deptFiles, uploadedDept);
+
+     // School fees (multiple)
+    window.schoolFees = []; // reset
+    const feeBlocks = feesList.querySelectorAll('.fee-item');
+    for (const block of feeBlocks) {
+      const fileInput = block.querySelector('.fee-file');
+      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        const tempUrl = await uploadSingleFile('schoolFee', fileInput);
+        const item = {
+          url: tempUrl,
+          type: block.querySelector('.fee-type').value,
+          level: block.querySelector('.fee-level').value,
+          semester: block.querySelector('.fee-sem').value
+        };
+        window.schoolFees.push(item);
+        block.dataset.url = tempUrl;
+      } else if (block.dataset.url) {
+        // previously uploaded (prefill)
+        window.schoolFees.push({ url: block.dataset.url, type: block.querySelector('.fee-type').value, level: block.querySelector('.fee-level').value, semester: block.querySelector('.fee-sem').value});
+      }
+    }
+
+    // Prepare preview HTML
+    const fd = new FormData(form);
+    let html = `<h4>Personal Info</h4><p><strong>Name:</strong> ${fd.get('surname')} ${fd.get('firstname')} ${fd.get('middlename') || ''}</p>`;
+    html += `<p><strong>RegNo:</strong> ${fd.get('regNo') || '—'} | <strong>Dept:</strong> ${document.getElementById('department').value}</p>`;
+    html += `<h4>Next of Kin</h4><p>${fd.get('nokSurname')} ${fd.get('nokFirstname')} — ${fd.get('nokRelation')} — ${fd.get('nokPhone')}</p>`;
+    html += `<h4>O'Level</h4><table><thead><tr><th>Year</th><th>Reg</th><th>Subject</th><th>Grade</th></tr></thead><tbody>`;
+    document.querySelectorAll('#olevelBody tr').forEach(tr => {
+      const vals = [...tr.querySelectorAll('input')].map(i=>i.value.trim());
+      if (vals.some(v=>v)) html += `<tr>${vals.map(v=>`<td>${v}</td>`).join('')}</tr>`;
+    });
+    html += `</tbody></table>`;
+
+    html += `<h4>Uploaded Documents</h4><div class="thumbs">`;
+    // combine all uploaded maps
+    const allFiles = {...window.uploadedFiles,...window.courseFiles,...window.ictFiles,...window.deptFiles};
+    // single files
+    for (const k in allFiles) {
+      const url = allFiles[k];
+      if (url) html += `<img src="${url}" onclick="openLightbox('${url}')">`;
+    }
+    // school fees
+    if (window.schoolFees && window.schoolFees.length) {
+      html += `<div style="margin-top:8px"><strong>School Fees:</strong>`;
+      window.schoolFees.forEach(sf => { html += `<div class="small-muted">${sf.level} ${sf.semester} — ${sf.type} — <a href="${sf.url}" target="_blank">view</a></div>`;});
+      html += `</div>`;
+    }
+    html += `</div>`;
+
+    previewContent.innerHTML = html;
+    showPreviewModal();
+  } catch (err) {
+    console.error(err);
+    alert('One or more uploads failed. Check console.');
+  } finally {
+    hideLoading();
+  }
+});
+
+/* ---------- Final submit: send fields + uploaded URLs to backend ---------- */
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  // user must preview before saving — but allow direct save if uploadedFiles present
+  await submitProfile();
+});
+
+closePreview.addEventListener('click', ()=> hidePreviewModal());
+confirmSubmit.addEventListener('click', async () => {
+  hidePreviewModal();
+  await submitProfile();
+});
+
+async function submitProfile(){
+  if (!form.checkValidity()) { form.reportValidity(); return; }
+  showLoading();
+
+  try {
+    // Create payload: gather all fields
+    const fd = new FormData(form);
+    // O'level JSON
+    const oarr = [];
+    document.querySelectorAll('#olevelBody tr').forEach(tr => {
+      const [year, reg, subject, grade] = [...tr.querySelectorAll('input')].map(i=>i.value.trim());
+      if (year || reg || subject || grade) oarr.push({year, reg, subject, grade});
+    });
+    fd.set('olevel', JSON.stringify(oarr));
+
+    // Append schoolFees as JSON
+    fd.set('schoolFees', JSON.stringify(window.schoolFees || []));
+
+    // Append previously uploaded file URLs so backend can store them
+    for (const key in window.uploadedFiles) fd.set(key, window.uploadedFiles[key]);
+    for (const key in window.courseFiles) fd.set(key, window.courseFiles[key]);
+    for (const key in window.ictFiles) fd.set(key, window.ictFiles[key]);
+    for (const key in window.deptFiles) fd.set(key, window.deptFiles[key]);
+
+    // Also append flags for files in schoolFees
+    if (window.schoolFees && window.schoolFees.length) {
+      fd.set('schoolFeesMeta', JSON.stringify(window.schoolFees));
+    }
+
+    // Optional: include student id hint
+    const sid = localStorage.getItem('studentId') || localStorage.getItem('student_id') || '';
+    if (sid) fd.set('studentId', sid);
+
+    // Send to backend (multipart/form-data) — backend profile endpoint should accept fields and file URLs
+    const res = await fetch(`${API_BASE}/api/students/profile`, {
+      method: 'POST',
+      body: fd
+    });
+    const data = await res.json();
+    if (res.ok && (data.success || data.message)) {
+      alert('✅ Profile saved successfully');
+      // refresh prefill to show updated data
+      await fetchProfileAndPrefill();
+    } else {
+      console.error('Save failed', data);
+      alert('❌ Save failed: ' + (data.message || JSON.stringify(data)));
+    }
+  } catch (err) {
+    console.error('Submit error', err);
+    alert('Submission error — check console.');
+  } finally {
+    hideLoading();
+  }
+}
+
+/* ---------- Helpers: click events for image preview (passport) ---------- */
+passportImg.addEventListener('click', () => {
+  if (passportImg.src) openLightbox(passportImg.src);
+});
+
+/* ---------- Init: add default rows and try to prefill ---------- */
+addOlevelRow(); // give one row to start
+addFeeItem(); // one default fee item
+fetchProfileAndPrefill();
+
+</script>
+</body>
+</html>
