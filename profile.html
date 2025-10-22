@@ -112,6 +112,18 @@
           <input name="email" id="email" type="email" required>
         </div>
         <div>
+          <div>
+          <label>Upload Passport Photograph</label>
+          <input type="file" name="passport" id="passport" accept="image/*" required>
+          </div>
+          <div>
+          <label>Marital Status</label>
+          <select name="marital" id="marital" required>
+          <option value="">Select</option>
+          <option value="Single">Single</option>
+          <option value="Married">Married</option>
+          </select>
+          </div>
           <label>JAMB Score</label>
           <input name="jambScore" id="jambScore" type="number" min="0" max="400" placeholder="e.g. 180">
         </div>
@@ -192,6 +204,11 @@
           <input name="address" id="address" type="text" required>
         </div>
         <div style="grid-column:1/3">
+          <div>
+          <label>LGA of Residence</label>
+          <input name="lgaResidence" id="lgaResidence" type="text" required>
+          </div>
+          
           <label>O'Level Results</label>
           <table>
             <thead><tr><th>Year</th><th>Reg No</th><th>Subject</th><th>Grade</th></tr></thead>
