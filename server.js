@@ -245,6 +245,27 @@ app.post("/api/students/register", upload.single("passport"), async (req, res) =
   }
 });
 
+// ======== Student Login =========
+app.post("/api/students/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const student = await Student.findOne({ email });
+    if (!student) {
+      return res.status(404).json({ message: "No account found with this email" });
+    }
+
+    if (student.password !== password) {
+      return res.status(401).json({ message: "Incorrect password" });
+    }
+
+    res.json({ message: "Login successful", student });
+  } catch (error) {
+    console.error("❌ Login error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Create or update detailed profile
 app.post("/api/students/profile", async (req, res) => {
   try {
