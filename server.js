@@ -65,7 +65,8 @@ const studentSchema = new mongoose.Schema({
   middlename: { type: String, trim: true, default: "" },
   phone: { type: String, required: true, trim: true },
   email: { type: String, required: true, trim: true, lowercase: true },
-  passport: { type: String, required: true }, // Cloudinary URL
+  password: { type: String, required: true, trim: true }, // 🔹 Added
+  passport: { type: String, required: true },
   dateRegistered: { type: Date, default: Date.now },
 });
 
@@ -175,20 +176,26 @@ app.get("/api/students/check-duplicate", async (req, res) => {
 });
 
 // Register Student (with passport upload)
+
 app.post("/api/students/register", upload.single("passport"), async (req, res) => {
   try {
-    const { surname, firstname, middlename, phone, email } = req.body;
+    const { surname, firstname, middlename, phone, email, password, confirmPassword } = req.body;
 
-    // Basic validation
-    if (!surname || !firstname || !phone || !email) {
+    if (!surname || !firstname || !phone || !email || !password || !confirmPassword) {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
+
     const trimmedEmail = normalizeEmail(email);
     const trimmedPhone = normalizePhone(phone);
 
     if (!isValidPhone(trimmedPhone)) {
       return res.status(400).json({ message: "Invalid phone format (expected 11 digits)" });
     }
+
     if (!isValidEmail(trimmedEmail)) {
       return res.status(400).json({ message: "Invalid email format" });
     }
@@ -201,14 +208,11 @@ app.post("/api/students/register", upload.single("passport"), async (req, res) =
       return res.status(409).json({ message: "Student with this email or phone already exists" });
     }
 
-    // Ensure passport file present
     if (!req.file) {
       return res.status(400).json({ message: "Please upload a passport image" });
     }
 
-    const passportUrl =
-      req.file.path || req.file.url || req.file.secure_url || (req.file && req.file.location) || "";
-
+    const passportUrl = req.file.path || req.file.secure_url || req.file.url || "";
     if (!passportUrl) {
       return res.status(500).json({ message: "Uploaded file URL not available" });
     }
@@ -219,12 +223,22 @@ app.post("/api/students/register", upload.single("passport"), async (req, res) =
       middlename: middlename ? String(middlename).trim() : "",
       phone: trimmedPhone,
       email: trimmedEmail,
+      password: password.trim(), // 🔹 Added
       passport: passportUrl,
     });
 
     await newStudent.save();
 
-    return res.status(201).json({ message: "Registration successful", student: newStudent });
+    return res.status(201).json({
+      message: "Registration successful",
+      student: {
+        _id: newStudent._id,
+        surname: newStudent.surname,
+        firstname: newStudent.firstname,
+        email: newStudent.email,
+        passport: newStudent.passport,
+      },
+    });
   } catch (error) {
     console.error("❌ Registration error:", error);
     return res.status(500).json({ message: "Server error", error: error.message });
