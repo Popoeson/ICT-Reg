@@ -7,7 +7,7 @@
 
   <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-  <!-- Icons (Remixicon CDN) -->
+  <!-- Icons -->
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 
   <style>
@@ -142,12 +142,12 @@
 
   <!-- HERO SECTION -->
   <section class="hero">
-    <img src="student-pic.jpg" alt="Student Photo">
+    <img id="studentPassport" src="student-pic.jpg" alt="Student Photo">
     <div class="hero-details">
-      <h2>Welcome, John Doe 👋</h2>
-      <p><strong>Matric No:</strong> CST/22/001</p>
-      <p><strong>Level:</strong> ND 2</p>
-      <p><strong>Department:</strong> Computer Science</p>
+      <h2 id="welcomeNote">Welcome, Student 👋</h2>
+      <p><strong>Matric No:</strong> <span id="matricNumber">N/A</span></p>
+      <p><strong>Level:</strong> <span id="level">N/A</span></p>
+      <p><strong>Department:</strong> <span id="department">N/A</span></p>
     </div>
   </section>
 
@@ -177,5 +177,30 @@
       <p>Access and download school-related documents.</p>
     </a>
   </section>
+
+  <script>
+    // ===== Load Student Data from LocalStorage =====
+    window.addEventListener("DOMContentLoaded", () => {
+      const surname = localStorage.getItem("studentSurname") || "";
+      const firstname = localStorage.getItem("studentFirstname") || "";
+      const middlename = localStorage.getItem("studentMiddlename") || "";
+      const passport = localStorage.getItem("studentPassport") || "student-pic.jpg";
+      const matric = localStorage.getItem("studentMatric") || "N/A";
+      const level = localStorage.getItem("studentLevel") || "N/A";
+      const dept = localStorage.getItem("studentDepartment") || "N/A";
+
+      // Display passport
+      document.getElementById("studentPassport").src = passport;
+
+      // Full name for greeting
+      const fullName = [surname, firstname, middlename].filter(Boolean).join(" ");
+      document.getElementById("welcomeNote").textContent = `Welcome, ${fullName || "Student"} 👋`;
+
+      // Other info
+      document.getElementById("matricNumber").textContent = matric;
+      document.getElementById("level").textContent = level;
+      document.getElementById("department").textContent = dept;
+    });
+  </script>
 </body>
 </html>
