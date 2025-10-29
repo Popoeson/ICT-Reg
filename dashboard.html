@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Portal Dashboard</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Icons (Remixicon CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background-color: #f5f8ff;
+      color: #333;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      background-color: #1e73be;
+      color: #fff;
+      padding: 15px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    header img {
+      height: 50px;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    /* ===== HERO CARD ===== */
+    .hero {
+      max-width: 1000px;
+      margin: 30px auto;
+      background-color: #fff;
+      border-radius: 15px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      padding: 25px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .hero img {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #1e73be;
+    }
+
+    .hero-details h2 {
+      color: #1e73be;
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .hero-details p {
+      margin: 3px 0;
+      font-size: 15px;
+    }
+
+    /* ===== CARDS SECTION ===== */
+    .cards-section {
+      max-width: 1000px;
+      margin: 20px auto 50px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background-color: #fff;
+      border-radius: 15px;
+      padding: 30px 25px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      text-align: center;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .card i {
+      font-size: 35px;
+      color: #1e73be;
+      margin-bottom: 12px;
+    }
+
+    .card h3 {
+      color: #1e73be;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .card p {
+      font-size: 14px;
+      color: #555;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .hero {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .hero img {
+        margin-bottom: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <img src="school-logo.png" alt="School Logo">
+    </div>
+    <h1>Student Portal Dashboard</h1>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <img src="student-pic.jpg" alt="Student Photo">
+    <div class="hero-details">
+      <h2>Welcome, John Doe 👋</h2>
+      <p><strong>Matric No:</strong> CST/22/001</p>
+      <p><strong>Level:</strong> ND 2</p>
+      <p><strong>Department:</strong> Computer Science</p>
+    </div>
+  </section>
+
+  <!-- MAIN CARDS -->
+  <section class="cards-section">
+    <a href="profile.html" class="card">
+      <i class="ri-user-3-line"></i>
+      <h3>Profile</h3>
+      <p>View and update your personal information.</p>
+    </a>
+
+    <a href="academics.html" class="card">
+      <i class="ri-book-open-line"></i>
+      <h3>Academics</h3>
+      <p>Check your courses, grades, and academic progress.</p>
+    </a>
+
+    <a href="fees.html" class="card">
+      <i class="ri-bank-card-line"></i>
+      <h3>Fees</h3>
+      <p>View your fee statements and make payments.</p>
+    </a>
+
+    <a href="documents.html" class="card">
+      <i class="ri-file-list-3-line"></i>
+      <h3>Documents</h3>
+      <p>Access and download school-related documents.</p>
+    </a>
+  </section>
+</body>
+</html>
