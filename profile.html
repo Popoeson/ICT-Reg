@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Profile</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background-color: #f5f8ff;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background-color: #1e73be;
+      color: #fff;
+      padding: 15px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .edit-btn {
+      background: #fff;
+      color: #1e73be;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .edit-btn:hover {
+      background: #1e73be;
+      color: #fff;
+    }
+
+    .profile-card {
+      background: #fff;
+      max-width: 600px;
+      margin: 40px auto;
+      border-radius: 15px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      padding: 30px;
+      text-align: center;
+    }
+
+    .profile-card img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #1e73be;
+      margin-bottom: 15px;
+    }
+
+    .profile-card h2 {
+      color: #1e73be;
+      margin-bottom: 10px;
+    }
+
+    .profile-info {
+      text-align: left;
+      margin-top: 20px;
+    }
+
+    .profile-info p {
+      font-size: 15px;
+      margin: 10px 0;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
+
+    .profile-info strong {
+      color: #1e73be;
+      width: 130px;
+      display: inline-block;
+    }
+
+    @media (max-width: 600px) {
+      header {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+      }
+
+      .profile-card {
+        margin: 20px;
+        padding: 20px;
+      }
+
+      .profile-card img {
+        width: 100px;
+        height: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Student Profile</h1>
+    <a href="edit-profile.html" class="edit-btn">Edit Profile</a>
+  </header>
+
+  <div class="profile-card">
+    <img id="studentPassport" src="default-avatar.png" alt="Student Passport" />
+    <h2 id="studentName">Student Name</h2>
+
+    <div class="profile-info">
+      <p><strong>Email:</strong> <span id="studentEmail">N/A</span></p>
+      <p><strong>Phone:</strong> <span id="studentPhone">N/A</span></p>
+      <p><strong>Matric No:</strong> <span id="studentMatric">N/A</span></p>
+      <p><strong>Department:</strong> <span id="studentDept">N/A</span></p>
+      <p><strong>Level:</strong> <span id="studentLevel">N/A</span></p>
+    </div>
+  </div>
+
+  <script>
+    // Load student data from localStorage
+    const student = JSON.parse(localStorage.getItem("studentData"));
+
+    if (!student) {
+      // If not logged in or data missing, redirect
+      window.location.href = "login.html";
+    } else {
+      document.getElementById("studentName").textContent =
+        `${student.surname || ""} ${student.firstname || ""} ${student.middlename || ""}`.trim();
+
+      document.getElementById("studentEmail").textContent = student.email || "N/A";
+      document.getElementById("studentPhone").textContent = student.phone || "N/A";
+      document.getElementById("studentMatric").textContent = student.matric || "N/A";
+      document.getElementById("studentDept").textContent = student.department || "N/A";
+      document.getElementById("studentLevel").textContent = student.level || "N/A";
+
+      // Passport preview
+      const passportImg = document.getElementById("studentPassport");
+      if (student.passport) {
+        passportImg.src = student.passport;
+      } else {
+        passportImg.src = "default-avatar.png"; // fallback
+      }
+    }
+  </script>
+</body>
+</html>
