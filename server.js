@@ -1,4 +1,4 @@
-// ====== server.js ======
+// ===== server.js =====
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -6,28 +6,37 @@ import cors from "cors";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
-import PDFDocument from "pdfkit";   // <-- ES module import
-import fs from "fs";                // <-- ES module import
+import PDFDocument from "pdfkit";
+import axios from "axios";
+import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// dotenv.config();
+dotenv.config();
 
 // For __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config();
 const app = express();
 app.use(express.json());
-// Allow all origins (or restrict to your frontend domain)
-app.use(cors({
-  origin: 'https://ict-reg.vercel.app' // or 'https://your-frontend-domain.com'
-}));
+app.use(express.urlencoded({ extended: true }));
+app.use(helmet());
+
+// CORS — restrict to your frontend domain or allow all during dev
+app.use(
+  cors({
+    origin: process.env.FRONTEND_ORIGIN || "https://ict-reg.vercel.app",
+  })
+);
 
 // ====== Database Connection ======
+const MONGO = process.env.MONGO_URI || process.env.MONGO || "";
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(MONGO, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB Error:", err));
 
@@ -44,28 +53,27 @@ const storage = new CloudinaryStorage({
   params: {
     folder: "school_uploads",
     allowed_formats: ["jpg", "jpeg", "png", "pdf"],
+    transformation: [{ width: 600, height: 600, crop: "limit" }],
   },
 });
 const upload = multer({ storage });
 
-//======= Student Schema ==[[[[[[[[[
-
+// ====== Schemas & Models ======
 const studentSchema = new mongoose.Schema({
-  surname: { type: String, required: true },
-  firstname: { type: String, required: true },
-  middlename: String,
-  phone: { type: String, required: true },
-  email: { type: String, required: true },
+  surname: { type: String, required: true, trim: true },
+  firstname: { type: String, required: true, trim: true },
+  middlename: { type: String, trim: true, default: "" },
+  phone: { type: String, required: true, trim: true },
+  email: { type: String, required: true, trim: true, lowercase: true },
   passport: { type: String, required: true }, // Cloudinary URL
   dateRegistered: { type: Date, default: Date.now },
 });
 
 const Student = mongoose.model("Student", studentSchema);
 
-// ====== Student Profile Schema ======
+/* Full profile schema (optional detailed records) */
 const profileSchema = new mongoose.Schema(
   {
-    // Personal Info
     surname: { type: String, required: true, trim: true },
     firstname: { type: String, required: true, trim: true },
     middlename: { type: String, trim: true },
@@ -79,8 +87,6 @@ const profileSchema = new mongoose.Schema(
     lgaResidence: { type: String, required: true },
     department: { type: String, required: true },
     regNo: { type: String, required: true, unique: true, uppercase: true },
-
-    // Next of Kin
     nokSurname: { type: String, required: true },
     nokFirstname: { type: String, required: true },
     nokMiddlename: { type: String },
@@ -88,8 +94,6 @@ const profileSchema = new mongoose.Schema(
     nokMarital: { type: String, required: true },
     nokRelation: { type: String, required: true },
     nokAddress: { type: String, required: true },
-
-    // Academic Info
     school: { type: String, required: true },
     olevel: [
       {
@@ -99,8 +103,6 @@ const profileSchema = new mongoose.Schema(
         grade: String,
       },
     ],
-
-    // Core uploads
     fileOlevel: String,
     fileJamb: String,
     fileState: String,
@@ -108,11 +110,9 @@ const profileSchema = new mongoose.Schema(
     fileNin: String,
     fileFee: String,
     passport: String,
-
-    // Dynamic extra uploads
     documents: [
       {
-        label: String, // e.g. "Admission Letter"
+        label: String,
         url: String,
       },
     ],
@@ -122,17 +122,35 @@ const profileSchema = new mongoose.Schema(
 
 const Profile = mongoose.model("Profile", profileSchema);
 
-// ====== Upload Single File ======
+// ====== Utility Functions ======
+function normalizeEmail(email = "") {
+  return String(email || "").trim().toLowerCase();
+}
+function normalizePhone(phone = "") {
+  return String(phone || "").trim();
+}
+function isValidPhone(phone = "") {
+  // Nigerian-like 11-digit check (adjust if you want other formats)
+  return /^\d{11}$/.test(phone);
+}
+function isValidEmail(email = "") {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// ====== Routes ======
+
+// Health check
+app.get("/api/health", (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+
+// Upload single file (returns Cloudinary URL)
 app.post("/api/students/upload-single", upload.any(), async (req, res) => {
   try {
     if (!req.files || !req.files.length) {
-      return res
-        .status(400)
-        .json({ success: false, message: "No file uploaded" });
+      return res.status(400).json({ success: false, message: "No file uploaded" });
     }
-
     const fileData = req.files[0];
-    const url = fileData.path || fileData.url;
+    const url = fileData.path || fileData.url || fileData.secure_url || fileData.location || null;
+    if (!url) return res.status(500).json({ success: false, message: "Could not get uploaded file URL" });
     res.json({ success: true, url });
   } catch (err) {
     console.error("❌ Upload error:", err);
@@ -140,393 +158,244 @@ app.post("/api/students/upload-single", upload.any(), async (req, res) => {
   }
 });
 
-// ====== Check Duplicate ======
+// Check duplicate by email or phone (query params: ?email=...&phone=...)
 app.get("/api/students/check-duplicate", async (req, res) => {
   try {
     const { email, phone } = req.query;
-    const exists = await Student.findOne({
-      $or: [{ email }, { phone }],
-    });
+    if (!email && !phone) return res.json({ exists: false });
+    const q = { $or: [] };
+    if (email) q.$or.push({ email: normalizeEmail(email) });
+    if (phone) q.$or.push({ phone: normalizePhone(phone) });
+    const exists = q.$or.length ? await Student.findOne(q) : null;
     res.json({ exists: !!exists });
   } catch (err) {
+    console.error("❌ check-duplicate error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-
-
-//======== Register Student ===========
+// Register Student (with passport upload)
 app.post("/api/students/register", upload.single("passport"), async (req, res) => {
   try {
     const { surname, firstname, middlename, phone, email } = req.body;
 
-    if (!req.file || !req.file.path) {
+    // Basic validation
+    if (!surname || !firstname || !phone || !email) {
+      return res.status(400).json({ message: "All required fields must be provided" });
+    }
+    const trimmedEmail = normalizeEmail(email);
+    const trimmedPhone = normalizePhone(phone);
+
+    if (!isValidPhone(trimmedPhone)) {
+      return res.status(400).json({ message: "Invalid phone format (expected 11 digits)" });
+    }
+    if (!isValidEmail(trimmedEmail)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    // Duplicate check
+    const dup = await Student.findOne({
+      $or: [{ email: trimmedEmail }, { phone: trimmedPhone }],
+    });
+    if (dup) {
+      return res.status(409).json({ message: "Student with this email or phone already exists" });
+    }
+
+    // Ensure passport file present
+    if (!req.file) {
       return res.status(400).json({ message: "Please upload a passport image" });
     }
 
-    // Save directly to MongoDB
+    const passportUrl =
+      req.file.path || req.file.url || req.file.secure_url || (req.file && req.file.location) || "";
+
+    if (!passportUrl) {
+      return res.status(500).json({ message: "Uploaded file URL not available" });
+    }
+
     const newStudent = new Student({
-      surname,
-      firstname,
-      middlename,
-      phone,
-      email,
-      passport: req.file.path, // Cloudinary automatically provides a secure URL here
+      surname: String(surname).trim(),
+      firstname: String(firstname).trim(),
+      middlename: middlename ? String(middlename).trim() : "",
+      phone: trimmedPhone,
+      email: trimmedEmail,
+      passport: passportUrl,
     });
 
     await newStudent.save();
 
-    res.json({ message: "Registration successful", student: newStudent });
+    return res.status(201).json({ message: "Registration successful", student: newStudent });
   } catch (error) {
     console.error("❌ Registration error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-// ====== Profile Setup ======
-app.post(
-  "/api/students/profile",
-  upload.fields([
-    { name: "fileOlevel" },
-    { name: "fileJamb" },
-    { name: "fileState" },
-    { name: "fileBirth" },
-    { name: "fileNin" },
-    { name: "fileFee" },
-    { name: "passport" },
-  ]),
-  async (req, res) => {
-    try {
-      const body = req.body;
-
-      // 🔹 Parse O-Level data if sent
-      const olevelArray =
-        typeof body.olevel === "string"
-          ? JSON.parse(body.olevel)
-          : body.olevel || [];
-
-      // 🔹 Define known upload fields
-      const fileKeys = [
-        "fileOlevel",
-        "fileJamb",
-        "fileState",
-        "fileBirth",
-        "fileNin",
-        "fileFee",
-        "passport",
-      ];
-
-      const uploads = {};
-      const documents = [];
-
-      // 🔹 Upload any provided files to Cloudinary
-      if (req.files) {
-        for (const field in req.files) {
-          const file = req.files[field][0];
-          const result = await cloudinary.uploader.upload(file.path, {
-            folder: "student_profiles",
-          });
-
-          if (fileKeys.includes(field)) {
-            uploads[field] = result.secure_url;
-          } else {
-            documents.push({ label: field, url: result.secure_url });
-          }
-        }
-      }
-
-      // 🔹 Check if a profile with this email or regNo already exists
-      const existing = await Profile.findOne({
-        $or: [{ email: body.email }, { regNo: body.regNo }],
-      });
-
-      if (existing) {
-        // ✅ Update existing profile
-        Object.assign(existing, body, uploads);
-        existing.documents = [
-          ...(existing.documents || []),
-          ...documents,
-        ];
-        existing.olevel = olevelArray.length ? olevelArray : existing.olevel;
-        await existing.save();
-
-        return res.json({
-          success: true,
-          message: "Profile updated successfully",
-          profile: existing,
-        });
-      }
-
-      // ✅ Otherwise, create a new profile
-      const newProfile = new Profile({
-        ...body,
-        olevel: olevelArray,
-        ...uploads,
-        documents,
-      });
-
-      await newProfile.save();
-
-      res.json({
-        success: true,
-        message: "Profile created successfully",
-        profile: newProfile,
-      });
-    } catch (error) {
-      console.error("❌ Profile creation error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
-    }
-  }
-);
-
-// ====== Update Student ======
-app.put(
-  "/api/students/:id",
-  upload.fields([
-    { name: "fileOlevel" },
-    { name: "fileJamb" },
-    { name: "fileState" },
-    { name: "fileBirth" },
-    { name: "fileNin" },
-    { name: "fileFee" },
-  ]),
-  async (req, res) => {
-    try {
-      const studentId = req.params.id;
-      const existingStudent = await Student.findById(studentId);
-      if (!existingStudent)
-        return res
-          .status(404)
-          .json({ success: false, message: "Student not found" });
-
-      const body = req.body;
-
-      // Parse O-Level
-      let olevelArray = [];
-      try {
-        olevelArray =
-          typeof body.olevel === "string"
-            ? JSON.parse(body.olevel)
-            : body.olevel || [];
-      } catch {
-        olevelArray = existingStudent.olevel;
-      }
-
-      // Handle file updates
-      const uploads = {};
-      const fileFields = [
-        "fileOlevel",
-        "fileJamb",
-        "fileState",
-        "fileBirth",
-        "fileNin",
-        "fileFee",
-      ];
-
-      fileFields.forEach((f) => {
-        if (req.files && req.files[f]) {
-          uploads[f] = req.files[f][0].path; // new file
-        } else {
-          uploads[f] = existingStudent[f]; // old URL
-        }
-      });
-
-      // Update text fields
-      const textFields = [
-        "surname",
-        "firstname",
-        "middlename",
-        "phone",
-        "email",
-        "marital",
-        "disability",
-        "stateOrigin",
-        "lgaOrigin",
-        "address",
-        "lgaResidence",
-        "department",
-        "regNo",
-        "nokSurname",
-        "nokFirstname",
-        "nokMiddlename",
-        "nokPhone",
-        "nokMarital",
-        "nokRelation",
-        "nokAddress",
-        "school",
-      ];
-
-      textFields.forEach((f) => {
-        existingStudent[f] = body[f] || existingStudent[f];
-      });
-
-      existingStudent.olevel = olevelArray;
-      Object.assign(existingStudent, uploads);
-
-      await existingStudent.save();
-
-      res.json({
-        success: true,
-        message: "✅ Student updated successfully",
-        student: existingStudent,
-      });
-    } catch (error) {
-      console.error("❌ Error updating student:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error while updating student",
-        error: error.message,
-      });
-    }
-  }
-);
-
-// ====== Search Students ======
-app.get("/api/students/search", async (req, res) => {
+// Create or update detailed profile
+app.post("/api/students/profile", async (req, res) => {
   try {
-    const { q, department } = req.query;
-    const filter = {};
-    if (q) {
-      const regex = new RegExp(q, "i");
-      filter.$or = [
-        { surname: regex },
-        { firstname: regex },
-        { middlename: regex },
-      ];
+    const payload = req.body;
+    if (!payload.email || !payload.phone || !payload.regNo) {
+      return res.status(400).json({ message: "email, phone and regNo are required" });
     }
-    if (department) filter.department = department;
 
-    const students = await Student.find(filter).sort({ createdAt: -1 });
-    res.json({ success: true, count: students.length, students });
+    const email = normalizeEmail(payload.email);
+    const phone = normalizePhone(payload.phone);
+
+    // Upsert by regNo
+    const profile = await Profile.findOneAndUpdate(
+      { regNo: payload.regNo.toUpperCase() },
+      {
+        ...payload,
+        email,
+        phone,
+        regNo: payload.regNo.toUpperCase(),
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    res.json({ success: true, profile });
   } catch (err) {
-    console.error(err);
+    console.error("❌ profile error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// ====== Delete Student ======
-app.delete("/api/students/:id", async (req, res) => {
-  try {
-    const studentId = req.params.id;
-    const student = await Student.findByIdAndDelete(studentId);
-    if (!student)
-      return res
-        .status(404)
-        .json({ success: false, message: "Student not found" });
-
-    res.json({ success: true, message: "Student deleted successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// ====== Fetch All Students ======
+// List students (supports search ?q= & pagination ?page=&limit=)
 app.get("/api/students", async (req, res) => {
   try {
-    const students = await Student.find().sort({ createdAt: -1 });
-    res.json({ success: true, count: students.length, students });
+    const { q = "", page = 1, limit = 50 } = req.query;
+    const search = q.trim();
+    const query = {};
+
+    if (search) {
+      const regex = new RegExp(search, "i");
+      query.$or = [{ surname: regex }, { firstname: regex }, { email: regex }, { phone: regex }];
+    }
+
+    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.max(1, parseInt(limit, 10));
+    const docs = await Student.find(query).sort({ dateRegistered: -1 }).skip(skip).limit(parseInt(limit, 10));
+    const total = await Student.countDocuments(query);
+    res.json({ success: true, data: docs, total });
   } catch (err) {
+    console.error("❌ list students error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-//====== Download Students Info (PDF) ==========
-app.get("/api/students/:id/download", async (req, res) => {
+// Get single student
+app.get("/api/students/:id", async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
     if (!student) return res.status(404).json({ message: "Student not found" });
-
-    const doc = new PDFDocument({ margin: 40 });
-
-    // Set headers so browser knows it's a file attachment
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=${student.regNo}.pdf`);
-
-    // Pipe PDF directly to response
-    doc.pipe(res);
-
-    // ========== HEADER ==========
-    doc.fontSize(20).text("STUDENT REGISTRATION INFORMATION", { align: "center" });
-    doc.moveDown();
-
-    // ========== PERSONAL INFO ==========
-    doc.fontSize(14).text("Personal Information", { underline: true });
-    doc.fontSize(12);
-    doc.text(`Surname: ${student.surname}`);
-    doc.text(`Firstname: ${student.firstname}`);
-    doc.text(`Middlename: ${student.middlename || "N/A"}`);
-    doc.text(`Phone: ${student.phone}`);
-    doc.text(`Email: ${student.email}`);
-    doc.text(`Marital Status: ${student.marital}`);
-    doc.text(`Disability: ${student.disability || "None"}`);
-    doc.text(`State of Origin: ${student.stateOrigin}`);
-    doc.text(`LGA of Origin: ${student.lgaOrigin}`);
-    doc.text(`Address: ${student.address}`);
-    doc.text(`LGA of Residence: ${student.lgaResidence}`);
-    doc.text(`Department: ${student.department}`);
-    doc.text(`Registration Number: ${student.regNo}`);
-    doc.moveDown();
-
-    // ========== NEXT OF KIN ==========
-    doc.fontSize(14).text("Next of Kin Information", { underline: true });
-    doc.fontSize(12);
-    doc.text(`Surname: ${student.nokSurname}`);
-    doc.text(`Firstname: ${student.nokFirstname}`);
-    doc.text(`Middlename: ${student.nokMiddlename || "N/A"}`);
-    doc.text(`Phone: ${student.nokPhone}`);
-    doc.text(`Marital Status: ${student.nokMarital}`);
-    doc.text(`Relationship: ${student.nokRelation}`);
-    doc.text(`Address: ${student.nokAddress}`);
-    doc.moveDown();
-
-    // ========== ACADEMIC INFO ==========
-    doc.fontSize(14).text("Academic Information", { underline: true });
-    doc.fontSize(12);
-    doc.text(`School: ${student.school}`);
-    doc.moveDown();
-
-    if (student.olevel && student.olevel.length > 0) {
-      doc.fontSize(12).text("O'Level Results:");
-      student.olevel.forEach((item, i) => {
-        doc.text(`${i + 1}. Subject: ${item.subject}, Grade: ${item.grade}, Year: ${item.year}, Reg: ${item.reg}`);
-      });
-    } else {
-      doc.text("No O'Level result provided.");
-    }
-    doc.moveDown();
-
-    // ========== UPLOADED FILES ==========
-    doc.fontSize(14).text("Uploaded Documents", { underline: true });
-    doc.fontSize(12);
-    const fileFields = [
-      { label: "O'Level", key: "fileOlevel" },
-      { label: "JAMB", key: "fileJamb" },
-      { label: "State of Origin", key: "fileState" },
-      { label: "Birth Certificate", key: "fileBirth" },
-      { label: "NIN", key: "fileNin" },
-      { label: "Fee Receipt", key: "fileFee" },
-    ];
-
-    fileFields.forEach(f => {
-      if (student[f.key]) {
-        doc.text(`${f.label}: ${student[f.key]}`, { link: student[f.key], underline: true });
-      } else {
-        doc.text(`${f.label}: Not uploaded`);
-      }
-    });
-
-    doc.end(); // Finish and send PDF
-
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-    res.status(500).json({ message: "Error generating PDF" });
+    res.json({ success: true, student });
+  } catch (err) {
+    console.error("❌ get student error:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
-// ====== Start Server ======
+
+// Delete student
+app.delete("/api/students/:id", async (req, res) => {
+  try {
+    const student = await Student.findByIdAndDelete(req.params.id);
+    if (!student) return res.status(404).json({ message: "Student not found" });
+    // Note: This does not delete the Cloudinary image. If you want to remove Cloudinary resource,
+    // store the public_id in the DB and call cloudinary.uploader.destroy(public_id)
+    res.json({ success: true, message: "Student deleted", student });
+  } catch (err) {
+    console.error("❌ delete student error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Export all students to PDF including passport thumbnails
+app.get("/api/students/export/pdf", async (req, res) => {
+  try {
+    const students = await Student.find({}).sort({ dateRegistered: -1 });
+
+    // Setup PDF
+    const doc = new PDFDocument({ margin: 40, size: "A4" });
+
+    // Stream the PDF to response
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="students_${Date.now()}.pdf"`);
+
+    doc.fontSize(20).text("Registered Students", { align: "center" });
+    doc.moveDown(0.5);
+    doc.fontSize(10).text(`Generated: ${new Date().toLocaleString()}`, { align: "center" });
+    doc.moveDown(1);
+
+    const startX = doc.x;
+    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const colWidths = { img: 60, name: pageWidth * 0.45, contact: pageWidth * 0.45 - 10 };
+
+    let y = doc.y;
+
+    // Table header
+    doc.fontSize(11).text("Photo", startX, y);
+    doc.text("Name", startX + colWidths.img + 10, y);
+    doc.text("Contact", startX + colWidths.img + 10 + colWidths.name, y);
+    y += 18;
+    doc.moveTo(startX, y - 4).lineTo(startX + pageWidth, y - 4).strokeOpacity(0.08).stroke();
+    y += 4;
+
+    // Helper to fetch image buffer
+    async function fetchImageBuffer(url) {
+      try {
+        if (!url) return null;
+        const resp = await axios.get(url, { responseType: "arraybuffer", timeout: 10000 });
+        return Buffer.from(resp.data, "binary");
+      } catch (err) {
+        // If image download fails, return null and continue
+        console.warn("Image fetch failed for", url, err.message);
+        return null;
+      }
+    }
+
+    for (const s of students) {
+      // Ensure a page break when nearing bottom
+      if (y > doc.page.height - doc.page.margins.bottom - 90) {
+        doc.addPage();
+        y = doc.y;
+      }
+
+      // Draw passport thumbnail (if available)
+      const imgBuf = await fetchImageBuffer(s.passport);
+      if (imgBuf) {
+        try {
+          doc.image(imgBuf, startX, y, { fit: [60, 60], align: "center", valign: "center" });
+        } catch (imgErr) {
+          // ignore image error
+        }
+      } else {
+        // placeholder rectangle
+        doc.rect(startX, y, 60, 60).strokeOpacity(0.06).stroke();
+        doc.fontSize(8).text("No Image", startX + 6, y + 24);
+      }
+
+      // Name
+      const fullName = `${s.surname} ${s.firstname} ${s.middlename || ""}`.replace(/\s+/g, " ").trim();
+      doc.fontSize(11).text(fullName, startX + colWidths.img + 10, y, { width: colWidths.name });
+
+      // Contact (email + phone + reg date)
+      const contactText = `Email: ${s.email}\nPhone: ${s.phone}\nRegistered: ${new Date(s.dateRegistered).toLocaleDateString()}`;
+      doc.fontSize(10).text(contactText, startX + colWidths.img + 10 + colWidths.name, y, {
+        width: colWidths.contact,
+      });
+
+      y += 70;
+      doc.moveTo(startX, y - 10).lineTo(startX + pageWidth, y - 10).strokeOpacity(0.03).stroke();
+    }
+
+    doc.end();
+    doc.pipe(res);
+  } catch (err) {
+    console.error("❌ export/pdf error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ===== Start server =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
