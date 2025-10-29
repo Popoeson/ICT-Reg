@@ -62,6 +62,7 @@
     input[type="text"],
     input[type="email"],
     input[type="tel"],
+    input[type="password"],
     input[type="file"] {
       padding: 10px 12px;
       border: 1.5px solid #ddd;
@@ -69,6 +70,7 @@
       font-size: 14px;
       outline: none;
       transition: border 0.2s;
+      width: 100%;
     }
 
     input:focus {
@@ -111,7 +113,21 @@
       margin-top: 10px;
     }
 
-    /* 🔹 Spinner overlay */
+    .password-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-wrapper i {
+      position: absolute;
+      right: 12px;
+      cursor: pointer;
+      color: #666;
+      font-size: 18px;
+    }
+
+    /* Spinner overlay */
     .spinner-overlay {
       position: fixed;
       top: 0;
@@ -183,6 +199,19 @@
       </div>
 
       <div>
+        <label for="password">Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="password" required />
+          <i class="ri-eye-off-line" id="togglePassword"></i>
+        </div>
+      </div>
+
+      <div>
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" id="confirmPassword" required />
+      </div>
+
+      <div>
         <label for="passport">Passport Photo</label>
         <input type="file" id="passport" accept="image/*" required />
       </div>
@@ -200,6 +229,8 @@ const form = document.getElementById("registerForm");
 const passportInput = document.getElementById("passport");
 const previewDiv = document.getElementById("preview");
 const spinnerOverlay = document.getElementById("spinnerOverlay");
+const togglePassword = document.getElementById("togglePassword");
+const passwordInput = document.getElementById("password");
 
 // 🔹 Preview passport
 passportInput.addEventListener("change", (e) => {
@@ -213,20 +244,36 @@ passportInput.addEventListener("change", (e) => {
   }
 });
 
+// 🔹 Toggle password visibility
+togglePassword.addEventListener("click", () => {
+  const type = passwordInput.type === "password" ? "text" : "password";
+  passwordInput.type = type;
+  togglePassword.className = type === "password" ? "ri-eye-off-line" : "ri-eye-line";
+});
+
 // 🔹 Submit form
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const password = document.getElementById("password").value.trim();
+  const confirmPassword = document.getElementById("confirmPassword").value.trim();
+
+  if (password !== confirmPassword) {
+    alert("Passwords do not match!");
+    return;
+  }
+
   const formData = new FormData();
-  formData.append("surname", document.getElementById("surname").value);
-  formData.append("firstname", document.getElementById("firstname").value);
-  formData.append("middlename", document.getElementById("middlename").value);
-  formData.append("phone", document.getElementById("phone").value);
-  formData.append("email", document.getElementById("email").value);
+  formData.append("surname", document.getElementById("surname").value.trim());
+  formData.append("firstname", document.getElementById("firstname").value.trim());
+  formData.append("middlename", document.getElementById("middlename").value.trim());
+  formData.append("phone", document.getElementById("phone").value.trim());
+  formData.append("email", document.getElementById("email").value.trim());
+  formData.append("password", password);
+  formData.append("confirmPassword", confirmPassword);
   formData.append("passport", passportInput.files[0]);
 
   try {
-    // 🔹 Show loading spinner
     document.body.classList.add("blur");
     spinnerOverlay.classList.add("active");
 
@@ -237,42 +284,33 @@ form.addEventListener("submit", async (e) => {
 
     const result = await res.json();
 
-    // 🔹 Hide spinner
     document.body.classList.remove("blur");
     spinnerOverlay.classList.remove("active");
 
     if (res.ok) {
-      // ✅ Save student info to localStorage for profile.html
-      // backend might return { student: {...} } or { student } or { data } etc.
-      const student = result.student || result.data || result || null;
-
-      if (student && (student._id || student.regNo || student.email)) {
-        try {
-          localStorage.setItem("studentId", student._id || student.id || "");
-          localStorage.setItem("studentRegNo", student.regNo || student.regno || "");
-          localStorage.setItem("studentEmail", student.email || "");
-        } catch (err) {
-          console.warn("Unable to write to localStorage:", err);
-        }
+      const student = result.student || result.data || null;
+      if (student) {
+        // 🔹 Store essential info in localStorage
+        localStorage.setItem("studentId", student._id || "");
+        localStorage.setItem("studentEmail", student.email || "");
+        localStorage.setItem("studentFirstname", student.firstname || "");
+        localStorage.setItem("studentSurname", student.surname || "");
+        localStorage.setItem("studentPassport", student.passport || "");
       }
 
       alert("Registration successful!");
       form.reset();
       previewDiv.innerHTML = "";
-
-      // ✅ Redirect to profile page
       window.location.href = "dashboard.html";
     } else {
       alert(result.message || "Registration failed.");
     }
   } catch (err) {
-    // Ensure spinner/blur are removed on error
     document.body.classList.remove("blur");
     spinnerOverlay.classList.remove("active");
-    console.error("Registration error:", err);
     alert("Error submitting registration form.");
   }
 });
-      </script>
+  </script>
 </body>
 </html>
