@@ -344,10 +344,9 @@ const departmentSelect = document.getElementById("department");
 const regNoInput = document.getElementById("regNo");
 const studentRegNo = document.getElementById("studentRegNo");
 
-// Prefill form
+// ✅ Prefill form
 async function prefillForm() {
   spinnerOverlay.style.display = "flex";
-
   let studentData = JSON.parse(localStorage.getItem("studentData")) || {};
 
   try {
@@ -384,7 +383,7 @@ async function prefillForm() {
   }
 }
 
-// Auto-generate Reg No
+// ✅ Auto-generate Reg No
 departmentSelect.addEventListener("change", () => {
   if (!regNoInput.value && departmentSelect.value) {
     const prefix = departmentSelect.value.split(" ").map(w => w[0]).join("").substring(0,3).toUpperCase();
@@ -395,7 +394,7 @@ departmentSelect.addEventListener("change", () => {
   }
 });
 
-// Preview passport
+// ✅ Preview passport
 passportInput.addEventListener("change", e => {
   const file = e.target.files[0];
   if (file) {
@@ -405,7 +404,7 @@ passportInput.addEventListener("change", e => {
   }
 });
 
-// Show preview modal
+// ✅ Show preview modal
 form.addEventListener("submit", e => {
   e.preventDefault();
   const formData = new FormData(form);
@@ -419,14 +418,26 @@ form.addEventListener("submit", e => {
 
 cancelBtn.addEventListener("click", () => previewModal.style.display = "none");
 
-// Confirm & save profile
+// ✅ Confirm & save profile
 confirmBtn.addEventListener("click", async () => {
   previewModal.style.display = "none";
   spinnerOverlay.style.display = "flex";
 
   try {
-    const formData = new FormData(form);
-    formData.append("studentId", studentId); // ✅ Ensure studentId is sent
+    // Always include all form fields — even empty ones
+    const fields = [
+      "surname", "firstname", "middlename", "phone", "email",
+      "department", "regNo", "level", "stateOrigin", "lgaOrigin",
+      "address", "nokSurname", "nokFirstname", "nokPhone", "nokRelation"
+    ];
+
+    const formData = new FormData();
+    fields.forEach(f => {
+      const el = document.getElementById(f);
+      formData.append(f, el ? el.value.trim() : "");
+    });
+
+    formData.append("studentId", studentId);
     if (passportInput.files[0]) formData.append("passport", passportInput.files[0]);
 
     const res = await fetch(`${backendURL}/api/profile/update`, {
@@ -451,7 +462,7 @@ confirmBtn.addEventListener("click", async () => {
   }
 });
 
-// Initialize
+// ✅ Initialize
 prefillForm();
 </script>
 </body>
