@@ -325,37 +325,33 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
 app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
   try {
     const body = req.body;
-    const studentId = body.studentId; // send this from frontend
+    const studentId = body.studentId;
 
     if (!studentId) {
       return res.status(400).json({ success: false, message: "Missing studentId" });
     }
 
-    let passportUrl = null;
-
-    // Upload image to Cloudinary (if any)
-    if (req.file) {
-      const stream = Readable.from(req.file.buffer);
-      const result = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          { folder: "student_passports" },
-          (err, result) => (err ? reject(err) : resolve(result))
-        );
-        stream.pipe(uploadStream);
-      });
-      passportUrl = result.secure_url;
+    // 🔹 Fetch student first
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student not found" });
     }
 
-    // Update profile by studentId
+    let passportUrl = null;
+    if (req.file) {
+      passportUrl = req.file.path || req.file.secure_url;
+    }
+
+    // 🔹 Update or create profile (using student's email)
     const updatedProfile = await StudentProfile.findOneAndUpdate(
-      { _id: studentId },
+      { email: student.email },
       {
         $set: {
           surname: body.surname,
           firstname: body.firstname,
           middlename: body.middlename,
           phone: body.phone,
-          email: body.email,
+          email: student.email, // ensure same
           department: body.department,
           regNo: body.regNo,
           level: body.level,
@@ -366,15 +362,11 @@ app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
           nokFirstname: body.nokFirstname,
           nokPhone: body.nokPhone,
           nokRelation: body.nokRelation,
-          ...(passportUrl && { passport: passportUrl }),
+          passport: passportUrl || body.passport,
         },
       },
-      { new: true, upsert: false } // don't create a new document
+      { new: true, upsert: true } // ✅ create if not found
     );
-
-    if (!updatedProfile) {
-      return res.status(404).json({ success: false, message: "Profile not found" });
-    }
 
     res.json({
       success: true,
