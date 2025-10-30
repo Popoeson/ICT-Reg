@@ -374,9 +374,13 @@ app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
       data: updatedProfile,
     });
   } catch (err) {
-    console.error("Error updating profile:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
-  }
+  console.error("Error updating profile:", err);
+  res.status(500).json({ 
+    success: false, 
+    message: "Server error", 
+    error: err.stack // <-- log full stack for debugging
+  });
+}
 });
 
 // ✅ Get Student Profile by RegNo
