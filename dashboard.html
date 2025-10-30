@@ -180,28 +180,41 @@
   </section>
 
   <script>
-  // ===== Load Student Data from LocalStorage =====
-  window.addEventListener("DOMContentLoaded", () => {
-    const surname = localStorage.getItem("studentSurname") || "";
-    const firstname = localStorage.getItem("studentFirstname") || "";
-    const middlename = localStorage.getItem("studentMiddlename") || "";
-    const passport = localStorage.getItem("studentPassport") || "student-pic.jpg";
-    const matric = localStorage.getItem("studentMatric") || "N/A";
-    const level = localStorage.getItem("studentLevel") || "N/A";
-    const dept = localStorage.getItem("studentDepartment") || "N/A";
+const backendURL = "https://ict-reg.onrender.com";
+const studentId = localStorage.getItem("studentId");
 
-    // ✅ Display passport
-    document.getElementById("studentPassport").src = passport;
+if (!studentId) {
+  window.location.href = "login.html";
+}
 
-    // ✅ Construct full name
-    const fullName = [surname, firstname, middlename].filter(Boolean).join(" ");
+// Fetch student info from backend
+async function loadDashboard() {
+  try {
+    const res = await fetch(`${backendURL}/api/students/${studentId}`);
+    const student = await res.json();
+
+    if (!res.ok) throw new Error(student.message || "Failed to load student data");
+
+    const fullName = [student.surname, student.firstname, student.middlename]
+      .filter(Boolean)
+      .join(" ");
+
     document.getElementById("welcomeNote").textContent = `Welcome, ${fullName || "Student"} 👋`;
+    document.getElementById("matricNumber").textContent = student.matric || "N/A";
+    document.getElementById("level").textContent = student.level || "N/A";
+    document.getElementById("department").textContent = student.department || "N/A";
 
-    // ✅ Update matric, level, and department correctly
-    document.getElementById("matricNumber").textContent = matric;
-    document.getElementById("level").textContent = level;
-    document.getElementById("department").textContent = dept;
-  });
+    const passportImg = document.getElementById("studentPassport");
+    passportImg.src = student.passport || "student-pic.jpg";
+  } catch (err) {
+    console.error(err);
+    alert("Session expired. Please log in again.");
+    localStorage.clear();
+    window.location.href = "login.html";
+  }
+}
+
+loadDashboard();
 </script>
 </body>
 </html>
