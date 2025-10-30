@@ -346,7 +346,7 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
       formData.append("jambInput", JSON.stringify(jambInput));
 
       // Submit to backend
-      const res = await fetch("https://ict-reg.onrender.com/api/upload-documents", {
+      const res = await fetch("https://ict-reg.onrender.com/upload-documents", {
         method: "POST",
         body: formData
       });
