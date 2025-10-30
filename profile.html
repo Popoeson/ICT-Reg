@@ -135,18 +135,22 @@
 const backendURL = "https://ict-reg.onrender.com";
 const studentId = localStorage.getItem("studentId");
 
-// Redirect to login if not found
 if (!studentId) {
   window.location.href = "login.html";
 }
 
-// Fetch student info from backend
 async function fetchStudent() {
   try {
-    const res = await fetch(`${backendURL}/api/students/${studentId}`);
-    const student = await res.json();
+    let student = JSON.parse(localStorage.getItem("studentData"));
 
-    if (!res.ok) throw new Error(student.message || "Failed to fetch student data");
+    if (!student) {
+      const res = await fetch(`${backendURL}/api/students/${studentId}`);
+      student = await res.json();
+
+      if (!res.ok) throw new Error(student.message || "Failed to fetch student data");
+
+      localStorage.setItem("studentData", JSON.stringify(student));
+    }
 
     document.getElementById("studentName").textContent =
       `${student.surname || ""} ${student.firstname || ""} ${student.middlename || ""}`.trim();
@@ -157,9 +161,9 @@ async function fetchStudent() {
     document.getElementById("studentDept").textContent = student.department || "N/A";
     document.getElementById("studentLevel").textContent = student.level || "N/A";
 
-    // Passport display
     const passportImg = document.getElementById("studentPassport");
     passportImg.src = student.passport || "default-avatar.png";
+
   } catch (err) {
     console.error(err);
     alert("Unable to load student data. Please log in again.");
