@@ -321,13 +321,19 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
   }
 });
 
-// ✅ Profile Update Route
+// Profile Update Route
 app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
   try {
     const body = req.body;
+    const studentId = body.studentId; // send this from frontend
+
+    if (!studentId) {
+      return res.status(400).json({ success: false, message: "Missing studentId" });
+    }
+
     let passportUrl = null;
 
-    // 🔹 Upload image to Cloudinary (if any)
+    // Upload image to Cloudinary (if any)
     if (req.file) {
       const stream = Readable.from(req.file.buffer);
       const result = await new Promise((resolve, reject) => {
@@ -340,9 +346,9 @@ app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
       passportUrl = result.secure_url;
     }
 
-    // 🔹 Create or update profile in DB
+    // Update profile by studentId
     const updatedProfile = await StudentProfile.findOneAndUpdate(
-      { regNo: body.regNo },
+      { _id: studentId },
       {
         $set: {
           surname: body.surname,
@@ -363,8 +369,12 @@ app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
           ...(passportUrl && { passport: passportUrl }),
         },
       },
-      { new: true, upsert: true }
+      { new: true, upsert: false } // don't create a new document
     );
+
+    if (!updatedProfile) {
+      return res.status(404).json({ success: false, message: "Profile not found" });
+    }
 
     res.json({
       success: true,
@@ -374,17 +384,6 @@ app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
   } catch (err) {
     console.error("Error updating profile:", err);
     res.status(500).json({ success: false, message: "Server error", error: err.message });
-  }
-});
-
-// Get a single student by ID
-app.get('/api/students/:id', async (req, res) => {
-  try {
-    const student = await Student.findById(req.params.id);
-    if (!student) return res.status(404).json({ message: 'Student not found' });
-    res.json(student);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
   }
 });
 
