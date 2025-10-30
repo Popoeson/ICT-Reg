@@ -131,31 +131,44 @@
     </div>
   </div>
 
-  <script>
-    // Load student data from localStorage
-    const student = JSON.parse(localStorage.getItem("studentData"));
+    <script>
+const backendURL = "https://ict-reg.onrender.com";
+const studentId = localStorage.getItem("studentId");
 
-    if (!student) {
-      // If not logged in or data missing, redirect
-      window.location.href = "login.html";
-    } else {
-      document.getElementById("studentName").textContent =
-        `${student.surname || ""} ${student.firstname || ""} ${student.middlename || ""}`.trim();
+// Redirect to login if not found
+if (!studentId) {
+  window.location.href = "login.html";
+}
 
-      document.getElementById("studentEmail").textContent = student.email || "N/A";
-      document.getElementById("studentPhone").textContent = student.phone || "N/A";
-      document.getElementById("studentMatric").textContent = student.matric || "N/A";
-      document.getElementById("studentDept").textContent = student.department || "N/A";
-      document.getElementById("studentLevel").textContent = student.level || "N/A";
+// Fetch student info from backend
+async function fetchStudent() {
+  try {
+    const res = await fetch(`${backendURL}/api/students/${studentId}`);
+    const student = await res.json();
 
-      // Passport preview
-      const passportImg = document.getElementById("studentPassport");
-      if (student.passport) {
-        passportImg.src = student.passport;
-      } else {
-        passportImg.src = "default-avatar.png"; // fallback
-      }
-    }
-  </script>
+    if (!res.ok) throw new Error(student.message || "Failed to fetch student data");
+
+    document.getElementById("studentName").textContent =
+      `${student.surname || ""} ${student.firstname || ""} ${student.middlename || ""}`.trim();
+
+    document.getElementById("studentEmail").textContent = student.email || "N/A";
+    document.getElementById("studentPhone").textContent = student.phone || "N/A";
+    document.getElementById("studentMatric").textContent = student.matric || "N/A";
+    document.getElementById("studentDept").textContent = student.department || "N/A";
+    document.getElementById("studentLevel").textContent = student.level || "N/A";
+
+    // Passport display
+    const passportImg = document.getElementById("studentPassport");
+    passportImg.src = student.passport || "default-avatar.png";
+  } catch (err) {
+    console.error(err);
+    alert("Unable to load student data. Please log in again.");
+    localStorage.clear();
+    window.location.href = "login.html";
+  }
+}
+
+fetchStudent();
+</script>
 </body>
 </html>
