@@ -331,41 +331,50 @@ app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
       return res.status(400).json({ success: false, message: "Missing studentId" });
     }
 
-    // 🔹 Fetch student first
+    // Fetch student
     const student = await Student.findById(studentId);
     if (!student) {
       return res.status(404).json({ success: false, message: "Student not found" });
     }
 
-    let passportUrl = null;
+    // Passport URL
+    let passportUrl = student.passport;
     if (req.file) {
       passportUrl = req.file.path || req.file.secure_url;
     }
 
-    // 🔹 Update or create profile (using student's email)
+    // 🔹 Only set regNo if provided, otherwise generate one
+    let regNo = body.regNo;
+    if (!regNo) {
+      const prefix = (body.department || "STD").split(" ").map(w => w[0]).join("").substring(0,3).toUpperCase();
+      const random = Math.floor(10000 + Math.random() * 90000);
+      regNo = `Reg/${prefix}/${random}`;
+    }
+
+    // Update or create profile
     const updatedProfile = await StudentProfile.findOneAndUpdate(
       { email: student.email },
       {
         $set: {
-          surname: body.surname,
-          firstname: body.firstname,
-          middlename: body.middlename,
-          phone: body.phone,
-          email: student.email, // ensure same
-          department: body.department,
-          regNo: body.regNo,
-          level: body.level,
-          stateOrigin: body.stateOrigin,
-          lgaOrigin: body.lgaOrigin,
-          address: body.address,
-          nokSurname: body.nokSurname,
-          nokFirstname: body.nokFirstname,
-          nokPhone: body.nokPhone,
-          nokRelation: body.nokRelation,
-          passport: passportUrl || body.passport,
+          surname: body.surname || student.surname,
+          firstname: body.firstname || student.firstname,
+          middlename: body.middlename || student.middlename,
+          phone: body.phone || student.phone,
+          email: student.email, // keep same
+          department: body.department || "",
+          regNo: regNo,
+          level: body.level || "",
+          stateOrigin: body.stateOrigin || "",
+          lgaOrigin: body.lgaOrigin || "",
+          address: body.address || "",
+          nokSurname: body.nokSurname || "",
+          nokFirstname: body.nokFirstname || "",
+          nokPhone: body.nokPhone || "",
+          nokRelation: body.nokRelation || "",
+          passport: passportUrl,
         },
       },
-      { new: true, upsert: true } // ✅ create if not found
+      { new: true, upsert: true } // create if not exists
     );
 
     res.json({
@@ -373,14 +382,11 @@ app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
       message: "Profile updated successfully",
       data: updatedProfile,
     });
+
   } catch (err) {
-  console.error("Error updating profile:", err);
-  res.status(500).json({ 
-    success: false, 
-    message: "Server error", 
-    error: err.stack // <-- log full stack for debugging
-  });
-}
+    console.error("Error updating profile:", err);
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
+  }
 });
 
 // ✅ Get Student Profile by RegNo
