@@ -183,8 +183,14 @@
           return;
         }
 
-        // ✅ Save student info (without password) to localStorage
-        localStorage.setItem("studentData", JSON.stringify(data.student));
+        // Save student info
+localStorage.setItem("studentData", JSON.stringify(data.student));
+
+// Save student ID separately (for dashboard & profile fetch)
+localStorage.setItem("studentId", data.student._id);
+
+// Redirect
+window.location.href = "dashboard.html";
 
         // ✅ Redirect to dashboard
         window.location.href = "dashboard.html";
