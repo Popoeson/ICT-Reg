@@ -141,20 +141,31 @@ if (!studentId) {
 
 async function fetchStudent() {
   try {
+    // Load from localStorage first
     let student = JSON.parse(localStorage.getItem("studentData"));
 
-    if (!student) {
+    let needsFetch = false;
+
+    // Check if essential fields are missing
+    if (!student || !student.level || !student.department || !student.matric) {
+      needsFetch = true;
+    }
+
+    if (needsFetch) {
       const res = await fetch(`${backendURL}/api/students/${studentId}`);
-      student = await res.json();
+      const data = await res.json();
 
-      if (!res.ok) throw new Error(student.message || "Failed to fetch student data");
+      if (!res.ok || !data) throw new Error(data.message || "Failed to fetch student data");
 
+      student = data;
+
+      // Update localStorage for dashboard and other pages
       localStorage.setItem("studentData", JSON.stringify(student));
     }
 
-    document.getElementById("studentName").textContent =
-      `${student.surname || ""} ${student.firstname || ""} ${student.middlename || ""}`.trim();
-
+    // Update profile elements safely
+    const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ");
+    document.getElementById("studentName").textContent = fullName || "Student";
     document.getElementById("studentEmail").textContent = student.email || "N/A";
     document.getElementById("studentPhone").textContent = student.phone || "N/A";
     document.getElementById("studentMatric").textContent = student.matric || "N/A";
@@ -172,6 +183,7 @@ async function fetchStudent() {
   }
 }
 
+// Load student data on page load
 fetchStudent();
 </script>
 </body>
