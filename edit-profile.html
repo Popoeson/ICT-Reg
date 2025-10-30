@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Edit Profile</title>
   <style>
-    /* === YOUR EXISTING STYLES (unchanged) === */
     * {
       margin: 0;
       padding: 0;
@@ -50,23 +49,18 @@
     .passport-section {
       display: flex;
       align-items: center;
-      gap: 1.5rem;
+      justify-content: center;
       margin-bottom: 2rem;
-      flex-wrap: wrap;
     }
 
     .passport-section img {
-      width: 120px;
-      height: 120px;
+      width: 140px;
+      height: 140px;
       object-fit: cover;
       border-radius: 10px;
       border: 2px solid #007bff;
       background: #f1f6ff;
-    }
-
-    .passport-section h2 {
-      font-size: 1.3rem;
-      color: #007bff;
+      cursor: pointer;
     }
 
     form {
@@ -145,11 +139,12 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0, 0, 0, 0.5);
       justify-content: center;
       align-items: center;
       z-index: 10;
     }
+
     .modal-content {
       background: #fff;
       padding: 1.5rem 2rem;
@@ -158,23 +153,26 @@
       max-width: 400px;
       text-align: left;
     }
+
     .modal-content h3 {
       color: #007bff;
       margin-bottom: 1rem;
     }
+
     .modal-actions {
       text-align: right;
       margin-top: 1.5rem;
     }
+
     .modal-actions button {
-      margin-left: .5rem;
+      margin-left: 0.5rem;
     }
 
     #spinnerOverlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(255,255,255,0.8);
+      background: rgba(255, 255, 255, 0.8);
       justify-content: center;
       align-items: center;
       z-index: 20;
@@ -204,13 +202,10 @@
 
   <main>
     <section class="passport-section">
-      <img id="passportImg" src="placeholder-passport.png" alt="Student Passport" />
-      <div>
-        <h2 id="fullNameEl">Student Name</h2>
-        <p id="deptText">Department: —</p>
-        <p id="levelText">Level: —</p>
-        <p id="contactText">Email: —</p>
-      </div>
+      <label for="passportInput">
+        <img id="passportImg" src="placeholder-passport.png" alt="Student Passport" />
+      </label>
+      <input type="file" id="passportInput" accept="image/*" style="display:none" />
     </section>
 
     <form id="editForm">
@@ -333,92 +328,77 @@
     const cancelBtn = document.getElementById('cancelBtn');
     const confirmBtn = document.getElementById('confirmBtn');
     const spinnerOverlay = document.getElementById('spinnerOverlay');
+    const passportInput = document.getElementById('passportInput');
+    const passportImg = document.getElementById('passportImg');
+    const regNoInput = document.getElementById('regNo');
+    const departmentSelect = document.getElementById('department');
+    const studentRegNo = document.getElementById('studentRegNo');
 
-    // Prefill from localStorage
-    window.addEventListener('DOMContentLoaded', () => {
-      const data = JSON.parse(localStorage.getItem('studentData')) || {};
-      document.getElementById('surname').value = data.surname || '';
-      document.getElementById('firstname').value = data.firstname || '';
-      document.getElementById('middlename').value = data.middlename || '';
-      document.getElementById('email').value = data.email || '';
-      document.getElementById('phone').value = data.phone || '';
-      document.getElementById('department').value = data.department || '';
-      document.getElementById('level').value = data.level || 'ND1';
-      document.getElementById('regNo').value = data.regNo || '';
-      document.getElementById('stateOrigin').value = data.stateOrigin || '';
-      document.getElementById('lgaOrigin').value = data.lgaOrigin || '';
-      document.getElementById('address').value = data.address || '';
-      document.getElementById('nokSurname').value = data.nokSurname || '';
-      document.getElementById('nokFirstname').value = data.nokFirstname || '';
-      document.getElementById('nokPhone').value = data.nokPhone || '';
-      document.getElementById('nokRelation').value = data.nokRelation || '';
-
-      // Header info
-      document.getElementById('fullNameEl').textContent = `${data.firstname || ''} ${data.surname || ''}`;
-      document.getElementById('deptText').textContent = `Department: ${data.department || '—'}`;
-      document.getElementById('levelText').textContent = `Level: ${data.level || '—'}`;
-      document.getElementById('contactText').textContent = `Email: ${data.email || '—'}`;
-      document.getElementById('studentRegNo').textContent = `Reg No: ${data.regNo || '—'}`;
+    // 🔹 Preview passport image
+    passportInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => (passportImg.src = reader.result);
+        reader.readAsDataURL(file);
+      }
     });
 
-    form.addEventListener('submit', (e) => {
+    // 🔹 Auto-generate Reg No when department changes
+    departmentSelect.addEventListener('change', () => {
+      const dept = departmentSelect.value;
+      if (dept) {
+        const prefix = dept.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase();
+        const random = Math.floor(10000 + Math.random() * 90000);
+        const reg = `Reg/${prefix}/${random}`;
+        regNoInput.value = reg;
+        studentRegNo.textContent = `Reg No: ${reg}`;
+      } else {
+        regNoInput.value = '';
+        studentRegNo.textContent = 'Reg No: —';
+      }
+    });
+
+    // 🔹 Prefill from localStorage
+    window.addEventListener('DOMContentLoaded', () => {
+      const data = JSON.parse(localStorage.getItem('studentData')) || {};
+      for (const key in data) {
+        const el = document.getElementById(key);
+        if (el) el.value = data[key];
+      }
+      if (data.passport) passportImg.src = data.passport;
+      if (data.regNo) studentRegNo.textContent = `Reg No: ${data.regNo}`;
+    });
+
+    // 🔹 Show preview modal on submit
+    form.addEventListener('submit', e => {
       e.preventDefault();
-
-      const updated = {
-        surname: surname.value,
-        firstname: firstname.value,
-        middlename: middlename.value,
-        email: email.value,
-        phone: phone.value,
-        department: department.value,
-        level: level.value,
-        regNo: regNo.value,
-        stateOrigin: stateOrigin.value,
-        lgaOrigin: lgaOrigin.value,
-        address: address.value,
-        nokSurname: nokSurname.value,
-        nokFirstname: nokFirstname.value,
-        nokPhone: nokPhone.value,
-        nokRelation: nokRelation.value
-      };
-
-      previewContent.innerHTML = Object.entries(updated)
-        .map(([key, val]) => `<p><strong>${key.replace(/([A-Z])/g, ' $1')}:</strong> ${val || '—'}</p>`)
+      const formData = new FormData(form);
+      const preview = Array.from(formData.entries())
+        .map(([k, v]) => `<p><strong>${k}:</strong> ${v || '—'}</p>`)
         .join('');
-
+      previewContent.innerHTML = preview;
       previewModal.style.display = 'flex';
     });
 
-    cancelBtn.addEventListener('click', () => previewModal.style.display = 'none');
+    cancelBtn.addEventListener('click', () => (previewModal.style.display = 'none'));
+
+    // 🔹 Confirm & Save
     confirmBtn.addEventListener('click', () => {
       previewModal.style.display = 'none';
       spinnerOverlay.style.display = 'flex';
       setTimeout(() => {
-        const updated = {
-          surname: surname.value,
-          firstname: firstname.value,
-          middlename: middlename.value,
-          email: email.value,
-          phone: phone.value,
-          department: department.value,
-          level: level.value,
-          regNo: regNo.value,
-          stateOrigin: stateOrigin.value,
-          lgaOrigin: lgaOrigin.value,
-          address: address.value,
-          nokSurname: nokSurname.value,
-          nokFirstname: nokFirstname.value,
-          nokPhone: nokPhone.value,
-          nokRelation: nokRelation.value
-        };
-        localStorage.setItem('studentData', JSON.stringify(updated));
+        const data = {};
+        form.querySelectorAll('input, select').forEach(input => {
+          data[input.id] = input.value;
+        });
+        data.passport = passportImg.src;
+        localStorage.setItem('studentData', JSON.stringify(data));
         spinnerOverlay.style.display = 'none';
         alert('Profile updated successfully!');
         window.location.href = 'dashboard.html';
       }, 2000);
     });
-
-            
   </script>
 </body>
 </html>
