@@ -324,6 +324,7 @@
   
  <script>
 const backendURL = "https://ict-reg.onrender.com";
+const studentId = localStorage.getItem("studentId");
 
 const form = document.getElementById("editForm");
 const previewModal = document.getElementById("previewModal");
@@ -337,38 +338,43 @@ const regNoInput = document.getElementById("regNo");
 const departmentSelect = document.getElementById("department");
 const studentRegNo = document.getElementById("studentRegNo");
 
-// ✅ Get current student regNo from localStorage (set during login)
-const studentData = JSON.parse(localStorage.getItem("studentData"));
-const regNo = studentData?.regNo;
-
-// Redirect if no regNo found
-if (!regNo) {
-  alert("Session expired. Please log in again.");
+// Redirect if student not logged in
+if (!studentId) {
   window.location.href = "login.html";
 }
 
-// 🔹 Fetch profile from backend
-async function loadProfile() {
+// 🔹 Fetch student data from backend
+async function fetchStudent() {
   try {
-    const res = await fetch(`${backendURL}/api/profile/${regNo}`);
-    const data = await res.json();
-    if (!res.ok || !data.success) throw new Error(data.message || "Failed to load profile");
+    const res = await fetch(`${backendURL}/api/profile/${studentId}`);
+    const student = await res.json();
+    if (!res.ok || !student.success) throw new Error(student.message || "Failed to load profile");
 
-    const student = data.data;
-    for (const key in student) {
+    const data = student.data;
+
+    // Prefill form fields
+    for (const key in data) {
       const el = document.getElementById(key);
-      if (el) el.value = student[key];
+      if (el) el.value = data[key];
     }
 
-    if (student.passport) passportImg.src = student.passport;
-    if (student.regNo) studentRegNo.textContent = `Reg No: ${student.regNo}`;
+    // Passport
+    passportImg.src = data.passport || "default-avatar.png";
+
+    // Reg No
+    if (data.regNo) studentRegNo.textContent = `Reg No: ${data.regNo}`;
+
+    // Update localStorage so dashboard/profile can use it
+    localStorage.setItem("studentData", JSON.stringify(data));
   } catch (err) {
     console.error(err);
-    alert("Error loading profile. Please log in again.");
+    alert("Could not load profile. Please log in again.");
+    localStorage.clear();
+    window.location.href = "login.html";
   }
 }
 
-// 🔹 Preview passport image before upload
+// Preview new passport image before upload
 passportInput.addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (file) {
@@ -378,7 +384,7 @@ passportInput.addEventListener("change", (e) => {
   }
 });
 
-// 🔹 Auto-generate Reg No when department changes
+// Auto-generate Reg No when department changes
 departmentSelect.addEventListener("change", () => {
   const dept = departmentSelect.value;
   if (dept) {
@@ -393,7 +399,7 @@ departmentSelect.addEventListener("change", () => {
   }
 });
 
-// 🔹 Show preview modal before submission
+// Show preview modal on submit
 form.addEventListener("submit", (e) => {
   e.preventDefault();
   const formData = new FormData(form);
@@ -406,7 +412,7 @@ form.addEventListener("submit", (e) => {
 
 cancelBtn.addEventListener("click", () => (previewModal.style.display = "none"));
 
-// 🔹 Confirm and submit update
+// Confirm update
 confirmBtn.addEventListener("click", async () => {
   previewModal.style.display = "none";
   spinnerOverlay.style.display = "flex";
@@ -417,7 +423,7 @@ confirmBtn.addEventListener("click", async () => {
       formData.append("passport", passportInput.files[0]);
     }
 
-    // ✅ Send to existing backend route
+    // ✅ Send update request to your current backend route
     const response = await fetch(`${backendURL}/api/profile/update`, {
       method: "POST",
       body: formData,
@@ -427,11 +433,12 @@ confirmBtn.addEventListener("click", async () => {
     spinnerOverlay.style.display = "none";
 
     if (result.success) {
+      // Update localStorage so dashboard/profile show the new data
       localStorage.setItem("studentData", JSON.stringify(result.data));
       alert("Profile updated successfully!");
       window.location.href = "dashboard.html";
     } else {
-      alert("Error: " + result.message);
+      alert("Error: " + (result.message || "Failed to update profile"));
     }
   } catch (err) {
     spinnerOverlay.style.display = "none";
@@ -441,7 +448,7 @@ confirmBtn.addEventListener("click", async () => {
 });
 
 // Load profile data on page load
-loadProfile();
+fetchStudent();
 </script>
 </body>
 </html>
