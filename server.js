@@ -123,6 +123,45 @@ const profileSchema = new mongoose.Schema(
 
 const Profile = mongoose.model("Profile", profileSchema);
 
+// Documents upload schema
+
+const DocumentSchema = new mongoose.Schema({
+  studentId: { type: mongoose.Schema.Types.ObjectId, ref: "Student", required: true },
+  oLevelInputs: [
+    {
+      examYear: String,
+      examType: String,
+      examNumber: String,
+      subject: String,
+      grade: String
+    }
+  ],
+  oLevelUploads: [String],
+  jambInput: {
+    regNo: String,
+    score: String
+  },
+  jambUpload: String,
+  jambAdmission: String,
+  applicationForm: String,
+  acceptanceForm: String,
+  guarantorForm: String,
+  codeOfConduct: String,
+  nd1First: String,
+  nd1Second: String,
+  nd2First: String,
+  nd2Second: String,
+  ictReceipts: [String],
+  feeReceipts: [String],
+  acceptanceFee: String,
+  stateOfOrigin: String,
+  nin: String,
+  deptFee: String,
+  uploadedAt: { type: Date, default: Date.now }
+});
+
+const Document = mongoose.model("DocumentUpload", DocumentSchema);
+
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
   return String(email || "").trim().toLowerCase();
@@ -263,6 +302,51 @@ app.post("/api/students/login", async (req, res) => {
   } catch (error) {
     console.error("❌ Login error:", error);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+// 📦 Route: Upload all documents
+app.post("/upload-documents", upload.any(), async (req, res) => {
+  try {
+    const { studentId, oLevelInputs, jambInput } = req.body;
+    if (!studentId) return res.status(400).json({ success: false, message: "Student ID required." });
+
+    // Parse text fields
+    const oLevel = JSON.parse(oLevelInputs || "[]");
+    const jamb = JSON.parse(jambInput || "{}");
+
+    const uploadedFiles = {};
+
+    // Upload each file in req.files to Cloudinary
+    for (const file of req.files) {
+      const stream = Readable.from(file.buffer);
+      const uploaded = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "student_documents" },
+          (error, result) => (error ? reject(error) : resolve(result))
+        );
+        stream.pipe(uploadStream);
+      });
+
+      uploadedFiles[file.fieldname] = uploaded.secure_url;
+    }
+
+    // Save to MongoDB
+    const uploadDoc = new Upload({
+      studentId,
+      oLevelInputs: oLevel,
+      jambInput: jamb,
+      files: uploadedFiles,
+    });
+
+    await uploadDoc.save();
+
+    res.json({ success: true, message: "Documents uploaded successfully", data: uploadDoc });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Error uploading documents", error: err.message });
   }
 });
 
