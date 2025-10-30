@@ -149,60 +149,72 @@
   </div>
 
   <script>
-    const backendURL = "https://ict-reg.onrender.com"; // ⚙️ Your backend URL
-    const form = document.getElementById("loginForm");
-    const errorBox = document.getElementById("errorBox");
-    const spinnerOverlay = document.getElementById("spinnerOverlay");
-    const loginBtn = document.getElementById("loginBtn");
+    const backendURL = "https://ict-reg.onrender.com";
+const form = document.getElementById("loginForm");
+const errorBox = document.getElementById("errorBox");
+const spinnerOverlay = document.getElementById("spinnerOverlay");
+const loginBtn = document.getElementById("loginBtn");
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-      // 🔹 Show spinner & disable button
-      spinnerOverlay.style.display = "flex";
-      loginBtn.disabled = true;
-      errorBox.style.display = "none";
+  spinnerOverlay.style.display = "flex";
+  loginBtn.disabled = true;
+  errorBox.style.display = "none";
 
-      try {
-        const res = await fetch(`${backendURL}/api/students/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          errorBox.style.display = "block";
-          errorBox.textContent = data.message || "Login failed";
-          spinnerOverlay.style.display = "none";
-          loginBtn.disabled = false;
-          return;
-        }
-
-        // Save student info
-localStorage.setItem("studentData", JSON.stringify(data.student));
-
-// Save student ID separately (for dashboard & profile fetch)
-localStorage.setItem("studentId", data.student._id);
-
-// Redirect
-window.location.href = "dashboard.html";
-
-        // ✅ Redirect to dashboard
-        window.location.href = "dashboard.html";
-      } catch (error) {
-        errorBox.style.display = "block";
-        errorBox.textContent = "Unable to connect to server";
-      } finally {
-        // 🔹 Hide spinner & re-enable button
-        spinnerOverlay.style.display = "none";
-        loginBtn.disabled = false;
-      }
+  try {
+    const res = await fetch(`${backendURL}/api/students/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
     });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      errorBox.style.display = "block";
+      errorBox.textContent = result.message || "Login failed";
+      return;
+    }
+
+    const student = result.student;
+
+    if (student) {
+      // 🔹 Save all essential info in localStorage
+      localStorage.setItem(
+        "studentData",
+        JSON.stringify({
+          _id: student._id,
+          surname: student.surname,
+          firstname: student.firstname,
+          middlename: student.middlename || "",
+          email: student.email,
+          phone: student.phone || "",
+          passport: student.passport || "student-pic.jpg",
+          matric: student.matric || "",
+          level: student.level || "",
+          department: student.department || "",
+          regNo: student.regNo || "",
+        })
+      );
+
+      localStorage.setItem("studentId", student._id);
+    }
+
+    // Redirect to dashboard
+    window.location.href = "dashboard.html";
+  } catch (error) {
+    errorBox.style.display = "block";
+    errorBox.textContent = "Unable to connect to server";
+    console.error(error);
+  } finally {
+    spinnerOverlay.style.display = "none";
+    loginBtn.disabled = false;
+  }
+});
   </script>
 </body>
 </html>
