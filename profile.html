@@ -132,59 +132,27 @@
   </div>
 
         <script>
-const backendURL = "https://ict-reg.onrender.com";
-const studentId = localStorage.getItem("studentId");
-
-if (!studentId) {
+// Check login
+const studentData = JSON.parse(localStorage.getItem("studentData"));
+if (!studentData || !studentData._id) {
   window.location.href = "login.html";
+} else {
+  // Build full name
+  const fullName = [studentData.surname, studentData.firstname, studentData.middlename]
+    .filter(Boolean)
+    .join(" ");
+
+  // Update profile elements
+  document.getElementById("studentName").textContent = fullName || "Student";
+  document.getElementById("studentEmail").textContent = studentData.email || "N/A";
+  document.getElementById("studentPhone").textContent = studentData.phone || "N/A";
+  document.getElementById("studentMatric").textContent = studentData.matric || "N/A";
+  document.getElementById("studentDept").textContent = studentData.department || "N/A";
+  document.getElementById("studentLevel").textContent = studentData.level || "N/A";
+
+  const passportImg = document.getElementById("studentPassport");
+  passportImg.src = studentData.passport || "default-avatar.png";
 }
-
-async function fetchStudent() {
-  try {
-    // Load from localStorage first
-    let student = JSON.parse(localStorage.getItem("studentData"));
-
-    let needsFetch = false;
-
-    // Check if essential fields are missing
-    if (!student || !student.level || !student.department || !student.matric) {
-      needsFetch = true;
-    }
-
-    if (needsFetch) {
-      const res = await fetch(`${backendURL}/api/students/${studentId}`);
-      const data = await res.json();
-
-      if (!res.ok || !data) throw new Error(data.message || "Failed to fetch student data");
-
-      student = data;
-
-      // Update localStorage for dashboard and other pages
-      localStorage.setItem("studentData", JSON.stringify(student));
-    }
-
-    // Update profile elements safely
-    const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ");
-    document.getElementById("studentName").textContent = fullName || "Student";
-    document.getElementById("studentEmail").textContent = student.email || "N/A";
-    document.getElementById("studentPhone").textContent = student.phone || "N/A";
-    document.getElementById("studentMatric").textContent = student.matric || "N/A";
-    document.getElementById("studentDept").textContent = student.department || "N/A";
-    document.getElementById("studentLevel").textContent = student.level || "N/A";
-
-    const passportImg = document.getElementById("studentPassport");
-    passportImg.src = student.passport || "default-avatar.png";
-
-  } catch (err) {
-    console.error(err);
-    alert("Unable to load student data. Please log in again.");
-    localStorage.clear();
-    window.location.href = "login.html";
-  }
-}
-
-// Load student data on page load
-fetchStudent();
 </script>
 </body>
 </html>
