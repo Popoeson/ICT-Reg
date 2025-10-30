@@ -328,6 +328,7 @@ const studentId = localStorage.getItem("studentId");
 
 if (!studentId) window.location.href = "login.html";
 
+// DOM elements
 const form = document.getElementById("editForm");
 const passportInput = document.getElementById("passportInput");
 const passportImg = document.getElementById("passportImg");
@@ -340,19 +341,21 @@ const departmentSelect = document.getElementById("department");
 const regNoInput = document.getElementById("regNo");
 const studentRegNo = document.getElementById("studentRegNo");
 
-// Prefill form from localStorage first
+// Prefill form
 async function prefillForm() {
   try {
     let student = JSON.parse(localStorage.getItem("studentData"));
 
-    // Fetch from backend if missing essential info
-    if (!student || !student.matric) {
+    // Fetch from backend if essential info is missing
+    if (!student || !student.matric || !student.level || !student.department) {
       const res = await fetch(`${backendURL}/api/students/${studentId}`);
-      student = await res.json();
-      if (!res.ok) throw new Error(student.message || "Failed to fetch student");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to fetch student");
+      student = data;
       localStorage.setItem("studentData", JSON.stringify(student));
     }
 
+    // Fill form fields
     for (const key in student) {
       const el = document.getElementById(key);
       if (el && key !== "passport") el.value = student[key] || "";
@@ -363,7 +366,6 @@ async function prefillForm() {
       regNoInput.value = student.regNo;
       studentRegNo.textContent = `Reg No: ${student.regNo}`;
     }
-
     if (student.department) departmentSelect.value = student.department;
 
   } catch (err) {
@@ -374,26 +376,23 @@ async function prefillForm() {
   }
 }
 
-// Department change: auto-generate Reg No if empty
+// Auto-generate Reg No
 departmentSelect.addEventListener("change", () => {
-  if (!regNoInput.value) {
-    const dept = departmentSelect.value;
-    if (dept) {
-      const prefix = dept.split(" ").map(w => w[0]).join("").substring(0, 3).toUpperCase();
-      const random = Math.floor(10000 + Math.random() * 90000);
-      const reg = `Reg/${prefix}/${random}`;
-      regNoInput.value = reg;
-      studentRegNo.textContent = `Reg No: ${reg}`;
-    }
+  if (!regNoInput.value && departmentSelect.value) {
+    const prefix = departmentSelect.value.split(" ").map(w => w[0]).join("").substring(0,3).toUpperCase();
+    const random = Math.floor(10000 + Math.random() * 90000);
+    const reg = `Reg/${prefix}/${random}`;
+    regNoInput.value = reg;
+    studentRegNo.textContent = `Reg No: ${reg}`;
   }
 });
 
-// Preview passport change
+// Preview passport image
 passportInput.addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (file) {
     const reader = new FileReader();
-    reader.onload = () => (passportImg.src = reader.result);
+    reader.onload = () => passportImg.src = reader.result;
     reader.readAsDataURL(file);
   }
 });
@@ -403,30 +402,30 @@ form.addEventListener("submit", (e) => {
   e.preventDefault();
   const formData = new FormData(form);
   const previewHTML = Array.from(formData.entries())
-    .map(([k, v]) => `<p><strong>${k}:</strong> ${v || "—"}</p>`)
+    .map(([k,v]) => `<p><strong>${k}:</strong> ${v || "—"}</p>`)
     .join("");
   previewContent.innerHTML = previewHTML;
   previewModal.style.display = "flex";
 });
 
-cancelBtn.addEventListener("click", () => (previewModal.style.display = "none"));
+cancelBtn.addEventListener("click", () => previewModal.style.display = "none");
 
-// Confirm and save changes
+// Confirm and save profile
 confirmBtn.addEventListener("click", async () => {
   previewModal.style.display = "none";
   spinnerOverlay.style.display = "flex";
 
   try {
     const formData = new FormData(form);
-formData.append("studentId", studentId); // Add this line
-if (passportInput.files[0]) formData.append("passport", passportInput.files[0]);
+    formData.append("studentId", studentId);
+    if (passportInput.files[0]) formData.append("passport", passportInput.files[0]);
 
     const res = await fetch(`${backendURL}/api/profile/update`, { method: "POST", body: formData });
     const result = await res.json();
     spinnerOverlay.style.display = "none";
 
     if (result.success) {
-      // Update localStorage and redirect
+      // Update localStorage for dashboard/profile consistency
       localStorage.setItem("studentData", JSON.stringify(result.data));
       alert("Profile updated successfully!");
       window.location.href = "dashboard.html";
@@ -440,7 +439,7 @@ if (passportInput.files[0]) formData.append("passport", passportInput.files[0]);
   }
 });
 
-// Load data on page load
+// Initialize
 prefillForm();
 </script>
 </body>
