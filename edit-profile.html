@@ -324,7 +324,6 @@
   
  <script>
 const backendURL = "https://ict-reg.onrender.com";
-const studentId = localStorage.getItem("studentId");
 
 const form = document.getElementById("editForm");
 const previewModal = document.getElementById("previewModal");
@@ -338,38 +337,38 @@ const regNoInput = document.getElementById("regNo");
 const departmentSelect = document.getElementById("department");
 const studentRegNo = document.getElementById("studentRegNo");
 
-// ✅ Redirect if student not logged in
-if (!studentId) {
+// ✅ Get current student regNo from localStorage (set during login)
+const studentData = JSON.parse(localStorage.getItem("studentData"));
+const regNo = studentData?.regNo;
+
+// Redirect if no regNo found
+if (!regNo) {
+  alert("Session expired. Please log in again.");
   window.location.href = "login.html";
 }
 
-// 🔹 Fetch student data from backend
-async function fetchStudent() {
+// 🔹 Fetch profile from backend
+async function loadProfile() {
   try {
-    const res = await fetch(`${backendURL}/api/students/${studentId}`);
-    const student = await res.json();
-    if (!res.ok) throw new Error(student.message || "Failed to load profile");
+    const res = await fetch(`${backendURL}/api/profile/${regNo}`);
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || "Failed to load profile");
 
-    // Prefill form fields
+    const student = data.data;
     for (const key in student) {
       const el = document.getElementById(key);
       if (el) el.value = student[key];
     }
 
-    // Passport
-    passportImg.src = student.passport || "default-avatar.png";
-
-    // Reg No
+    if (student.passport) passportImg.src = student.passport;
     if (student.regNo) studentRegNo.textContent = `Reg No: ${student.regNo}`;
   } catch (err) {
     console.error(err);
-    alert("Could not load profile. Please log in again.");
-    localStorage.clear();
-    window.location.href = "login.html";
+    alert("Error loading profile. Please log in again.");
   }
 }
 
-// 🔹 Preview new passport image before upload
+// 🔹 Preview passport image before upload
 passportInput.addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (file) {
@@ -394,7 +393,7 @@ departmentSelect.addEventListener("change", () => {
   }
 });
 
-// 🔹 Show preview modal on submit
+// 🔹 Show preview modal before submission
 form.addEventListener("submit", (e) => {
   e.preventDefault();
   const formData = new FormData(form);
@@ -407,43 +406,42 @@ form.addEventListener("submit", (e) => {
 
 cancelBtn.addEventListener("click", () => (previewModal.style.display = "none"));
 
-// 🔹 Confirm update
+// 🔹 Confirm and submit update
 confirmBtn.addEventListener("click", async () => {
   previewModal.style.display = "none";
   spinnerOverlay.style.display = "flex";
 
   try {
     const formData = new FormData(form);
-
-    // Append passport file if uploaded
     if (passportInput.files[0]) {
       formData.append("passport", passportInput.files[0]);
     }
 
-    // ✅ Send update request
-    const response = await fetch(`${backendURL}/api/students/${studentId}/update`, {
-      method: "PUT",
+    // ✅ Send to existing backend route
+    const response = await fetch(`${backendURL}/api/profile/update`, {
+      method: "POST",
       body: formData,
     });
 
     const result = await response.json();
     spinnerOverlay.style.display = "none";
 
-    if (response.ok) {
+    if (result.success) {
+      localStorage.setItem("studentData", JSON.stringify(result.data));
       alert("Profile updated successfully!");
       window.location.href = "dashboard.html";
     } else {
-      alert("Error: " + (result.message || "Failed to update profile"));
+      alert("Error: " + result.message);
     }
   } catch (err) {
     spinnerOverlay.style.display = "none";
-    alert("Server error. Please try again.");
     console.error(err);
+    alert("Server error. Please try again.");
   }
 });
 
 // Load profile data on page load
-fetchStudent();
+loadProfile();
 </script>
 </body>
 </html>
