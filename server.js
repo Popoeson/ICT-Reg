@@ -388,6 +388,18 @@ app.get('/api/students/:id', async (req, res) => {
   }
 });
 
+// ✅ Get Student Profile by RegNo
+app.get("/api/profile/:regNo", async (req, res) => {
+  try {
+    const student = await StudentProfile.findOne({ regNo: req.params.regNo });
+    if (!student) return res.status(404).json({ success: false, message: "Student not found" });
+    res.json({ success: true, data: student });
+  } catch (err) {
+    console.error("Error fetching profile:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 // ✅ Optional: Get Profile by Reg No (for prefill)
 app.get("/api/profile/:regNo", async (req, res) => {
   try {
