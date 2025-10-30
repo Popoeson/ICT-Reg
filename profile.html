@@ -135,39 +135,103 @@
 const backendURL = "https://ict-reg.onrender.com";
 const studentId = localStorage.getItem("studentId");
 
-// Redirect to login if not found
+const form = document.getElementById("editForm");
+const passportInput = document.getElementById("passportInput");
+const passportImg = document.getElementById("passportImg");
+const spinnerOverlay = document.getElementById("spinnerOverlay");
+const previewModal = document.getElementById("previewModal");
+const previewContent = document.getElementById("previewContent");
+const cancelBtn = document.getElementById("cancelBtn");
+const confirmBtn = document.getElementById("confirmBtn");
+
+// Redirect if student not logged in
 if (!studentId) {
   window.location.href = "login.html";
 }
 
-// Fetch student info from backend
+// 🔹 Fetch and prefill form with student data (reuse same route)
 async function fetchStudent() {
   try {
     const res = await fetch(`${backendURL}/api/students/${studentId}`);
     const student = await res.json();
 
-    if (!res.ok) throw new Error(student.message || "Failed to fetch student data");
+    if (!res.ok) throw new Error(student.message || "Failed to load profile");
 
-    document.getElementById("studentName").textContent =
-      `${student.surname || ""} ${student.firstname || ""} ${student.middlename || ""}`.trim();
+    // Prefill inputs if present
+    for (const key in student) {
+      const el = document.getElementById(key);
+      if (el && key !== "passport") {
+        el.value = student[key] || "";
+      }
+    }
 
-    document.getElementById("studentEmail").textContent = student.email || "N/A";
-    document.getElementById("studentPhone").textContent = student.phone || "N/A";
-    document.getElementById("studentMatric").textContent = student.matric || "N/A";
-    document.getElementById("studentDept").textContent = student.department || "N/A";
-    document.getElementById("studentLevel").textContent = student.level || "N/A";
-
-    // Passport display
-    const passportImg = document.getElementById("studentPassport");
+    // Passport image
     passportImg.src = student.passport || "default-avatar.png";
   } catch (err) {
     console.error(err);
-    alert("Unable to load student data. Please log in again.");
+    alert("Could not load profile. Please log in again.");
     localStorage.clear();
     window.location.href = "login.html";
   }
 }
 
+// Preview passport change
+passportInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = () => (passportImg.src = reader.result);
+    reader.readAsDataURL(file);
+  }
+});
+
+// Show preview modal before confirming update
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const formData = new FormData(form);
+  const previewHTML = Array.from(formData.entries())
+    .map(([k, v]) => `<p><strong>${k}:</strong> ${v || "—"}</p>`)
+    .join("");
+  previewContent.innerHTML = previewHTML;
+  previewModal.style.display = "flex";
+});
+
+cancelBtn.addEventListener("click", () => (previewModal.style.display = "none"));
+
+// Confirm and update student
+confirmBtn.addEventListener("click", async () => {
+  previewModal.style.display = "none";
+  spinnerOverlay.style.display = "flex";
+
+  try {
+    const formData = new FormData(form);
+    if (passportInput.files[0]) {
+      formData.append("passport", passportInput.files[0]);
+    }
+
+    const response = await fetch(`${backendURL}/api/profile/update`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await response.json();
+    spinnerOverlay.style.display = "none";
+
+    if (result.success) {
+      alert("Profile updated successfully!");
+      localStorage.setItem("studentData", JSON.stringify(result.data));
+      window.location.href = "dashboard.html";
+    } else {
+      alert("Error: " + (result.message || "Failed to update profile"));
+    }
+  } catch (err) {
+    spinnerOverlay.style.display = "none";
+    console.error(err);
+    alert("Server error. Please try again.");
+  }
+});
+
+// Load data on start
 fetchStudent();
 </script>
 </body>
