@@ -334,6 +334,9 @@ const previewModal = document.getElementById("previewModal");
 const previewContent = document.getElementById("previewContent");
 const cancelBtn = document.getElementById("cancelBtn");
 const confirmBtn = document.getElementById("confirmBtn");
+const departmentSelect = document.getElementById("department");
+const regNoInput = document.getElementById("regNo");
+const studentRegNo = document.getElementById("studentRegNo");
 
 // Redirect if student not logged in
 if (!studentId) {
@@ -358,6 +361,12 @@ async function fetchStudent() {
 
     // Passport image
     passportImg.src = student.passport || "default-avatar.png";
+
+    // Prefill Reg No if it exists
+    if (student.regNo) {
+      regNoInput.value = student.regNo;
+      studentRegNo.textContent = `Reg No: ${student.regNo}`;
+    }
   } catch (err) {
     console.error(err);
     alert("Could not load profile. Please log in again.");
@@ -365,6 +374,21 @@ async function fetchStudent() {
     window.location.href = "login.html";
   }
 }
+
+// 🔹 Auto-generate Reg No when department changes
+departmentSelect.addEventListener("change", () => {
+  const dept = departmentSelect.value;
+  if (dept) {
+    const prefix = dept.split(" ").map(w => w[0]).join("").substring(0, 3).toUpperCase();
+    const random = Math.floor(10000 + Math.random() * 90000);
+    const reg = `Reg/${prefix}/${random}`;
+    regNoInput.value = reg;
+    studentRegNo.textContent = `Reg No: ${reg}`;
+  } else {
+    regNoInput.value = "";
+    studentRegNo.textContent = "Reg No: —";
+  }
+});
 
 // Preview passport change
 passportInput.addEventListener("change", (e) => {
