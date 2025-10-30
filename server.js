@@ -277,7 +277,6 @@ app.post("/api/students/login", async (req, res) => {
 });
 
 
-
 // 📦 Route: Upload all documents
 app.post("/upload-documents", upload.any(), async (req, res) => {
   try {
@@ -288,20 +287,50 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
     const oLevel = JSON.parse(oLevelInputs || "[]");
     const jamb = JSON.parse(jambInput || "{}");
 
+    // Define all expected file fields
+    const expectedFiles = [
+      "jambUpload",
+      "jambAdmission",
+      "applicationForm",
+      "acceptanceForm",
+      "guarantorForm",
+      "codeOfConduct",
+      "nd1First",
+      "nd1Second",
+      "nd2First",
+      "nd2Second",
+      "ict1", "ict2", "ict3", "ict4",
+      "fee1", "fee2", "fee3", "fee4",
+      "acceptanceFee",
+      "stateOfOrigin",
+      "nin",
+      "deptFee",
+      // Add any other expected file fields here
+    ];
+
     const uploadedFiles = {};
 
-    // Upload each file in req.files to Cloudinary
+    // Map uploaded files by fieldname
+    const fileMap = {};
     for (const file of req.files) {
-      const stream = Readable.from(file.buffer);
-      const uploaded = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          { folder: "student_documents" },
-          (error, result) => (error ? reject(error) : resolve(result))
-        );
-        stream.pipe(uploadStream);
-      });
+      fileMap[file.fieldname] = file;
+    }
 
-      uploadedFiles[file.fieldname] = uploaded.secure_url;
+    // Upload files or set "N/A" if missing
+    for (const field of expectedFiles) {
+      if (fileMap[field]) {
+        const stream = Readable.from(fileMap[field].buffer);
+        const uploaded = await new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: "student_documents" },
+            (error, result) => (error ? reject(error) : resolve(result))
+          );
+          stream.pipe(uploadStream);
+        });
+        uploadedFiles[field] = uploaded.secure_url;
+      } else {
+        uploadedFiles[field] = "N/A";
+      }
     }
 
     // Save to MongoDB
