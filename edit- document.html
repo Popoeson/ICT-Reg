@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upload Documents</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Poppins",sans-serif;}
+body{background:#f9fbfd;color:#333;}
+header{background:#1e73be;color:white;padding:1rem 2rem;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+header h1{font-size:1.5rem;margin-bottom:.3rem;}
+header p{font-size:.95rem;opacity:0.9;}
+main{max-width:1000px;margin:2rem auto;background:white;padding:2rem;border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,0.05);}
+h2.section-title{color:#1e73be;font-size:1.2rem;margin-bottom:.8rem;border-left:4px solid #1e73be;padding-left:.5rem;}
+.form-section{margin-bottom:2rem;}
+label{display:block;font-weight:500;margin-bottom:.3rem;font-size:.9rem;}
+input[type="file"],select,input[type="text"],input[type="number"]{width:100%;padding:.6rem .7rem;border:1px solid #c8d3e1;border-radius:6px;margin-bottom:1rem;outline:none;transition: all 0.2s ease;}
+input:focus,select:focus{border-color:#1e73be;box-shadow:0 0 0 2px rgba(30,115,190,0.15);}
+table{width:100%;border-collapse: collapse;margin-bottom:1rem;}
+th,td{border:1px solid #c8d3e1;padding:.6rem;text-align:center;font-size:.9rem;}
+th{background:#f2f7ff;color:#1e73be;}
+.btn-group{display:flex;justify-content:flex-end;gap:.8rem;margin-bottom:1rem;}
+.btn{background:#1e73be;color:white;border:none;padding:.6rem 1rem;border-radius:5px;cursor:pointer;transition:background .2s ease;font-size:.9rem;}
+.btn:hover{background:#125a99;}
+button[type="submit"]{background:#1e73be;color:white;padding:.8rem 1.8rem;border-radius:6px;border:none;font-weight:500;cursor:pointer;display:block;margin-left:auto;}
+button[type="submit"]:hover{background:#125a99;}
+@media(max-width:700px){main{padding:1.5rem;}th,td{font-size:.8rem;}}
+
+/* PREVIEW MODAL */
+.preview-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .3s ease, visibility .3s ease;
+}
+.preview-modal.active {
+  visibility: visible;
+  opacity: 1;
+}
+.preview-box {
+  background: #fff;
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+  text-align:center;
+}
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(120px,1fr));
+  gap: 10px;
+  margin-top: 1rem;
+}
+.preview-grid img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform .2s ease;
+}
+.preview-grid img:hover {transform: scale(1.05);}
+.preview-large {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.8);
+  justify-content:center;
+  align-items:center;
+  z-index:200;
+}
+.preview-large img {
+  max-width:90%;
+  max-height:90%;
+  border-radius:10px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Upload Your Documents</h1>
+  <p>Submit your academic and administrative documents. Fields are optional.</p>
+</header>
+
+<main>
+  <form id="uploadForm">
+
+    <!-- O'LEVEL TABLE INPUT -->
+    <section class="form-section">
+      <h2 class="section-title">O'Level Result Input</h2>
+      <table id="olevelTable">
+        <thead>
+          <tr>
+            <th>Exam Year</th>
+            <th>Exam Type</th>
+            <th>Exam Number</th>
+            <th>Subject</th>
+            <th>Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="number" placeholder="e.g. 2020"></td>
+            <td><input type="text" placeholder="e.g. WAEC"></td>
+            <td><input type="text" placeholder="e.g. 12345678AB"></td>
+            <td><input type="text" placeholder="e.g. Mathematics"></td>
+            <td><input type="text" placeholder="e.g. B3"></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="btn-group">
+        <button type="button" class="btn" id="addRow">Add Row</button>
+        <button type="button" class="btn" id="deleteRow">Delete Row</button>
+      </div>
+    </section>
+
+    <!-- O'LEVEL UPLOAD -->
+    <section class="form-section">
+      <h2 class="section-title">O'Level Result Upload</h2>
+      <label>Number of O'Level results to upload</label>
+      <select id="olevelCount">
+        <option value="0">Select Option</option>
+        <option value="1">One</option>
+        <option value="2">Two</option>
+      </select>
+      <div id="olevelUploads"></div>
+    </section>
+
+    <!-- JAMB -->
+    <section class="form-section">
+      <h2 class="section-title">JAMB Documents</h2>
+      <label>JAMB Reg Number</label>
+      <input type="text" id="jambRegNo" placeholder="e.g. 2022345678AB">
+      <label>JAMB Score</label>
+      <input type="number" id="jambScore" placeholder="e.g. 250">
+      <label>JAMB Result Upload</label>
+      <input type="file" id="jambUpload" accept="image/*">
+      <label>JAMB Admission Letter Upload</label>
+      <input type="file" id="jambAdmission" accept="image/*">
+    </section>
+
+    <!-- SCHOOL FORMS -->
+    <section class="form-section">
+      <h2 class="section-title">School Forms</h2>
+      <label>Application Form</label><input type="file" id="applicationForm" accept="image/*">
+      <label>Acceptance Form</label><input type="file" id="acceptanceForm" accept="image/*">
+      <label>Guarantor's Form</label><input type="file" id="guarantorForm" accept="image/*">
+      <label>Code of Conduct</label><input type="file" id="codeOfConduct" accept="image/*">
+    </section>
+
+    <!-- COURSE & FEES -->
+    <section class="form-section">
+      <h2 class="section-title">Course & Receipts</h2>
+      <label>ND1 - First Semester Form</label><input type="file" id="nd1First" accept="image/*">
+      <label>ND1 - Second Semester Form</label><input type="file" id="nd1Second" accept="image/*">
+      <label>ND2 - First Semester Form</label><input type="file" id="nd2First" accept="image/*">
+      <label>ND2 - Second Semester Form</label><input type="file" id="nd2Second" accept="image/*">
+      <label>ICT Receipts</label>
+      <input type="file" id="ict1" accept="image/*"><input type="file" id="ict2" accept="image/*"><input type="file" id="ict3" accept="image/*"><input type="file" id="ict4" accept="image/*">
+      <label>School Fees Receipts</label>
+      <input type="file" id="fee1" accept="image/*"><input type="file" id="fee2" accept="image/*"><input type="file" id="fee3" accept="image/*"><input type="file" id="fee4" accept="image/*">
+    </section>
+
+    <!-- OTHER DOCUMENTS -->
+    <section class="form-section">
+      <h2 class="section-title">Other Documents</h2>
+      <label>Acceptance Fee Upload</label><input type="file" id="acceptanceFee" accept="image/*">
+      <label>State of Origin Upload</label><input type="file" id="stateOfOrigin" accept="image/*">
+      <label>NIN Upload</label><input type="file" id="nin" accept="image/*">
+      <label>Departmental Fee Receipt</label><input type="file" id="deptFee" accept="image/*">
+    </section>
+
+    <button type="submit">Submit Documents</button>
+  </form>
+</main>
+
+<!-- PREVIEW MODAL -->
+<div class="preview-modal" id="previewModal">
+  <div class="preview-box">
+    <h2>Preview Uploaded Documents</h2>
+    <p>Click any thumbnail to enlarge. Review before submitting.</p>
+    <div class="preview-grid" id="previewGrid"></div>
+    <button class="btn" id="proceedBtn" style="margin-top:1rem;">Proceed to Submit</button>
+  </div>
+</div>
+
+<!-- FULL IMAGE VIEW -->
+<div class="preview-large" id="previewLarge">
+  <img src="" alt="Preview">
+</div>
+
+<script>
+// ===== O'LEVEL TABLE DYNAMIC ROWS =====
+const olevelTable=document.querySelector("#olevelTable tbody");
+document.getElementById("addRow").onclick=()=>{const row=document.createElement("tr");row.innerHTML=`<td><input type="number" placeholder="e.g. 2020"></td>
+<td><input type="text" placeholder="e.g. WAEC"></td>
+<td><input type="text" placeholder="e.g. 12345678AB"></td>
+<td><input type="text" placeholder="e.g. Mathematics"></td>
+<td><input type="text" placeholder="e.g. B3"></td>`;olevelTable.appendChild(row);}
+document.getElementById("deleteRow").onclick=()=>{const rows=olevelTable.querySelectorAll("tr");if(rows.length>1)olevelTable.removeChild(rows[rows.length-1]);};
+
+// ===== O'LEVEL UPLOAD DYNAMIC FIELDS =====
+const olevelCount=document.getElementById("olevelCount");
+const olevelUploads=document.getElementById("olevelUploads");
+olevelCount.addEventListener("change",()=>{olevelUploads.innerHTML="";const c=parseInt(olevelCount.value);for(let i=1;i<=c;i++){const input=document.createElement("input");input.type="file";input.accept="image/*";input.id=`oLevelUpload${i}`;input.style.marginBottom="0.8rem";olevelUploads.appendChild(input);}});
+
+// ===== PREVIEW SYSTEM =====
+const modal=document.getElementById("previewModal");
+const grid=document.getElementById("previewGrid");
+const large=document.getElementById("previewLarge");
+const largeImg=large.querySelector("img");
+
+function showPreview(images){
+  grid.innerHTML="";
+  images.forEach(file=>{
+    if(!file)return;
+    const img=document.createElement("img");
+    img.src=URL.createObjectURL(file);
+    img.onclick=()=>{largeImg.src=img.src;large.style.display="flex";}
+    grid.appendChild(img);
+  });
+  modal.classList.add("active");
+}
+large.onclick=(e)=>{if(e.target===large)large.style.display="none";};
+modal.onclick=(e)=>{if(e.target===modal)modal.classList.remove("active");};
+
+// ===== FORM SUBMISSION =====
+document.getElementById("uploadForm").addEventListener("submit",async(e)=>{
+  e.preventDefault();
+  const formData=new FormData();
+  const studentId=localStorage.getItem("studentId");
+  formData.append("studentId",studentId||"demo");
+
+  // Gather files for preview
+  const fileInputs=document.querySelectorAll("input[type=file]");
+  const files=[];
+  fileInputs.forEach(f=>{if(f.files[0])files.push(f.files[0]);});
+  showPreview(files);
+
+  // Proceed submission
+  document.getElementById("proceedBtn").onclick=async()=>{
+    modal.classList.remove("active");
+    fileInputs.forEach(f=>{if(f.files[0])formData.append(f.id,f.files[0]);});
+    const oLevelData=[];
+    olevelTable.querySelectorAll("tr").forEach(row=>{
+      const vals=Array.from(row.querySelectorAll("input")).map(i=>i.value||"");
+      oLevelData.push({examYear:vals[0],examType:vals[1],examNumber:vals[2],subject:vals[3],grade:vals[4]});
+    });
+    formData.append("oLevelInputs",JSON.stringify(oLevelData));
+    const jambInput={
+      regNo:document.getElementById("jambRegNo").value||"",
+      score:document.getElementById("jambScore").value||""
+    };
+    formData.append("jambInput",JSON.stringify(jambInput));
+
+    try{
+      const res=await fetch("https://ict-reg.onrender.com/api/upload-documents",{
+        method:"POST",
+        body:formData
+      });
+      const data=await res.json();
+      alert(data.success?"Documents uploaded successfully!":"Upload failed: "+data.message);
+    }catch(err){console.error(err);alert("Server error.");}
+  }
+});
+</script>
+</body>
+</html>
