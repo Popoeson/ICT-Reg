@@ -326,6 +326,8 @@
 const backendURL = "https://ict-reg.onrender.com";
 const studentId = localStorage.getItem("studentId");
 
+if (!studentId) window.location.href = "login.html";
+
 const form = document.getElementById("editForm");
 const passportInput = document.getElementById("passportInput");
 const passportImg = document.getElementById("passportImg");
@@ -338,35 +340,32 @@ const departmentSelect = document.getElementById("department");
 const regNoInput = document.getElementById("regNo");
 const studentRegNo = document.getElementById("studentRegNo");
 
-// Redirect if student not logged in
-if (!studentId) {
-  window.location.href = "login.html";
-}
-
-// 🔹 Fetch and prefill form with student data (reuse same route)
-async function fetchStudent() {
+// Prefill form from localStorage first
+async function prefillForm() {
   try {
-    const res = await fetch(`${backendURL}/api/students/${studentId}`);
-    const student = await res.json();
+    let student = JSON.parse(localStorage.getItem("studentData"));
 
-    if (!res.ok) throw new Error(student.message || "Failed to load profile");
-
-    // Prefill inputs if present
-    for (const key in student) {
-      const el = document.getElementById(key);
-      if (el && key !== "passport") {
-        el.value = student[key] || "";
-      }
+    // Fetch from backend if missing essential info
+    if (!student || !student.matric) {
+      const res = await fetch(`${backendURL}/api/students/${studentId}`);
+      student = await res.json();
+      if (!res.ok) throw new Error(student.message || "Failed to fetch student");
+      localStorage.setItem("studentData", JSON.stringify(student));
     }
 
-    // Passport image
-    passportImg.src = student.passport || "default-avatar.png";
+    for (const key in student) {
+      const el = document.getElementById(key);
+      if (el && key !== "passport") el.value = student[key] || "";
+    }
 
-    // Prefill Reg No if it exists
+    passportImg.src = student.passport || "default-avatar.png";
     if (student.regNo) {
       regNoInput.value = student.regNo;
       studentRegNo.textContent = `Reg No: ${student.regNo}`;
     }
+
+    if (student.department) departmentSelect.value = student.department;
+
   } catch (err) {
     console.error(err);
     alert("Could not load profile. Please log in again.");
@@ -375,18 +374,17 @@ async function fetchStudent() {
   }
 }
 
-// 🔹 Auto-generate Reg No when department changes
+// Department change: auto-generate Reg No if empty
 departmentSelect.addEventListener("change", () => {
-  const dept = departmentSelect.value;
-  if (dept) {
-    const prefix = dept.split(" ").map(w => w[0]).join("").substring(0, 3).toUpperCase();
-    const random = Math.floor(10000 + Math.random() * 90000);
-    const reg = `Reg/${prefix}/${random}`;
-    regNoInput.value = reg;
-    studentRegNo.textContent = `Reg No: ${reg}`;
-  } else {
-    regNoInput.value = "";
-    studentRegNo.textContent = "Reg No: —";
+  if (!regNoInput.value) {
+    const dept = departmentSelect.value;
+    if (dept) {
+      const prefix = dept.split(" ").map(w => w[0]).join("").substring(0, 3).toUpperCase();
+      const random = Math.floor(10000 + Math.random() * 90000);
+      const reg = `Reg/${prefix}/${random}`;
+      regNoInput.value = reg;
+      studentRegNo.textContent = `Reg No: ${reg}`;
+    }
   }
 });
 
@@ -400,7 +398,7 @@ passportInput.addEventListener("change", (e) => {
   }
 });
 
-// Show preview modal before confirming update
+// Preview modal
 form.addEventListener("submit", (e) => {
   e.preventDefault();
   const formData = new FormData(form);
@@ -413,28 +411,23 @@ form.addEventListener("submit", (e) => {
 
 cancelBtn.addEventListener("click", () => (previewModal.style.display = "none"));
 
-// Confirm and update student
+// Confirm and save changes
 confirmBtn.addEventListener("click", async () => {
   previewModal.style.display = "none";
   spinnerOverlay.style.display = "flex";
 
   try {
     const formData = new FormData(form);
-    if (passportInput.files[0]) {
-      formData.append("passport", passportInput.files[0]);
-    }
+    if (passportInput.files[0]) formData.append("passport", passportInput.files[0]);
 
-    const response = await fetch(`${backendURL}/api/profile/update`, {
-      method: "POST",
-      body: formData,
-    });
-
-    const result = await response.json();
+    const res = await fetch(`${backendURL}/api/profile/update`, { method: "POST", body: formData });
+    const result = await res.json();
     spinnerOverlay.style.display = "none";
 
     if (result.success) {
-      alert("Profile updated successfully!");
+      // Update localStorage and redirect
       localStorage.setItem("studentData", JSON.stringify(result.data));
+      alert("Profile updated successfully!");
       window.location.href = "dashboard.html";
     } else {
       alert("Error: " + (result.message || "Failed to update profile"));
@@ -446,8 +439,8 @@ confirmBtn.addEventListener("click", async () => {
   }
 });
 
-// Load data on start
-fetchStudent();
+// Load data on page load
+prefillForm();
 </script>
 </body>
 </html>
