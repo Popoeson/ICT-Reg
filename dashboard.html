@@ -180,28 +180,28 @@
   </section>
 
   <script>
-    // ===== Load Student Data from LocalStorage =====
-    window.addEventListener("DOMContentLoaded", () => {
-      const surname = localStorage.getItem("studentSurname") || "";
-      const firstname = localStorage.getItem("studentFirstname") || "";
-      const middlename = localStorage.getItem("studentMiddlename") || "";
-      const passport = localStorage.getItem("studentPassport") || "student-pic.jpg";
-      const matric = localStorage.getItem("studentMatric") || "N/A";
-      const level = localStorage.getItem("studentLevel") || "N/A";
-      const dept = localStorage.getItem("studentDepartment") || "N/A";
+  // ===== Load Student Data from LocalStorage =====
+  window.addEventListener("DOMContentLoaded", () => {
+    const surname = localStorage.getItem("studentSurname") || "";
+    const firstname = localStorage.getItem("studentFirstname") || "";
+    const middlename = localStorage.getItem("studentMiddlename") || "";
+    const passport = localStorage.getItem("studentPassport") || "student-pic.jpg";
+    const matric = localStorage.getItem("studentMatric") || "N/A";
+    const level = localStorage.getItem("studentLevel") || "N/A";
+    const dept = localStorage.getItem("studentDepartment") || "N/A";
 
-      // Display passport
-      document.getElementById("studentPassport").src = passport;
+    // ✅ Display passport
+    document.getElementById("studentPassport").src = passport;
 
-      // Full name for greeting
-      const fullName = [surname, firstname, middlename].filter(Boolean).join(" ");
-      document.getElementById("welcomeNote").textContent = `Welcome, ${fullName || "Student"} 👋`;
+    // ✅ Construct full name
+    const fullName = [surname, firstname, middlename].filter(Boolean).join(" ");
+    document.getElementById("welcomeNote").textContent = `Welcome, ${fullName || "Student"} 👋`;
 
-      // Other info
-      document.getElementById("matricNumber").textContent = matric;
-      document.getElementById("level").textContent = student.level;
-      document.getElementById("department").textContent = student.department;
-    });
-  </script>
+    // ✅ Update matric, level, and department correctly
+    document.getElementById("matricNumber").textContent = matric;
+    document.getElementById("level").textContent = level;
+    document.getElementById("department").textContent = dept;
+  });
+</script>
 </body>
 </html>
