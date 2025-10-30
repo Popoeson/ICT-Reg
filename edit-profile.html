@@ -344,20 +344,23 @@ const departmentSelect = document.getElementById("department");
 const regNoInput = document.getElementById("regNo");
 const studentRegNo = document.getElementById("studentRegNo");
 
-// ✅ Step 1: Fetch student info directly from backend
+// ✅ Prefill form from localStorage or fetch backend if missing
 async function prefillForm() {
   spinnerOverlay.style.display = "flex";
+
+  let studentData = JSON.parse(localStorage.getItem("studentData")) || {};
+
   try {
-    const res = await fetch(`${backendURL}/api/students/${studentId}`);
-    const data = await res.json();
-    spinnerOverlay.style.display = "none";
+    // Fetch from backend if essential info is missing
+    if (!studentData._id || !studentData.surname || !studentData.email) {
+      const res = await fetch(`${backendURL}/api/students/${studentId}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to fetch student info");
+      studentData = data;
+      localStorage.setItem("studentData", JSON.stringify(studentData));
+    }
 
-    if (!res.ok) throw new Error(data.message || "Failed to load student info");
-
-    // Save fresh data for dashboard/profile
-    localStorage.setItem("studentData", JSON.stringify(data));
-
-    // Fill the form with values from backend
+    // Fill form inputs if data exists
     const fields = [
       "surname", "firstname", "middlename", "phone", "email",
       "department", "regNo", "level", "stateOrigin", "lgaOrigin",
@@ -365,26 +368,30 @@ async function prefillForm() {
     ];
 
     fields.forEach(f => {
-      const input = document.getElementById(f);
-      if (input && data[f]) input.value = data[f];
+      const el = document.getElementById(f);
+      if (el && studentData[f]) el.value = studentData[f];
     });
 
-    // Display passport image (Cloudinary URL)
-    passportImg.src = data.passport || "placeholder-passport.png";
+    // Passport image
+    passportImg.src = studentData.passport || "placeholder-passport.png";
 
-    // Display Reg No (if any)
-    studentRegNo.textContent = data.regNo ? `Reg No: ${data.regNo}` : "Reg No: —";
+    // Reg No display
+    studentRegNo.textContent = studentData.regNo ? `Reg No: ${studentData.regNo}` : "Reg No: —";
+
+    // Department select
+    if (studentData.department) departmentSelect.value = studentData.department;
 
   } catch (err) {
-    spinnerOverlay.style.display = "none";
     console.error("Prefill Error:", err);
     alert("Could not load your profile. Please log in again.");
     localStorage.clear();
     window.location.href = "login.html";
+  } finally {
+    spinnerOverlay.style.display = "none";
   }
 }
 
-// ✅ Step 2: Auto-generate Reg No if not present
+// ✅ Auto-generate Reg No if empty
 departmentSelect.addEventListener("change", () => {
   if (!regNoInput.value && departmentSelect.value) {
     const prefix = departmentSelect.value.split(" ").map(w => w[0]).join("").substring(0,3).toUpperCase();
@@ -395,7 +402,7 @@ departmentSelect.addEventListener("change", () => {
   }
 });
 
-// ✅ Step 3: Preview passport
+// ✅ Preview passport image
 passportInput.addEventListener("change", e => {
   const file = e.target.files[0];
   if (file) {
@@ -405,7 +412,7 @@ passportInput.addEventListener("change", e => {
   }
 });
 
-// ✅ Step 4: Preview modal before save
+// ✅ Show preview modal before save
 form.addEventListener("submit", e => {
   e.preventDefault();
   const formData = new FormData(form);
@@ -419,10 +426,11 @@ form.addEventListener("submit", e => {
 
 cancelBtn.addEventListener("click", () => previewModal.style.display = "none");
 
-// ✅ Step 5: Confirm save
+// ✅ Confirm and save profile
 confirmBtn.addEventListener("click", async () => {
   previewModal.style.display = "none";
   spinnerOverlay.style.display = "flex";
+
   try {
     const formData = new FormData(form);
     formData.append("studentId", studentId);
@@ -450,7 +458,7 @@ confirmBtn.addEventListener("click", async () => {
   }
 });
 
-// ✅ Step 6: Initialize
+// Initialize
 prefillForm();
 </script>
 </body>
