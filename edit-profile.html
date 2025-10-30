@@ -370,7 +370,7 @@ async function prefillForm() {
     });
 
     // Display passport image (Cloudinary URL)
-    passportImg.src = student.passport || "placeholder-passport.png";
+    passportImg.src = data.passport || "placeholder-passport.png";
 
     // Display Reg No (if any)
     studentRegNo.textContent = data.regNo ? `Reg No: ${data.regNo}` : "Reg No: —";
