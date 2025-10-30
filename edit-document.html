@@ -235,42 +235,74 @@ large.onclick=(e)=>{if(e.target===large)large.style.display="none";};
 modal.onclick=(e)=>{if(e.target===modal)modal.classList.remove("active");};
 
 // ===== FORM SUBMISSION =====
-document.getElementById("uploadForm").addEventListener("submit",async(e)=>{
+document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const formData=new FormData();
-  const studentId=localStorage.getItem("studentId");
-  formData.append("studentId",studentId||"demo");
+  const formData = new FormData();
+  const studentId = localStorage.getItem("studentId");
+  formData.append("studentId", studentId || "demo");
 
-  // Gather files for preview
-  const fileInputs=document.querySelectorAll("input[type=file]");
-  const files=[];
-  fileInputs.forEach(f=>{if(f.files[0])files.push(f.files[0]);});
+  const fileInputs = document.querySelectorAll("input[type=file]");
+
+  // ===== Prepare files for preview =====
+  const files = [];
+  fileInputs.forEach(f => {
+    if (f.files[0]) files.push(f.files[0]);
+  });
   showPreview(files);
 
   // Proceed submission
-  document.getElementById("proceedBtn").onclick=async()=>{
+  document.getElementById("proceedBtn").onclick = async () => {
     modal.classList.remove("active");
-    fileInputs.forEach(f=>{if(f.files[0])formData.append(f.id,f.files[0]);});
-    const oLevelData=[];
-    olevelTable.querySelectorAll("tr").forEach(row=>{
-      const vals=Array.from(row.querySelectorAll("input")).map(i=>i.value||"");
-      oLevelData.push({examYear:vals[0],examType:vals[1],examNumber:vals[2],subject:vals[3],grade:vals[4]});
-    });
-    formData.append("oLevelInputs",JSON.stringify(oLevelData));
-    const jambInput={
-      regNo:document.getElementById("jambRegNo").value||"",
-      score:document.getElementById("jambScore").value||""
-    };
-    formData.append("jambInput",JSON.stringify(jambInput));
 
-    try{
-      const res=await fetch("https://ict-reg.onrender.com/api/upload-documents",{
-        method:"POST",
-        body:formData
+    // List all expected file fields
+    const expectedFiles = [
+      "jambUpload", "jambAdmission",
+      "applicationForm", "acceptanceForm", "guarantorForm", "codeOfConduct",
+      "nd1First", "nd1Second", "nd2First", "nd2Second",
+      "ict1", "ict2", "ict3", "ict4",
+      "fee1", "fee2", "fee3", "fee4",
+      "acceptanceFee", "stateOfOrigin", "nin", "deptFee"
+      // Add more if needed
+    ];
+
+    // Append files or "N/A" for empty
+    expectedFiles.forEach(id => {
+      const input = document.getElementById(id);
+      if (input && input.files[0]) {
+        formData.append(id, input.files[0]);
+      } else {
+        // Send a dummy blob to trigger backend (optional)
+        // Backend will handle missing fields as "N/A" anyway
+        // formData.append(id, new Blob(["N/A"], { type: "text/plain" }));
+      }
+    });
+
+    // O'Level Data
+    const oLevelData = [];
+    olevelTable.querySelectorAll("tr").forEach(row => {
+      const vals = Array.from(row.querySelectorAll("input")).map(i => i.value || "");
+      oLevelData.push({ examYear: vals[0], examType: vals[1], examNumber: vals[2], subject: vals[3], grade: vals[4] });
+    });
+    formData.append("oLevelInputs", JSON.stringify(oLevelData));
+
+    // JAMB data
+    const jambInput = {
+      regNo: document.getElementById("jambRegNo").value || "",
+      score: document.getElementById("jambScore").value || ""
+    };
+    formData.append("jambInput", JSON.stringify(jambInput));
+
+    try {
+      const res = await fetch("https://ict-reg.onrender.com/api/upload-documents", {
+        method: "POST",
+        body: formData
       });
-      const data=await res.json();
-      alert(data.success?"Documents uploaded successfully!":"Upload failed: "+data.message);
-    }catch(err){console.error(err);alert("Server error.");}
+      const data = await res.json();
+      alert(data.success ? "Documents uploaded successfully!" : "Upload failed: " + data.message);
+    } catch (err) {
+      console.error(err);
+      alert("Server error.");
+    }
   }
 });
 </script>
