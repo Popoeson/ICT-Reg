@@ -187,8 +187,8 @@
       const middlename = localStorage.getItem("studentMiddlename") || "";
       const passport = localStorage.getItem("studentPassport") || "student-pic.jpg";
       const matric = localStorage.getItem("studentMatric") || "N/A";
-      const level = localStorage.getItem("studentLevel") || "N/A";
-      const dept = localStorage.getItem("studentDepartment") || "N/A";
+            document.getElementById("department").textContent = student.department || "N/A";
+      document.getElementById("level").textContent = student.level || "N/A";
 
       // Display passport
       document.getElementById("studentPassport").src = passport;
