@@ -187,26 +187,36 @@ if (!studentId) {
   window.location.href = "login.html";
 }
 
-// Load student data from localStorage first (faster) or fetch from backend
 async function loadDashboard() {
   try {
+    // Try to load from localStorage first
     let student = JSON.parse(localStorage.getItem("studentData"));
 
-    if (!student) {
-      // fallback: fetch from backend
+    let needsFetch = false;
+
+    // Check if essential fields are missing or null
+    if (!student || !student.level || !student.department || !student.matric) {
+      needsFetch = true;
+    }
+
+    if (needsFetch) {
       const res = await fetch(`${backendURL}/api/students/${studentId}`);
-      student = await res.json();
+      const data = await res.json();
 
-      if (!res.ok) throw new Error(student.message || "Failed to load student data");
+      if (!res.ok || !data) throw new Error(data.message || "Failed to load student data");
 
-      // update localStorage for next time
+      student = data;
+
+      // Update localStorage so other pages can use it
       localStorage.setItem("studentData", JSON.stringify(student));
     }
 
+    // Build full name safely
     const fullName = [student.surname, student.firstname, student.middlename]
       .filter(Boolean)
       .join(" ");
 
+    // Update dashboard elements
     document.getElementById("welcomeNote").textContent = `Welcome, ${fullName || "Student"} 👋`;
     document.getElementById("matricNumber").textContent = student.matric || "N/A";
     document.getElementById("level").textContent = student.level || "N/A";
@@ -214,6 +224,7 @@ async function loadDashboard() {
 
     const passportImg = document.getElementById("studentPassport");
     passportImg.src = student.passport || "student-pic.jpg";
+
   } catch (err) {
     console.error(err);
     alert("Session expired. Please log in again.");
@@ -222,6 +233,7 @@ async function loadDashboard() {
   }
 }
 
+// Run on page load
 loadDashboard();
 </script>
 </body>
