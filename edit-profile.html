@@ -418,7 +418,8 @@ confirmBtn.addEventListener("click", async () => {
 
   try {
     const formData = new FormData(form);
-    if (passportInput.files[0]) formData.append("passport", passportInput.files[0]);
+formData.append("studentId", studentId); // Add this line
+if (passportInput.files[0]) formData.append("passport", passportInput.files[0]);
 
     const res = await fetch(`${backendURL}/api/profile/update`, { method: "POST", body: formData });
     const result = await res.json();
