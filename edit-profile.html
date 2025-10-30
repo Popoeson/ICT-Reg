@@ -344,14 +344,13 @@ const departmentSelect = document.getElementById("department");
 const regNoInput = document.getElementById("regNo");
 const studentRegNo = document.getElementById("studentRegNo");
 
-// ✅ Prefill form from localStorage or fetch backend if missing
+// Prefill form
 async function prefillForm() {
   spinnerOverlay.style.display = "flex";
 
   let studentData = JSON.parse(localStorage.getItem("studentData")) || {};
 
   try {
-    // Fetch from backend if essential info is missing
     if (!studentData._id || !studentData.surname || !studentData.email) {
       const res = await fetch(`${backendURL}/api/students/${studentId}`);
       const data = await res.json();
@@ -360,7 +359,6 @@ async function prefillForm() {
       localStorage.setItem("studentData", JSON.stringify(studentData));
     }
 
-    // Fill form inputs if data exists
     const fields = [
       "surname", "firstname", "middlename", "phone", "email",
       "department", "regNo", "level", "stateOrigin", "lgaOrigin",
@@ -372,13 +370,8 @@ async function prefillForm() {
       if (el && studentData[f]) el.value = studentData[f];
     });
 
-    // Passport image
     passportImg.src = studentData.passport || "placeholder-passport.png";
-
-    // Reg No display
     studentRegNo.textContent = studentData.regNo ? `Reg No: ${studentData.regNo}` : "Reg No: —";
-
-    // Department select
     if (studentData.department) departmentSelect.value = studentData.department;
 
   } catch (err) {
@@ -391,7 +384,7 @@ async function prefillForm() {
   }
 }
 
-// ✅ Auto-generate Reg No if empty
+// Auto-generate Reg No
 departmentSelect.addEventListener("change", () => {
   if (!regNoInput.value && departmentSelect.value) {
     const prefix = departmentSelect.value.split(" ").map(w => w[0]).join("").substring(0,3).toUpperCase();
@@ -402,7 +395,7 @@ departmentSelect.addEventListener("change", () => {
   }
 });
 
-// ✅ Preview passport image
+// Preview passport
 passportInput.addEventListener("change", e => {
   const file = e.target.files[0];
   if (file) {
@@ -412,7 +405,7 @@ passportInput.addEventListener("change", e => {
   }
 });
 
-// ✅ Show preview modal before save
+// Show preview modal
 form.addEventListener("submit", e => {
   e.preventDefault();
   const formData = new FormData(form);
@@ -426,14 +419,14 @@ form.addEventListener("submit", e => {
 
 cancelBtn.addEventListener("click", () => previewModal.style.display = "none");
 
-// ✅ Confirm and save profile
+// Confirm & save profile
 confirmBtn.addEventListener("click", async () => {
   previewModal.style.display = "none";
   spinnerOverlay.style.display = "flex";
 
   try {
     const formData = new FormData(form);
-    formData.append("studentId", studentId);
+    formData.append("studentId", studentId); // ✅ Ensure studentId is sent
     if (passportInput.files[0]) formData.append("passport", passportInput.files[0]);
 
     const res = await fetch(`${backendURL}/api/profile/update`, {
@@ -444,7 +437,7 @@ confirmBtn.addEventListener("click", async () => {
     const result = await res.json();
     spinnerOverlay.style.display = "none";
 
-    if (result.success) {
+    if (res.ok && result.success) {
       alert("Profile updated successfully!");
       localStorage.setItem("studentData", JSON.stringify(result.data));
       window.location.href = "dashboard.html";
