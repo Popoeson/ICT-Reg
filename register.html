@@ -225,7 +225,7 @@
   </div>
 
   <script>
-const form = document.getElementById("registerForm");
+    const form = document.getElementById("registerForm");
 const passportInput = document.getElementById("passport");
 const previewDiv = document.getElementById("preview");
 const spinnerOverlay = document.getElementById("spinnerOverlay");
@@ -255,7 +255,7 @@ togglePassword.addEventListener("click", () => {
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const password = document.getElementById("password").value.trim();
+  const password = passwordInput.value.trim();
   const confirmPassword = document.getElementById("confirmPassword").value.trim();
 
   if (password !== confirmPassword) {
@@ -274,6 +274,7 @@ form.addEventListener("submit", async (e) => {
   formData.append("passport", passportInput.files[0]);
 
   try {
+    // Show spinner
     document.body.classList.add("blur");
     spinnerOverlay.classList.add("active");
 
@@ -284,18 +285,33 @@ form.addEventListener("submit", async (e) => {
 
     const result = await res.json();
 
+    // Hide spinner
     document.body.classList.remove("blur");
     spinnerOverlay.classList.remove("active");
 
     if (res.ok) {
-      const student = result.student || result.data || null;
+      const student = result.student;
+
       if (student) {
-        // 🔹 Store essential info in localStorage
-        localStorage.setItem("studentId", student._id || "");
-        localStorage.setItem("studentEmail", student.email || "");
-        localStorage.setItem("studentFirstname", student.firstname || "");
-        localStorage.setItem("studentSurname", student.surname || "");
-        localStorage.setItem("studentPassport", student.passport || "");
+        // 🔹 Save all essential info in localStorage
+        localStorage.setItem(
+          "studentData",
+          JSON.stringify({
+            _id: student._id,
+            surname: student.surname,
+            firstname: student.firstname,
+            middlename: student.middlename || "",
+            email: student.email,
+            phone: student.phone || "",
+            passport: student.passport,
+            matric: student.matric || "",      // empty until profile updated
+            level: student.level || "",        // empty until profile updated
+            department: student.department || "",
+            regNo: student.regNo || "",
+          })
+        );
+
+        localStorage.setItem("studentId", student._id); // convenience
       }
 
       alert("Registration successful!");
@@ -308,6 +324,7 @@ form.addEventListener("submit", async (e) => {
   } catch (err) {
     document.body.classList.remove("blur");
     spinnerOverlay.classList.remove("active");
+    console.error(err);
     alert("Error submitting registration form.");
   }
 });
