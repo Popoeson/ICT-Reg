@@ -72,56 +72,27 @@ const studentSchema = new mongoose.Schema({
 
 const Student = mongoose.model("Student", studentSchema);
 
-/* Full profile schema (optional detailed records) */
-const profileSchema = new mongoose.Schema(
-  {
-    surname: { type: String, required: true, trim: true },
-    firstname: { type: String, required: true, trim: true },
-    middlename: { type: String, trim: true },
-    phone: { type: String, required: true, trim: true, unique: true },
-    email: { type: String, required: true, trim: true, lowercase: true, unique: true },
-    marital: { type: String, required: true },
-    disability: { type: String, default: "None" },
-    stateOrigin: { type: String, required: true },
-    lgaOrigin: { type: String, required: true },
-    address: { type: String, required: true },
-    lgaResidence: { type: String, required: true },
-    department: { type: String, required: true },
-    regNo: { type: String, required: true, unique: true, uppercase: true },
-    nokSurname: { type: String, required: true },
-    nokFirstname: { type: String, required: true },
-    nokMiddlename: { type: String },
-    nokPhone: { type: String, required: true },
-    nokMarital: { type: String, required: true },
-    nokRelation: { type: String, required: true },
-    nokAddress: { type: String, required: true },
-    school: { type: String, required: true },
-    olevel: [
-      {
-        year: String,
-        reg: String,
-        subject: String,
-        grade: String,
-      },
-    ],
-    fileOlevel: String,
-    fileJamb: String,
-    fileState: String,
-    fileBirth: String,
-    fileNin: String,
-    fileFee: String,
-    passport: String,
-    documents: [
-      {
-        label: String,
-        url: String,
-      },
-    ],
-  },
-  { timestamps: true }
-);
+// Student Profile Setup
+const studentProfileSchema = new mongoose.Schema({
+  surname: String,
+  firstname: String,
+  middlename: String,
+  phone: String,
+  email: String,
+  department: String,
+  regNo: { type: String, unique: true },
+  level: String,
+  stateOrigin: String,
+  lgaOrigin: String,
+  address: String,
+  nokSurname: String,
+  nokFirstname: String,
+  nokPhone: String,
+  nokRelation: String,
+  passport: String, // Cloudinary image URL
+}, { timestamps: true });
 
-const Profile = mongoose.model("Profile", profileSchema);
+const StudentProfile = mongoose.model("StudentProfile", studentProfileSchema);
 
 // Documents upload schema
 
@@ -350,33 +321,70 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
   }
 });
 
-// Create or update detailed profile
-app.post("/api/students/profile", async (req, res) => {
+// ✅ Profile Update Route
+app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
   try {
-    const payload = req.body;
-    if (!payload.email || !payload.phone || !payload.regNo) {
-      return res.status(400).json({ message: "email, phone and regNo are required" });
+    const body = req.body;
+    let passportUrl = null;
+
+    // 🔹 Upload image to Cloudinary (if any)
+    if (req.file) {
+      const stream = Readable.from(req.file.buffer);
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "student_passports" },
+          (err, result) => (err ? reject(err) : resolve(result))
+        );
+        stream.pipe(uploadStream);
+      });
+      passportUrl = result.secure_url;
     }
 
-    const email = normalizeEmail(payload.email);
-    const phone = normalizePhone(payload.phone);
-
-    // Upsert by regNo
-    const profile = await Profile.findOneAndUpdate(
-      { regNo: payload.regNo.toUpperCase() },
+    // 🔹 Create or update profile in DB
+    const updatedProfile = await StudentProfile.findOneAndUpdate(
+      { regNo: body.regNo },
       {
-        ...payload,
-        email,
-        phone,
-        regNo: payload.regNo.toUpperCase(),
+        $set: {
+          surname: body.surname,
+          firstname: body.firstname,
+          middlename: body.middlename,
+          phone: body.phone,
+          email: body.email,
+          department: body.department,
+          regNo: body.regNo,
+          level: body.level,
+          stateOrigin: body.stateOrigin,
+          lgaOrigin: body.lgaOrigin,
+          address: body.address,
+          nokSurname: body.nokSurname,
+          nokFirstname: body.nokFirstname,
+          nokPhone: body.nokPhone,
+          nokRelation: body.nokRelation,
+          ...(passportUrl && { passport: passportUrl }),
+        },
       },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      { new: true, upsert: true }
     );
 
-    res.json({ success: true, profile });
+    res.json({
+      success: true,
+      message: "Profile updated successfully",
+      data: updatedProfile,
+    });
   } catch (err) {
-    console.error("❌ profile error:", err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Error updating profile:", err);
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
+  }
+});
+
+// ✅ Optional: Get Profile by Reg No (for prefill)
+app.get("/api/profile/:regNo", async (req, res) => {
+  try {
+    const student = await StudentProfile.findOne({ regNo: req.params.regNo });
+    if (!student) return res.status(404).json({ success: false, message: "Profile not found" });
+    res.json({ success: true, data: student });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 });
 
