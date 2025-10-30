@@ -187,8 +187,8 @@
       const middlename = localStorage.getItem("studentMiddlename") || "";
       const passport = localStorage.getItem("studentPassport") || "student-pic.jpg";
       const matric = localStorage.getItem("studentMatric") || "N/A";
-            document.getElementById("department").textContent = student.department || "N/A";
-      document.getElementById("level").textContent = student.level || "N/A";
+      const level = localStorage.getItem("studentLevel") || "N/A";
+      const dept = localStorage.getItem("studentDepartment") || "N/A";
 
       // Display passport
       document.getElementById("studentPassport").src = passport;
@@ -199,8 +199,8 @@
 
       // Other info
       document.getElementById("matricNumber").textContent = matric;
-      document.getElementById("level").textContent = level;
-      document.getElementById("department").textContent = dept;
+      document.getElementById("level").textContent = student.level;
+      document.getElementById("department").textContent = student.department;
     });
   </script>
 </body>
