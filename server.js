@@ -509,19 +509,22 @@ app.get("/api/students", async (req, res) => {
   }
 });
 
-// Get single student profile
+
+// Get combined student + profile (match by email instead)
 app.get("/api/students/:id", async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
     if (!student) return res.status(404).json({ message: "Student not found" });
 
-    const profile = await StudentProfile.findOne({ studentId: req.params.id });
+    // Find profile using the student's email
+    const profile = await StudentProfile.findOne({ email: student.email });
 
     const fullStudentData = {
       ...student.toObject(),
-      department: profile?.department || student.department || "N/A",
-      level: profile?.level || student.level || "N/A",
-      passport: profile?.passport || student.passport || "student-pic.jpg",
+      department: profile?.department || "N/A",
+      level: profile?.level || "N/A",
+      passport: profile?.passport || "student-pic.jpg",
+      regNo: profile?.regNo || "N/A",
     };
 
     res.json({ success: true, student: fullStudentData });
