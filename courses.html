@@ -72,6 +72,17 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+    button.delete-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button.delete-btn:hover {
+      background-color: #c82333;
+    }
     @media (max-width: 600px) {
       table, thead, tbody, th, td, tr { display: block; }
       thead { display: none; }
@@ -142,12 +153,14 @@
         // Flatten nested courses array
         allCourses = [];
         (data.data || []).forEach(doc => {
-          const { level, department, semester, courses } = doc;
+          const { level, department, semester, _id: docId, courses } = doc;
           (courses || []).forEach(course => {
             allCourses.push({
               level,
               department,
               semester,
+              docId,
+              courseId: course._id,
               code: course.code,
               title: course.title,
               unit: course.unit,
@@ -205,6 +218,7 @@
           <th>Course Title</th>
           <th>Course Unit</th>
           <th>Lecturer</th>
+          <th>Actions</th>
         </tr>`;
         table.appendChild(thead);
 
@@ -217,6 +231,9 @@
             <td data-label="Course Title">${course.title}</td>
             <td data-label="Course Unit">${course.unit}</td>
             <td data-label="Lecturer">${course.lecturer}</td>
+            <td data-label="Actions">
+              <button class="delete-btn" onclick="deleteCourse('${course.docId}', '${course.courseId}')">Delete</button>
+            </td>
           `;
           tbody.appendChild(tr);
         });
@@ -228,6 +245,23 @@
 
       if (courses.length === 0) {
         container.innerHTML = '<p style="text-align:center;color:#555;">No courses found for selected filters.</p>';
+      }
+    }
+
+    async function deleteCourse(docId, courseId) {
+      if (!confirm('Are you sure you want to delete this course?')) return;
+
+      try {
+        const res = await fetch(`https://ict-reg.onrender.com/api/courses/${docId}/${courseId}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Failed to delete course');
+
+        alert('Course deleted successfully!');
+        fetchCourses(); // refresh dashboard
+      } catch(err) {
+        alert('Error deleting course: ' + err.message);
       }
     }
 
