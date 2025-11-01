@@ -82,6 +82,7 @@ const studentProfileSchema = new mongoose.Schema({
   email: String,
   department: String,
   regNo: { type: String, unique: true },
+  matricNo: { type: String, unique: true }, // ✅ Added field
   level: String,
   stateOrigin: String,
   lgaOrigin: String,
