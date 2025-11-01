@@ -135,6 +135,8 @@
       <div class="info-item"><strong>Email:</strong> <span id="studentEmail">N/A</span></div>
       <div class="info-item"><strong>Phone:</strong> <span id="studentPhone">N/A</span></div>
       <div class="info-item"><strong>Matric No:</strong> <span id="studentMatric">N/A</span></div>
+
+<div class="info-item"><strong>Reg No:</strong> <span id="regNo">N/A</span></div>
       <div class="info-item"><strong>Department:</strong> <span id="studentDept">N/A</span></div>
       <div class="info-item"><strong>Level:</strong> <span id="studentLevel">N/A</span></div>
     </section>
@@ -177,6 +179,8 @@
           document.getElementById("studentEmail").textContent = s.email || "N/A";
           document.getElementById("studentPhone").textContent = s.phone || "N/A";
           document.getElementById("studentMatric").textContent = s.matricNo || "N/A";
+ 
+document.getElementById("regNo").textContent = s.regNo || "N/A";
           document.getElementById("studentDept").textContent = s.department || "N/A";
           document.getElementById("studentLevel").textContent = s.level || "N/A";
           document.getElementById("studentState").textContent = s.stateOrigin || "N/A";
