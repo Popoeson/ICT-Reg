@@ -385,6 +385,17 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
   }
 });
 
+//======== Fetch Uploaded Documents =======
+app.get("/api/documents/:studentId", async (req, res) => {
+  try {
+    const doc = await Document.findOne({ studentId: req.params.studentId });
+    if (!doc) return res.json({ success: false, message: "No record found" });
+    res.json({ success: true, data: doc });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Profile Update Route
 app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
   try {
