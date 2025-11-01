@@ -299,8 +299,11 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
   try {
     const { studentId, oLevelInputs, jambInput } = req.body;
     if (!studentId)
-      return res.status(400).json({ success: false, message: "Student ID required." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Student ID required." });
 
+    // Parse the received JSON strings safely
     const oLevel = JSON.parse(oLevelInputs || "[]");
     const jamb = JSON.parse(jambInput || "{}");
 
@@ -308,16 +311,18 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
       "jambUpload", "jambAdmission", "applicationForm", "acceptanceForm",
       "guarantorForm", "codeOfConduct", "nd1First", "nd1Second",
       "nd2First", "nd2Second", "ict1", "ict2", "ict3", "ict4",
-      "fee1", "fee2", "fee3", "fee4", "acceptanceFee", "stateOfOrigin",
-      "nin", "deptFee"
+      "fee1", "fee2", "fee3", "fee4", "acceptanceFee",
+      "stateOfOrigin", "nin", "deptFee"
     ];
 
     const uploadedFiles = {};
     const fileMap = {};
+
     for (const file of req.files) {
       fileMap[file.fieldname] = file;
     }
 
+    // Upload to Cloudinary or assign "N/A"
     for (const field of expectedFiles) {
       if (fileMap[field]) {
         const uploaded = await cloudinary.uploader.upload(fileMap[field].path, {
@@ -329,26 +334,54 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
       }
     }
 
-    // ✅ Use the correct model name
-    const uploadDoc = new Document({
-      studentId,
-      oLevelInputs: oLevel,
-      jambInput: jamb,
-      files: uploadedFiles,
-    });
+    // 🧠 Check if the student already has a document record
+    let existingDoc = await Document.findOne({ studentId });
 
-    await uploadDoc.save();
+    if (existingDoc) {
+      // ✅ Update the existing record
+      existingDoc.oLevelInputs = oLevel.length > 0 ? oLevel : existingDoc.oLevelInputs;
+      existingDoc.jambInput = Object.keys(jamb).length > 0 ? jamb : existingDoc.jambInput;
 
-    res.json({
-      success: true,
-      message: "Documents uploaded successfully",
-      data: uploadDoc,
-    });
+      // Merge files (keep old ones if not re-uploaded)
+      for (const field of expectedFiles) {
+        if (uploadedFiles[field] !== "N/A") {
+          existingDoc.files[field] = uploadedFiles[field];
+        } else if (!existingDoc.files[field]) {
+          existingDoc.files[field] = "N/A";
+        }
+      }
+
+      await existingDoc.save();
+
+      res.json({
+        success: true,
+        message: "Documents updated successfully",
+        data: existingDoc,
+      });
+    } else {
+      // 🆕 Create a new record
+      const newDoc = new Document({
+        studentId,
+        oLevelInputs: oLevel,
+        jambInput: jamb,
+        files: uploadedFiles,
+      });
+
+      await newDoc.save();
+
+      res.json({
+        success: true,
+        message: "Documents uploaded successfully",
+        data: newDoc,
+      });
+    }
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({ success: false, message: "Error uploading documents", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Error uploading documents",
+      error: err.message,
+    });
   }
 });
 
