@@ -509,14 +509,18 @@ app.get("/api/students", async (req, res) => {
   }
 });
 
-// Get single student
+// Get single student profile
 app.get("/api/students/:id", async (req, res) => {
   try {
-    const student = await Student.findById(req.params.id);
-    if (!student) return res.status(404).json({ message: "Student not found" });
-    res.json({ success: true, student });
+    const studentProfile = await StudentProfile.findOne({ studentId: req.params.id });
+
+    if (!studentProfile) {
+      return res.status(404).json({ message: "Student profile not found" });
+    }
+
+    res.json({ success: true, student: studentProfile });
   } catch (err) {
-    console.error("❌ get student error:", err);
+    console.error("❌ get student profile error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
