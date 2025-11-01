@@ -32,6 +32,7 @@
       align-items: center;
       justify-content: space-between;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      position: relative;
     }
 
     header img {
@@ -42,6 +43,17 @@
     header h1 {
       font-size: 19px;
       font-weight: 500;
+    }
+
+    /* ===== LOADING BAR ===== */
+    #loadingBar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      width: 0%;
+      background-color: #00ff6a;
+      transition: width 0.4s ease;
     }
 
     /* ===== HERO CARD ===== */
@@ -139,6 +151,7 @@
       <img src="upload/logo.jpg" alt="School Logo">
     </div>
     <h1>Student Portal Dashboard</h1>
+    <div id="loadingBar"></div>
   </header>
 
   <!-- HERO SECTION -->
@@ -180,40 +193,56 @@
   </section>
 
   <script>
-const studentData = JSON.parse(localStorage.getItem("studentData"));
-const studentId = localStorage.getItem("studentId");
+  const loadingBar = document.getElementById("loadingBar");
+  const studentData = JSON.parse(localStorage.getItem("studentData"));
+  const studentId = localStorage.getItem("studentId");
 
-if (!studentData || !studentId) {
-  window.location.href = "login.html";
-} else {
-  const backendUrl = "https://ict-reg.onrender.com/api/students/" + studentId;
+  // Function to simulate progress bar animation
+  function startLoadingBar() {
+    loadingBar.style.width = "30%";
+    setTimeout(() => (loadingBar.style.width = "60%"), 300);
+    setTimeout(() => (loadingBar.style.width = "85%"), 800);
+  }
 
-  fetch(backendUrl)
-    .then(res => res.json())
-    .then(data => {
-      if (data.success && data.student) {
-        const student = data.student;
+  function finishLoadingBar() {
+    loadingBar.style.width = "100%";
+    setTimeout(() => {
+      loadingBar.style.opacity = "0";
+    }, 400);
+  }
 
-        // Update localStorage to always keep full info
-        localStorage.setItem("studentData", JSON.stringify(student));
+  if (!studentData || !studentId) {
+    window.location.href = "login.html";
+  } else {
+    startLoadingBar();
+    const backendUrl = `https://ict-reg.onrender.com/api/students/${studentId}`;
 
-        const fullName = [student.surname, student.firstname, student.middlename]
-          .filter(Boolean)
-          .join(" ");
+    fetch(backendUrl)
+      .then(res => res.json())
+      .then(data => {
+        finishLoadingBar();
+        if (data.success && data.student) {
+          const student = data.student;
+          localStorage.setItem("studentData", JSON.stringify(student));
 
-        document.getElementById("welcomeNote").textContent = `Welcome, ${fullName || "Student"} 👋`;
-        document.getElementById("matricNumber").textContent = student.matric || "N/A";
-        document.getElementById("level").textContent = student.level || "N/A";
-        document.getElementById("department").textContent = student.department || "N/A";
-        document.getElementById("studentPassport").src = student.passport || "student-pic.jpg";
-      } else {
-        console.error("⚠️ Failed to fetch full student info:", data);
-      }
-    })
-    .catch(err => {
-      console.error("❌ Error fetching student data:", err);
-    });
-}
-</script>
+          const fullName = [student.surname, student.firstname, student.middlename]
+            .filter(Boolean)
+            .join(" ");
+
+          document.getElementById("welcomeNote").textContent = `Welcome, ${fullName || "Student"} 👋`;
+          document.getElementById("matricNumber").textContent = student.matric || "N/A";
+          document.getElementById("level").textContent = student.level || "N/A";
+          document.getElementById("department").textContent = student.department || "N/A";
+          document.getElementById("studentPassport").src = student.passport || "student-pic.jpg";
+        } else {
+          console.error("⚠️ Failed to fetch full student info:", data);
+        }
+      })
+      .catch(err => {
+        finishLoadingBar();
+        console.error("❌ Error fetching student data:", err);
+      });
+  }
+  </script>
 </body>
 </html>
