@@ -1,274 +1,315 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Uploaded Documents</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>View Uploaded Documents</title>
   <style>
-    :root{
-      --blue:#1e73be;
-      --blue-dark:#1660a0;
-      --muted:#f2f6fb;
-      --card-bg:#ffffff;
-      --text:#222;
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f8ff;
+      color: #333;
+      margin: 0;
+      padding: 0;
     }
 
-    *{box-sizing:border-box;margin:0;padding:0;font-family:"Poppins",system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
-    body{background:var(--muted);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
-
-    header{
-      background:var(--blue);
-      color:#fff;
-      padding:16px 20px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      box-shadow:0 2px 6px rgba(0,0,0,0.08);
-    }
-    header h1{font-size:1.1rem;font-weight:600;}
-    .top-actions{display:flex;gap:10px;align-items:center;}
-    .upload-btn{
-      background:#fff;color:var(--blue);border:none;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;
-      box-shadow:0 1px 0 rgba(0,0,0,0.03);transition:transform .12s ease,background .12s;
-    }
-    .upload-btn:hover{transform:translateY(-2px);background:#f8fbff;}
-
-    .container{
-      width:100%;
-      max-width:1100px;
-      margin:22px auto;
-      padding:14px;
+    header {
+      background: #0056b3;
+      color: white;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
-      gap:16px;
+    header h1 {
+      font-size: 20px;
+      margin: 0;
     }
 
-    .file-card{
-      background:var(--card-bg);
-      border-radius:10px;
-      overflow:hidden;
-      box-shadow:0 2px 6px rgba(16,24,40,0.04);
-      display:flex;
-      flex-direction:column;
-      cursor:default;
-      min-height:170px;
-      transition:transform .12s ease,box-shadow .12s ease;
-    }
-    .file-card:hover{transform:translateY(-6px);box-shadow:0 6px 18px rgba(16,24,40,0.08);}
-
-    .thumb{
-      height:120px;
-      width:100%;
-      object-fit:cover;
-      background:#eef6ff;
-      display:block;
+    header button {
+      background: white;
+      color: #0056b3;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
     }
 
-    .not-uploaded{
-      height:120px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:#9aa7bf;
-      font-size:0.9rem;
-      background:#fbfdff;
+    header button:hover {
+      background: #e7efff;
     }
 
-    .label{
-      padding:10px 12px;
-      font-size:0.9rem;
-      color:var(--blue-dark);
-      border-top:1px solid #f1f6fb;
-      text-transform:capitalize;
-      word-break:break-word;
+    main {
+      max-width: 950px;
+      margin: 25px auto;
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
     }
 
-    /* overlay */
-    .overlay{
-      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-      background:rgba(0,0,0,0.65);visibility:hidden;opacity:0;transition:opacity .15s ease,visibility .15s;
-      z-index:1200;padding:20px;
-    }
-    .overlay.active{visibility:visible;opacity:1;}
-    .overlay .content{
-      max-width:95%;max-height:95%;display:flex;align-items:center;justify-content:center;
-    }
-    .overlay img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.5);}
-    .overlay .close-btn{
-      position:absolute;top:18px;right:20px;background:#fff;border-radius:8px;padding:6px 8px;border:none;cursor:pointer;
-      box-shadow:0 2px 8px rgba(0,0,0,0.15);
+    section {
+      margin-bottom: 30px;
     }
 
-    .empty-state{padding:32px;background:var(--card-bg);border-radius:10px;text-align:center;color:#5b6b80;}
+    .section-title {
+      font-size: 18px;
+      color: #0056b3;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #0056b3;
+      padding-bottom: 5px;
+    }
 
-    @media (max-width:600px){
-      header{flex-direction:column;align-items:flex-start;gap:10px}
-      .upload-btn{width:100%;}
-      .top-actions{width:100%}
-      .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+    .thumbnail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 15px;
+    }
+
+    .thumbnail {
+      text-align: center;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      background: #f9fbff;
+      transition: 0.3s;
+    }
+
+    .thumbnail:hover {
+      background: #eef4ff;
+      transform: scale(1.02);
+    }
+
+    .thumbnail img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .thumbnail p {
+      font-size: 13px;
+      margin-top: 8px;
+      font-weight: 500;
+      color: #444;
+    }
+
+    /* Read-only JAMB and O'Level styles */
+    .readonly-input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background: #f7f9ff;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background: #0056b3;
+      color: white;
+    }
+
+    /* Overlay for image preview */
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .overlay img {
+      max-width: 90%;
+      max-height: 85%;
+      border-radius: 10px;
+    }
+
+    .no-file {
+      text-align: center;
+      color: #777;
+      font-style: italic;
+      border: 1px dashed #ccc;
+      padding: 20px;
+      border-radius: 8px;
+      background: #fafafa;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Uploaded Documents</h1>
-    <div class="top-actions">
-      <button class="upload-btn" id="gotoUpload">Upload Documents</button>
-    </div>
+    <h1>Student Uploaded Documents</h1>
+    <button onclick="window.location.href='edit-document.html'">Upload Documents</button>
   </header>
 
-  <div class="container" id="container">
-    <div id="loading" class="empty-state">Loading documents…</div>
-    <div id="docsGrid" class="grid" style="display:none;"></div>
-  </div>
+  <main id="uploadsContainer">
+    <p>Loading documents...</p>
+  </main>
 
-  <!-- Overlay preview -->
-  <div id="overlay" class="overlay" onclick="closeOverlay(event)">
-    <button class="close-btn" aria-label="Close" onclick="hideOverlay()">✕</button>
-    <div class="content">
-      <img id="overlayImg" src="" alt="Document preview" />
-    </div>
+  <!-- Overlay for image preview -->
+  <div class="overlay" id="imageOverlay" onclick="closeOverlay()">
+    <img id="overlayImg" src="" alt="Preview">
   </div>
 
   <script>
-    const API_BASE = "https://ict-reg.onrender.com"; // keep this your backend base
-    const studentId = localStorage.getItem("studentId");
+    const studentId = localStorage.getItem("studentId"); // Assuming studentId is stored after login
+    const baseURL = "https://ict-reg.onrender.com"; // Adjust backend URL if needed
 
-    document.getElementById("gotoUpload").addEventListener("click", () => {
-      window.location.href = "edit-document.html";
-    });
-
-    async function fetchDocuments(){
-      const loading = document.getElementById("loading");
-      const grid = document.getElementById("docsGrid");
-      loading.style.display = "block";
-      grid.style.display = "none";
-      loading.textContent = "Loading documents…";
-
-      if (!studentId) {
-        loading.textContent = "You are not logged in.";
-        return;
-      }
-
+    async function fetchDocuments() {
       try {
-        const res = await fetch(`${API_BASE}/api/documents/${studentId}`);
-        if (!res.ok) {
-          loading.textContent = "No documents found.";
-          return;
-        }
-        const json = await res.json();
+        const res = await fetch(`${baseURL}/api/student-documents/${studentId}`);
+        const data = await res.json();
 
-        if (!json.success || !json.data) {
-          loading.textContent = "No documents found for this student.";
-          return;
-        }
+        const main = document.getElementById("uploadsContainer");
+        main.innerHTML = "";
 
-        const record = json.data;
-        // `files` field may be an object (key -> url or "N/A")
-        const files = record.files || {};
-
-        // If files object is empty and oLevelUploads or arrays exist, handle gracefully
-        const keys = Object.keys(files);
-        if (keys.length === 0) {
-          loading.textContent = "No uploaded files yet.";
+        if (!data.success || !data.document) {
+          main.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
           return;
         }
 
-        renderGrid(files);
+        const doc = data.document;
+
+        // O'Level Inputs Table
+        const oLevelTable = `
+          <section>
+            <h2 class="section-title">O'Level Result Input</h2>
+            ${doc.oLevelInputs?.length ? `
+              <table>
+                <thead>
+                  <tr>
+                    <th>Exam Year</th>
+                    <th>Exam Type</th>
+                    <th>Exam Number</th>
+                    <th>Subject</th>
+                    <th>Grade</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${doc.oLevelInputs.map(r => `
+                    <tr>
+                      <td>${r.examYear}</td>
+                      <td>${r.examType}</td>
+                      <td>${r.examNumber}</td>
+                      <td>${r.subject}</td>
+                      <td>${r.grade}</td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            ` : `<div class="no-file">No O'Level record found</div>`}
+          </section>`;
+
+        // JAMB Info
+        const jambInfo = `
+          <section>
+            <h2 class="section-title">JAMB Details</h2>
+            <label>JAMB Reg No</label>
+            <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
+            <label>JAMB Score</label>
+            <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
+          </section>`;
+
+        // Helper for thumbnails
+        const createThumbnail = (url, label) => {
+          return url && url !== "N/A"
+            ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
+            : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
+        };
+
+        // Build each section
+        const files = doc.files || {};
+
+        const sections = `
+          ${oLevelTable}
+          ${jambInfo}
+
+          <section>
+            <h2 class="section-title">JAMB Documents</h2>
+            <div class="thumbnail-grid">
+              ${createThumbnail(files.jambUpload, "JAMB Result Upload")}
+              ${createThumbnail(files.jambAdmission, "JAMB Admission Letter")}
+            </div>
+          </section>
+
+          <section>
+            <h2 class="section-title">School Forms</h2>
+            <div class="thumbnail-grid">
+              ${createThumbnail(files.applicationForm, "Application Form")}
+              ${createThumbnail(files.acceptanceForm, "Acceptance Form")}
+              ${createThumbnail(files.guarantorForm, "Guarantor’s Form")}
+              ${createThumbnail(files.codeOfConduct, "Code of Conduct")}
+            </div>
+          </section>
+
+          <section>
+            <h2 class="section-title">Course & Receipts</h2>
+            <div class="thumbnail-grid">
+              ${createThumbnail(files.nd1First, "ND1 - First Semester Course Form")}
+              ${createThumbnail(files.nd1Second, "ND1 - Second Semester Course Form")}
+              ${createThumbnail(files.nd2First, "ND2 - First Semester Course Form")}
+              ${createThumbnail(files.nd2Second, "ND2 - Second Semester Course Form")}
+              ${createThumbnail(files.ict1, "ICT Receipt 1")}
+              ${createThumbnail(files.ict2, "ICT Receipt 2")}
+              ${createThumbnail(files.ict3, "ICT Receipt 3")}
+              ${createThumbnail(files.ict4, "ICT Receipt 4")}
+              ${createThumbnail(files.fee1, "School Fees Receipt 1")}
+              ${createThumbnail(files.fee2, "School Fees Receipt 2")}
+              ${createThumbnail(files.fee3, "School Fees Receipt 3")}
+              ${createThumbnail(files.fee4, "School Fees Receipt 4")}
+            </div>
+          </section>
+
+          <section>
+            <h2 class="section-title">Other Documents</h2>
+            <div class="thumbnail-grid">
+              ${createThumbnail(files.acceptanceFee, "Acceptance Fee")}
+              ${createThumbnail(files.stateOfOrigin, "State of Origin")}
+              ${createThumbnail(files.nin, "NIN Upload")}
+              ${createThumbnail(files.deptFee, "Departmental Fee Receipt")}
+            </div>
+          </section>
+        `;
+
+        main.innerHTML = sections;
       } catch (err) {
-        console.error("Fetch error:", err);
-        loading.textContent = "Error loading documents. Please try again.";
+        console.error(err);
+        document.getElementById("uploadsContainer").innerHTML =
+          "<p style='color:red; text-align:center;'>Error loading documents.</p>";
       }
     }
 
-    function renderGrid(files){
-      const container = document.getElementById("docsGrid");
-      const loading = document.getElementById("loading");
-      container.innerHTML = ""; // reset
-
-      // Ensure a stable ordering (optional) — prefer readable order
-      const order = [
-        "jambUpload","jambAdmission",
-        "applicationForm","acceptanceForm","guarantorForm","codeOfConduct",
-        "nd1First","nd1Second","nd2First","nd2Second",
-        "ict1","ict2","ict3","ict4",
-        "fee1","fee2","fee3","fee4",
-        "acceptanceFee","stateOfOrigin","nin","deptFee"
-      ];
-
-      // if files has keys not in order, include them too
-      const fileKeys = Array.from(new Set([...order, ...Object.keys(files)]));
-
-      fileKeys.forEach(key => {
-        const value = files[key];
-        const card = document.createElement("div");
-        card.className = "file-card";
-
-        if (value && value !== "N/A") {
-          const img = document.createElement("img");
-          img.className = "thumb";
-          img.src = value;
-          img.alt = key;
-          img.loading = "lazy";
-          img.addEventListener("click", () => showOverlay(value));
-          card.appendChild(img);
-        } else {
-          const placeholder = document.createElement("div");
-          placeholder.className = "not-uploaded";
-          placeholder.textContent = "File not yet uploaded";
-          card.appendChild(placeholder);
-        }
-
-        const label = document.createElement("div");
-        label.className = "label";
-        // convert camelCase or snake to readable label
-        label.textContent = prettifyKey(key);
-        card.appendChild(label);
-
-        container.appendChild(card);
-      });
-
-      loading.style.display = "none";
-      container.style.display = "grid";
+    function openOverlay(src) {
+      const overlay = document.getElementById("imageOverlay");
+      const overlayImg = document.getElementById("overlayImg");
+      overlayImg.src = src;
+      overlay.style.display = "flex";
     }
 
-    function prettifyKey(k){
-      if (!k) return "";
-      // replace camelCase / underscores / numbers nicely
-      return k
-        .replace(/([a-z])([A-Z])/g, "$1 $2") // camelCase
-        .replace(/[_\-]/g, " ")
-        .replace(/\d+/g, "")
-        .trim()
-        .replace(/\b\w/g, ch => ch.toUpperCase());
+    function closeOverlay() {
+      document.getElementById("imageOverlay").style.display = "none";
     }
 
-    function showOverlay(src){
-      const overlay = document.getElementById("overlay");
-      const img = document.getElementById("overlayImg");
-      img.src = src;
-      overlay.classList.add("active");
-      // prevent body scroll while open
-      document.body.style.overflow = "hidden";
-    }
-
-    function hideOverlay(){
-      const overlay = document.getElementById("overlay");
-      overlay.classList.remove("active");
-      document.getElementById("overlayImg").src = "";
-      document.body.style.overflow = "";
-    }
-
-    function closeOverlay(e){
-      // close when clicked outside image (overlay background)
-      if (e.target.id === "overlay") hideOverlay();
-    }
-
-    // Kick off
     fetchDocuments();
   </script>
 </body>
