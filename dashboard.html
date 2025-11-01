@@ -159,7 +159,7 @@
     <img id="studentPassport" src="student-pic.jpg" alt="Student Photo">
     <div class="hero-details">
       <h2 id="welcomeNote">Welcome, Student 👋</h2>
-      <p><strong>Matric No:</strong> <span id="matricNumber">N/A</span></p>
+      <p><strong>Matric No:</strong> <span id="matricNumber"> </span></p>
       <p><strong>Level:</strong> <span id="level">N/A</span></p>
       <p><strong>Department:</strong> <span id="department">N/A</span></p>
     </div>
@@ -230,7 +230,7 @@
             .join(" ");
 
           document.getElementById("welcomeNote").textContent = `Welcome, ${fullName || "Student"} 👋`;
-          document.getElementById("matricNumber").textContent = student.matric || "N/A";
+          document.getElementById("matricNumber").textContent = student.matricNo || "N/A";
           document.getElementById("level").textContent = student.level || "N/A";
           document.getElementById("department").textContent = student.department || "N/A";
           document.getElementById("studentPassport").src = student.passport || "student-pic.jpg";
