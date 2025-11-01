@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>School Course Management</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #007bff;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.5em;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 20px auto;
+      background-color: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .page-title {
+      font-size: 1.4em;
+      margin-bottom: 20px;
+      font-weight: 600;
+      color: #333;
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .controls select, .controls button {
+      padding: 10px 15px;
+      font-size: 1em;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+    }
+
+    .controls select:focus, .controls input:focus {
+      border-color: #007bff;
+      outline: none;
+      box-shadow: 0 0 8px rgba(0,123,255,0.3);
+    }
+
+    .add-btn, .submit-btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .add-btn:hover, .submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 14px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background-color: #007bff;
+      color: white;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .delete-btn:hover {
+      background-color: #a71d2a;
+    }
+
+    input[type="text"], input[type="number"] {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 100%;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 6px rgba(0,123,255,0.2);
+      outline: none;
+    }
+
+    @media (max-width: 600px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      thead { display: none; }
+      tr {
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 15px;
+        background-color: #ffffff;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      }
+      td {
+        padding: 8px 0;
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.95em;
+      }
+      td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #555;
+      }
+      .controls { flex-direction: column; align-items: stretch; }
+      .controls select, .controls button { width: 100%; }
+      .submit-btn { width: 100%; margin-top: 20px; }
+    }
+
+  </style>
+</head>
+<body>
+  <header>School Course Management</header>
+  <div class="container">
+    <div class="page-title" id="pageTitle">Courses for ND1 - Computer Science - Semester 1</div>
+    <div class="controls">
+      <select id="level" onchange="updateTitle()">
+        <option value="ND1">ND 1</option>
+        <option value="ND2">ND 2</option>
+      </select>
+
+      <select id="department" onchange="updateTitle()">
+        <option value="Accountancy">Accountancy</option>
+        <option value="Business Admin">Business Admin</option>
+        <option value="Computer Science">Computer Science</option>
+        <option value="Computer Engineering">Computer Engineering</option>
+        <option value="Electrical Engineering">Electrical Engineering</option>
+        <option value="Mass Communication">Mass Communication</option>
+        <option value="OTM">OTM</option>
+        <option value="Science Lab Tech">Science Lab Tech</option>
+      </select>
+      
+      <select id="semester" onchange="updateTitle()">
+        <option value="1">Semester 1</option>
+        <option value="2">Semester 2</option>
+      </select>
+
+      <button class="add-btn" onclick="addRow()">Add Row</button>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="coursesTable">
+        <thead>
+          <tr>
+            <th>Serial Number</th>
+            <th>Course Code</th>
+            <th>Course Title</th>
+            <th>Course Unit</th>
+            <th>Lecturer</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <button class="submit-btn" onclick="submitCourses()">Submit Courses</button>
+  </div>
+
+  <script>
+    function updateTitle() {
+      const level = document.getElementById('level').value;
+      const department = document.getElementById('department').value;
+      const semester = document.getElementById('semester').value;
+      document.getElementById('pageTitle').innerText = `Courses for ${level} - ${department} - Semester ${semester}`;
+    }
+
+    function addRow() {
+      const table = document.getElementById('coursesTable').getElementsByTagName('tbody')[0];
+      const rowCount = table.rows.length + 1;
+      const row = table.insertRow();
+
+      row.insertCell(0).innerText = rowCount;
+      row.cells[0].setAttribute('data-label', 'Serial Number');
+
+      const inputFields = ['Course Code','Course Title','Course Unit','Lecturer'];
+      for(let i=0;i<inputFields.length;i++){
+        const cell = row.insertCell(i+1);
+        cell.setAttribute('data-label', inputFields[i]);
+        const input = document.createElement('input');
+        input.type = (inputFields[i] === 'Course Unit') ? 'number' : 'text';
+        if(input.type === 'number') input.min = 0;
+        cell.appendChild(input);
+      }
+
+      const actionCell = row.insertCell(5);
+      actionCell.setAttribute('data-label', 'Action');
+      const delBtn = document.createElement('button');
+      delBtn.className = 'delete-btn';
+      delBtn.innerText = 'Delete';
+      delBtn.onclick = function(){ deleteRow(this); };
+      actionCell.appendChild(delBtn);
+
+      // Optional styling for new rows
+      row.style.backgroundColor = '#fafafa';
+      row.style.borderRadius = '8px';
+      row.style.boxShadow = '0 2px 6px rgba(0,0,0,0.05)';
+      row.style.marginBottom = '8px';
+    }
+
+    function deleteRow(button) {
+      const row = button.parentNode.parentNode;
+      row.parentNode.removeChild(row);
+      const table = document.getElementById('coursesTable').getElementsByTagName('tbody')[0];
+      for (let i = 0; i < table.rows.length; i++) {
+        table.rows[i].cells[0].innerText = i + 1;
+      }
+    }
+
+    function submitCourses() {
+      const table = document.getElementById('coursesTable').getElementsByTagName('tbody')[0];
+      const level = document.getElementById('level').value;
+      const department = document.getElementById('department').value;
+      const semester = document.getElementById('semester').value;
+
+      const courses = [];
+      for (let row of table.rows) {
+        const course = {
+          code: row.cells[1].children[0].value.trim(),
+          title: row.cells[2].children[0].value.trim(),
+          unit: parseInt(row.cells[3].children[0].value) || 0,
+          lecturer: row.cells[4].children[0].value.trim()
+        };
+        courses.push(course);
+      }
+
+      if (!courses.length) {
+        alert('Add at least one course before submitting.');
+        return;
+      }
+
+      fetch('https://ict-reg.onrender.com/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ level, department, semester, courses })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.success){
+          alert('Courses submitted successfully!');
+          table.innerHTML = '';
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Failed to submit courses.');
+      });
+    }
+
+    updateTitle();
+  </script>
+</body>
+</html>
