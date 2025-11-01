@@ -178,7 +178,7 @@
 
     async function fetchDocuments() {
       try {
-        const res = await fetch(`${baseURL}/api/student-documents/${studentId}`);
+        const res = await fetch(`${baseURL}/api/documents/${studentId}`);
         const data = await res.json();
 
         const main = document.getElementById("uploadsContainer");
