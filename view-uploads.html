@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Uploaded Documents</title>
+  <style>
+    :root{
+      --blue:#1e73be;
+      --blue-dark:#1660a0;
+      --muted:#f2f6fb;
+      --card-bg:#ffffff;
+      --text:#222;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0;font-family:"Poppins",system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+    body{background:var(--muted);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+
+    header{
+      background:var(--blue);
+      color:#fff;
+      padding:16px 20px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.08);
+    }
+    header h1{font-size:1.1rem;font-weight:600;}
+    .top-actions{display:flex;gap:10px;align-items:center;}
+    .upload-btn{
+      background:#fff;color:var(--blue);border:none;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;
+      box-shadow:0 1px 0 rgba(0,0,0,0.03);transition:transform .12s ease,background .12s;
+    }
+    .upload-btn:hover{transform:translateY(-2px);background:#f8fbff;}
+
+    .container{
+      width:100%;
+      max-width:1100px;
+      margin:22px auto;
+      padding:14px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
+      gap:16px;
+    }
+
+    .file-card{
+      background:var(--card-bg);
+      border-radius:10px;
+      overflow:hidden;
+      box-shadow:0 2px 6px rgba(16,24,40,0.04);
+      display:flex;
+      flex-direction:column;
+      cursor:default;
+      min-height:170px;
+      transition:transform .12s ease,box-shadow .12s ease;
+    }
+    .file-card:hover{transform:translateY(-6px);box-shadow:0 6px 18px rgba(16,24,40,0.08);}
+
+    .thumb{
+      height:120px;
+      width:100%;
+      object-fit:cover;
+      background:#eef6ff;
+      display:block;
+    }
+
+    .not-uploaded{
+      height:120px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#9aa7bf;
+      font-size:0.9rem;
+      background:#fbfdff;
+    }
+
+    .label{
+      padding:10px 12px;
+      font-size:0.9rem;
+      color:var(--blue-dark);
+      border-top:1px solid #f1f6fb;
+      text-transform:capitalize;
+      word-break:break-word;
+    }
+
+    /* overlay */
+    .overlay{
+      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,0.65);visibility:hidden;opacity:0;transition:opacity .15s ease,visibility .15s;
+      z-index:1200;padding:20px;
+    }
+    .overlay.active{visibility:visible;opacity:1;}
+    .overlay .content{
+      max-width:95%;max-height:95%;display:flex;align-items:center;justify-content:center;
+    }
+    .overlay img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.5);}
+    .overlay .close-btn{
+      position:absolute;top:18px;right:20px;background:#fff;border-radius:8px;padding:6px 8px;border:none;cursor:pointer;
+      box-shadow:0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .empty-state{padding:32px;background:var(--card-bg);border-radius:10px;text-align:center;color:#5b6b80;}
+
+    @media (max-width:600px){
+      header{flex-direction:column;align-items:flex-start;gap:10px}
+      .upload-btn{width:100%;}
+      .top-actions{width:100%}
+      .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Uploaded Documents</h1>
+    <div class="top-actions">
+      <button class="upload-btn" id="gotoUpload">Upload Documents</button>
+    </div>
+  </header>
+
+  <div class="container" id="container">
+    <div id="loading" class="empty-state">Loading documents…</div>
+    <div id="docsGrid" class="grid" style="display:none;"></div>
+  </div>
+
+  <!-- Overlay preview -->
+  <div id="overlay" class="overlay" onclick="closeOverlay(event)">
+    <button class="close-btn" aria-label="Close" onclick="hideOverlay()">✕</button>
+    <div class="content">
+      <img id="overlayImg" src="" alt="Document preview" />
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://ict-reg.onrender.com"; // keep this your backend base
+    const studentId = localStorage.getItem("studentId");
+
+    document.getElementById("gotoUpload").addEventListener("click", () => {
+      window.location.href = "edit-documents.html";
+    });
+
+    async function fetchDocuments(){
+      const loading = document.getElementById("loading");
+      const grid = document.getElementById("docsGrid");
+      loading.style.display = "block";
+      grid.style.display = "none";
+      loading.textContent = "Loading documents…";
+
+      if (!studentId) {
+        loading.textContent = "You are not logged in.";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/documents/${studentId}`);
+        if (!res.ok) {
+          loading.textContent = "No documents found.";
+          return;
+        }
+        const json = await res.json();
+
+        if (!json.success || !json.data) {
+          loading.textContent = "No documents found for this student.";
+          return;
+        }
+
+        const record = json.data;
+        // `files` field may be an object (key -> url or "N/A")
+        const files = record.files || {};
+
+        // If files object is empty and oLevelUploads or arrays exist, handle gracefully
+        const keys = Object.keys(files);
+        if (keys.length === 0) {
+          loading.textContent = "No uploaded files yet.";
+          return;
+        }
+
+        renderGrid(files);
+      } catch (err) {
+        console.error("Fetch error:", err);
+        loading.textContent = "Error loading documents. Please try again.";
+      }
+    }
+
+    function renderGrid(files){
+      const container = document.getElementById("docsGrid");
+      const loading = document.getElementById("loading");
+      container.innerHTML = ""; // reset
+
+      // Ensure a stable ordering (optional) — prefer readable order
+      const order = [
+        "jambUpload","jambAdmission",
+        "applicationForm","acceptanceForm","guarantorForm","codeOfConduct",
+        "nd1First","nd1Second","nd2First","nd2Second",
+        "ict1","ict2","ict3","ict4",
+        "fee1","fee2","fee3","fee4",
+        "acceptanceFee","stateOfOrigin","nin","deptFee"
+      ];
+
+      // if files has keys not in order, include them too
+      const fileKeys = Array.from(new Set([...order, ...Object.keys(files)]));
+
+      fileKeys.forEach(key => {
+        const value = files[key];
+        const card = document.createElement("div");
+        card.className = "file-card";
+
+        if (value && value !== "N/A") {
+          const img = document.createElement("img");
+          img.className = "thumb";
+          img.src = value;
+          img.alt = key;
+          img.loading = "lazy";
+          img.addEventListener("click", () => showOverlay(value));
+          card.appendChild(img);
+        } else {
+          const placeholder = document.createElement("div");
+          placeholder.className = "not-uploaded";
+          placeholder.textContent = "File not yet uploaded";
+          card.appendChild(placeholder);
+        }
+
+        const label = document.createElement("div");
+        label.className = "label";
+        // convert camelCase or snake to readable label
+        label.textContent = prettifyKey(key);
+        card.appendChild(label);
+
+        container.appendChild(card);
+      });
+
+      loading.style.display = "none";
+      container.style.display = "grid";
+    }
+
+    function prettifyKey(k){
+      if (!k) return "";
+      // replace camelCase / underscores / numbers nicely
+      return k
+        .replace(/([a-z])([A-Z])/g, "$1 $2") // camelCase
+        .replace(/[_\-]/g, " ")
+        .replace(/\d+/g, "")
+        .trim()
+        .replace(/\b\w/g, ch => ch.toUpperCase());
+    }
+
+    function showOverlay(src){
+      const overlay = document.getElementById("overlay");
+      const img = document.getElementById("overlayImg");
+      img.src = src;
+      overlay.classList.add("active");
+      // prevent body scroll while open
+      document.body.style.overflow = "hidden";
+    }
+
+    function hideOverlay(){
+      const overlay = document.getElementById("overlay");
+      overlay.classList.remove("active");
+      document.getElementById("overlayImg").src = "";
+      document.body.style.overflow = "";
+    }
+
+    function closeOverlay(e){
+      // close when clicked outside image (overlay background)
+      if (e.target.id === "overlay") hideOverlay();
+    }
+
+    // Kick off
+    fetchDocuments();
+  </script>
+</body>
+</html>
