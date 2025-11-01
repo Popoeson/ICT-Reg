@@ -185,7 +185,7 @@
   const stored = JSON.parse(localStorage.getItem(LOCAL_KEY));
 
   if (!stored || !stored._id) {
-    // Not logged in
+    // Not logged in, redirect
     window.location.href = "login.html";
     return;
   }
@@ -193,61 +193,37 @@
   const studentId = stored._id;
   const backend = "https://ict-reg.onrender.com";
 
-  // Helper to apply student object to UI
-  function applyToUI(student) {
+  // Function to update the UI
+  function updateUI(student) {
     const fullName = [student.surname, student.firstname, student.middlename]
       .filter(Boolean)
       .join(" ");
 
     document.getElementById("welcomeNote").textContent = `Welcome, ${fullName || "Student"} 👋`;
-    // You asked matric remain N/A for now, so we don't touch matricNumber
+    document.getElementById("matricNumber").textContent = "N/A"; // You said to leave it as N/A
     document.getElementById("level").textContent = student.level || "N/A";
     document.getElementById("department").textContent = student.department || "N/A";
-    document.getElementById("studentPassport").src = student.passport || "student-pic.jpg";
+
+    const passportImg = document.getElementById("studentPassport");
+    passportImg.src = student.passport || "student-pic.jpg";
   }
 
-  // First apply whatever is in localStorage so page isn't blank
-  try {
-    applyToUI(stored);
-  } catch (e) {
-    // ignore UI errors for initial render
-    console.warn("Initial UI apply failed:", e);
-  }
+  // First, display whatever is stored locally
+  updateUI(stored);
 
-  // Now fetch latest data from backend and update UI + localStorage
+  // Then fetch the latest info from backend
   try {
     const res = await fetch(`${backend}/api/students/${studentId}`);
-    if (!res.ok) {
-      console.warn("Could not fetch latest student data:", res.status, res.statusText);
-      return;
-    }
-    const json = await res.json();
+    const data = await res.json();
 
-    // Support both response shapes:
-    // 1) { success: true, student: { ... } }
-    // 2) { success: true, student: { ... } } (some endpoints) or direct student object
-    const student = json.student ?? json.studentData ?? json.data ?? json ?? null;
-
-    // If the backend responded with a wrapper like { success: true, student: {...} }
-    const resolved = (student && student._id) ? student
-                    : (json && json.student && json.student._id) ? json.student
-                    : null;
-
-    if (resolved) {
-      applyToUI(resolved);
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(resolved));
+    if (res.ok && data.success && data.student) {
+      updateUI(data.student);
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(data.student));
     } else {
-      // Fallback: try to use raw json if it looks like a student
-      if (json && json._id) {
-        applyToUI(json);
-        localStorage.setItem(LOCAL_KEY, JSON.stringify(json));
-      } else {
-        console.warn("Unexpected student response shape:", json);
-      }
+      console.warn("Failed to refresh student data:", data.message || data);
     }
   } catch (err) {
     console.error("Error fetching student data:", err);
-    // keep using localStorage values if fetch failed
   }
 })();
 </script>
