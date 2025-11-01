@@ -246,6 +246,12 @@
               <option>Electrical Engineering</option>
             </select>
           </div>
+
+          <div>
+  <label>Matric No</label>
+  <input type="text" id="matricNo" placeholder="Enter your Matric Number">
+</div>
+
           <div>
             <label>Reg No</label>
             <input type="text" id="regNo" readonly>
@@ -426,10 +432,10 @@ confirmBtn.addEventListener("click", async () => {
   try {
     // Always include all form fields — even empty ones
     const fields = [
-      "surname", "firstname", "middlename", "phone", "email",
-      "department", "regNo", "level", "stateOrigin", "lgaOrigin",
-      "address", "nokSurname", "nokFirstname", "nokPhone", "nokRelation"
-    ];
+  "surname", "firstname", "middlename", "phone", "email",
+  "department", "regNo", "matricNo", "level", "stateOrigin", "lgaOrigin",
+  "address", "nokSurname", "nokFirstname", "nokPhone", "nokRelation"
+];
 
     const formData = new FormData();
     fields.forEach(f => {
