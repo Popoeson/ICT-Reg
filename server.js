@@ -282,7 +282,8 @@ app.post("/api/students/login", async (req, res) => {
 app.post("/upload-documents", upload.any(), async (req, res) => {
   try {
     const { studentId, oLevelInputs, jambInput } = req.body;
-    if (!studentId) return res.status(400).json({ success: false, message: "Student ID required." });
+    if (!studentId)
+      return res.status(400).json({ success: false, message: "Student ID required." });
 
     // Parse text fields
     const oLevel = JSON.parse(oLevelInputs || "[]");
@@ -290,56 +291,28 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
 
     // Define all expected file fields
     const expectedFiles = [
-      "jambUpload",
-      "jambAdmission",
-      "applicationForm",
-      "acceptanceForm",
-      "guarantorForm",
-      "codeOfConduct",
-      "nd1First",
-      "nd1Second",
-      "nd2First",
-      "nd2Second",
+      "jambUpload", "jambAdmission",
+      "applicationForm", "acceptanceForm",
+      "guarantorForm", "codeOfConduct",
+      "nd1First", "nd1Second", "nd2First", "nd2Second",
       "ict1", "ict2", "ict3", "ict4",
       "fee1", "fee2", "fee3", "fee4",
-      "acceptanceFee",
-      "stateOfOrigin",
-      "nin",
-      "deptFee",
-      // Add any other expected file fields here
+      "acceptanceFee", "stateOfOrigin", "nin", "deptFee"
     ];
 
-    const uploadedFiles = {};
-
-    // Map uploaded files by fieldname
-    const fileMap = {};
-    for (const file of req.files) {
-      fileMap[file.fieldname] = file;
-    }
-
-    // Upload files or set "N/A" if missing
-    for (const field of expectedFiles) {
-      if (fileMap[field]) {
-        const stream = Readable.from(fileMap[field].buffer);
-        const uploaded = await new Promise((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            { folder: "student_documents" },
-            (error, result) => (error ? reject(error) : resolve(result))
-          );
-          stream.pipe(uploadStream);
-        });
-        uploadedFiles[field] = uploaded.secure_url;
-      } else {
-        uploadedFiles[field] = "N/A";
-      }
-    }
+    // Build file URLs from multer-cloudinary output
+    const fileUrls = {};
+    expectedFiles.forEach(field => {
+      const file = req.files.find(f => f.fieldname === field);
+      fileUrls[field] = file ? file.path : "N/A"; // multer-storage-cloudinary gives you .path
+    });
 
     // Save to MongoDB
     const uploadDoc = new Upload({
       studentId,
       oLevelInputs: oLevel,
       jambInput: jamb,
-      files: uploadedFiles,
+      files: fileUrls,
     });
 
     await uploadDoc.save();
@@ -347,7 +320,11 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
     res.json({ success: true, message: "Documents uploaded successfully", data: uploadDoc });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: "Error uploading documents", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Error uploading documents",
+      error: err.message,
+    });
   }
 });
 
