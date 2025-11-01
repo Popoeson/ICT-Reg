@@ -277,7 +277,6 @@ app.post("/api/students/login", async (req, res) => {
   }
 });
 
-
 // 📦 Route: Upload all documents
 app.post("/upload-documents", upload.any(), async (req, res) => {
   try {
@@ -285,46 +284,54 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
     if (!studentId)
       return res.status(400).json({ success: false, message: "Student ID required." });
 
-    // Parse text fields
     const oLevel = JSON.parse(oLevelInputs || "[]");
     const jamb = JSON.parse(jambInput || "{}");
 
-    // Define all expected file fields
     const expectedFiles = [
-      "jambUpload", "jambAdmission",
-      "applicationForm", "acceptanceForm",
-      "guarantorForm", "codeOfConduct",
-      "nd1First", "nd1Second", "nd2First", "nd2Second",
-      "ict1", "ict2", "ict3", "ict4",
-      "fee1", "fee2", "fee3", "fee4",
-      "acceptanceFee", "stateOfOrigin", "nin", "deptFee"
+      "jambUpload", "jambAdmission", "applicationForm", "acceptanceForm",
+      "guarantorForm", "codeOfConduct", "nd1First", "nd1Second",
+      "nd2First", "nd2Second", "ict1", "ict2", "ict3", "ict4",
+      "fee1", "fee2", "fee3", "fee4", "acceptanceFee", "stateOfOrigin",
+      "nin", "deptFee"
     ];
 
-    // Build file URLs from multer-cloudinary output
-    const fileUrls = {};
-    expectedFiles.forEach(field => {
-      const file = req.files.find(f => f.fieldname === field);
-      fileUrls[field] = file ? file.path : "N/A"; // multer-storage-cloudinary gives you .path
-    });
+    const uploadedFiles = {};
+    const fileMap = {};
+    for (const file of req.files) {
+      fileMap[file.fieldname] = file;
+    }
 
-    // Save to MongoDB
-    const uploadDoc = new Upload({
+    for (const field of expectedFiles) {
+      if (fileMap[field]) {
+        const uploaded = await cloudinary.uploader.upload(fileMap[field].path, {
+          folder: "student_documents",
+        });
+        uploadedFiles[field] = uploaded.secure_url;
+      } else {
+        uploadedFiles[field] = "N/A";
+      }
+    }
+
+    // ✅ Use the correct model name
+    const uploadDoc = new Document({
       studentId,
       oLevelInputs: oLevel,
       jambInput: jamb,
-      files: fileUrls,
+      files: uploadedFiles,
     });
 
     await uploadDoc.save();
 
-    res.json({ success: true, message: "Documents uploaded successfully", data: uploadDoc });
+    res.json({
+      success: true,
+      message: "Documents uploaded successfully",
+      data: uploadDoc,
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      success: false,
-      message: "Error uploading documents",
-      error: err.message,
-    });
+    res
+      .status(500)
+      .json({ success: false, message: "Error uploading documents", error: err.message });
   }
 });
 
