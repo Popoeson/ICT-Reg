@@ -138,7 +138,9 @@
         const res = await fetch('https://ict-reg.onrender.com/api/courses');
         const data = await res.json();
         if (!data.success) throw new Error(data.message || 'Failed to fetch courses');
-        allCourses = data.courses;
+
+        // Fix: backend returns `data` not `courses`
+        allCourses = data.data || [];
         renderFilteredDashboard();
       } catch(err) {
         console.error(err);
@@ -151,7 +153,7 @@
       const departmentFilter = document.getElementById('filterDepartment').value;
       const levelFilter = document.getElementById('filterLevel').value;
 
-      const filtered = allCourses.filter(c => {
+      const filtered = (allCourses || []).filter(c => {
         return (!semesterFilter || c.semester == semesterFilter) &&
                (!departmentFilter || c.department === departmentFilter) &&
                (!levelFilter || c.level === levelFilter);
@@ -164,9 +166,14 @@
       const container = document.getElementById('dashboardContainer');
       container.innerHTML = '';
 
+      if (!courses.length) {
+        container.innerHTML = '<p style="text-align:center;color:#555;">No courses found for selected filters.</p>';
+        return;
+      }
+
       const grouped = {};
       courses.forEach(c => {
-        const key = `${c.semester} - ${c.department} - ${c.level}`;
+        const key = `Semester ${c.semester} - ${c.department} - ${c.level}`;
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(c);
       });
@@ -208,10 +215,6 @@
         section.appendChild(table);
         container.appendChild(section);
       });
-
-      if (courses.length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#555;">No courses found for selected filters.</p>';
-      }
     }
 
     fetchCourses();
