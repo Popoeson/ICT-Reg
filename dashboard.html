@@ -180,52 +180,44 @@
   </section>
 
   <script>
-(async () => {
-  const LOCAL_KEY = "studentData";
-  const stored = JSON.parse(localStorage.getItem(LOCAL_KEY));
-
-  if (!stored || !stored._id) {
-    // Not logged in, redirect
-    window.location.href = "login.html";
+document.addEventListener("DOMContentLoaded", () => {
+  const studentId = localStorage.getItem("studentId");
+  if (!studentId) {
+    alert("Session expired. Please log in again.");
+    window.location.href = "student-login.html";
     return;
   }
 
-  const studentId = stored._id;
-  const backend = "https://ict-reg.onrender.com";
+  fetch(`https://ict-reg.onrender.com/api/students/${studentId}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success || !data.student) {
+        alert("Unable to load profile. Please log in again.");
+        window.location.href = "student-login.html";
+        return;
+      }
 
-  // Function to update the UI
-  function updateUI(student) {
-    const fullName = [student.surname, student.firstname, student.middlename]
-      .filter(Boolean)
-      .join(" ");
+      const student = data.student;
 
-    document.getElementById("welcomeNote").textContent = `Welcome, ${fullName || "Student"} 👋`;
-    document.getElementById("matricNumber").textContent = "N/A"; // You said to leave it as N/A
-    document.getElementById("level").textContent = student.level || "N/A";
-    document.getElementById("department").textContent = student.department || "N/A";
+      // Build full name
+      const fullName = `${student.surname || ""} ${student.firstname || ""} ${student.middlename || ""}`.trim();
 
-    const passportImg = document.getElementById("studentPassport");
-    passportImg.src = student.passport || "student-pic.jpg";
-  }
+      // Update the DOM
+      document.getElementById("welcomeNote").textContent = `Welcome, ${fullName} 👋`;
 
-  // First, display whatever is stored locally
-  updateUI(stored);
+      document.getElementById("studentPassport").src = student.passport || "student-pic.jpg";
 
-  // Then fetch the latest info from backend
-  try {
-    const res = await fetch(`${backend}/api/students/${studentId}`);
-    const data = await res.json();
+      document.getElementById("department").textContent = student.department || "N/A";
+      document.getElementById("level").textContent = student.level || "N/A";
 
-    if (res.ok && data.success && data.student) {
-      updateUI(data.student);
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(data.student));
-    } else {
-      console.warn("Failed to refresh student data:", data.message || data);
-    }
-  } catch (err) {
-    console.error("Error fetching student data:", err);
-  }
-})();
+      // Matric number placeholder (you’ll add later)
+      document.getElementById("matricNumber").textContent = student.matricNo || "N/A";
+    })
+    .catch(err => {
+      console.error("❌ Error fetching student data:", err);
+      alert("Error loading your dashboard. Please refresh the page.");
+    });
+});
 </script>
 </body>
 </html>
