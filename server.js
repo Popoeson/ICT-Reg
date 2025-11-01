@@ -98,41 +98,58 @@ const StudentProfile = mongoose.model("StudentProfile", studentProfileSchema);
 // Documents upload schema
 
 const DocumentSchema = new mongoose.Schema({
-  studentId: { type: mongoose.Schema.Types.ObjectId, ref: "Student", required: true },
+  studentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Student",
+    required: true,
+  },
   oLevelInputs: [
     {
       examYear: String,
       examType: String,
       examNumber: String,
       subject: String,
-      grade: String
-    }
+      grade: String,
+    },
   ],
-  oLevelUploads: [String],
   jambInput: {
     regNo: String,
-    score: String
+    score: String,
   },
-  jambUpload: String,
-  jambAdmission: String,
-  applicationForm: String,
-  acceptanceForm: String,
-  guarantorForm: String,
-  codeOfConduct: String,
-  nd1First: String,
-  nd1Second: String,
-  nd2First: String,
-  nd2Second: String,
-  ictReceipts: [String],
-  feeReceipts: [String],
-  acceptanceFee: String,
-  stateOfOrigin: String,
-  nin: String,
-  deptFee: String,
-  uploadedAt: { type: Date, default: Date.now }
+
+  // 🆕 Add this field to store all uploaded file URLs
+  files: {
+    jambUpload: String,
+    jambAdmission: String,
+    applicationForm: String,
+    acceptanceForm: String,
+    guarantorForm: String,
+    codeOfConduct: String,
+    nd1First: String,
+    nd1Second: String,
+    nd2First: String,
+    nd2Second: String,
+    ict1: String,
+    ict2: String,
+    ict3: String,
+    ict4: String,
+    fee1: String,
+    fee2: String,
+    fee3: String,
+    fee4: String,
+    acceptanceFee: String,
+    stateOfOrigin: String,
+    nin: String,
+    deptFee: String,
+  },
+
+  uploadedAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-const Document = mongoose.model("DocumentUpload", DocumentSchema);
+module.exports = mongoose.model("DocumentUpload", DocumentSchema);
 
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
