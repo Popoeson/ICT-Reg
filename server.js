@@ -512,15 +512,21 @@ app.get("/api/students", async (req, res) => {
 // Get single student profile
 app.get("/api/students/:id", async (req, res) => {
   try {
-    const studentProfile = await StudentProfile.findOne({ studentId: req.params.id });
+    const student = await Student.findById(req.params.id);
+    if (!student) return res.status(404).json({ message: "Student not found" });
 
-    if (!studentProfile) {
-      return res.status(404).json({ message: "Student profile not found" });
-    }
+    const profile = await StudentProfile.findOne({ studentId: req.params.id });
 
-    res.json({ success: true, student: studentProfile });
+    const fullStudentData = {
+      ...student.toObject(),
+      department: profile?.department || student.department || "N/A",
+      level: profile?.level || student.level || "N/A",
+      passport: profile?.passport || student.passport || "student-pic.jpg",
+    };
+
+    res.json({ success: true, student: fullStudentData });
   } catch (err) {
-    console.error("❌ get student profile error:", err);
+    console.error("❌ get student + profile error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
