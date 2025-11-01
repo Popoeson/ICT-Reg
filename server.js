@@ -510,21 +510,19 @@ app.get("/api/students", async (req, res) => {
 });
 
 
-// Get combined student + profile (match by email instead)
+// Get combined student + profile (merge all fields)
 app.get("/api/students/:id", async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
     if (!student) return res.status(404).json({ message: "Student not found" });
 
-    // Find profile using the student's email
+    // Find matching profile by email
     const profile = await StudentProfile.findOne({ email: student.email });
 
+    // Combine both, with Student fields taking priority if duplicated
     const fullStudentData = {
-      ...student.toObject(),
-      department: profile?.department || "N/A",
-      level: profile?.level || "N/A",
-      passport: profile?.passport || "student-pic.jpg",
-      regNo: profile?.regNo || "N/A",
+      ...profile?.toObject(), // merge all profile fields first
+      ...student.toObject(),  // then overwrite with Student fields if overlap
     };
 
     res.json({ success: true, student: fullStudentData });
