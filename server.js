@@ -426,6 +426,7 @@ app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
       const random = Math.floor(10000 + Math.random() * 90000);
       regNo = `Reg/${prefix}/${random}`;
     }
+     const matricNo = body.matricNo || student.matricNo; // fallback to existing
 
     // Update or create profile
     const updatedProfile = await StudentProfile.findOneAndUpdate(
