@@ -149,7 +149,7 @@ const DocumentSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("DocumentUpload", DocumentSchema);
+const Document = mongoose.model("DocumentUpload", DocumentSchema);
 
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
