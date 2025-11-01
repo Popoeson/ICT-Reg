@@ -53,12 +53,11 @@
 
     .profile-card {
       background: #fff;
-      max-width: 600px;
+      max-width: 650px;
       margin: 40px auto;
       border-radius: 15px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
       padding: 30px;
-      text-align: center;
     }
 
     .profile-card img {
@@ -67,30 +66,40 @@
       border-radius: 50%;
       object-fit: cover;
       border: 3px solid #1e73be;
-      margin-bottom: 15px;
+      display: block;
+      margin: 0 auto 15px;
     }
 
     .profile-card h2 {
       color: #1e73be;
-      margin-bottom: 10px;
+      text-align: center;
+      margin-bottom: 25px;
     }
 
-    .profile-info {
-      text-align: left;
-      margin-top: 20px;
+    section {
+      margin-top: 25px;
     }
 
-    .profile-info p {
-      font-size: 15px;
-      margin: 10px 0;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 8px;
-    }
-
-    .profile-info strong {
+    section h3 {
       color: #1e73be;
-      width: 130px;
+      border-bottom: 2px solid #1e73be;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .info-item {
+      margin: 8px 0;
+      font-size: 15px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+    }
+
+    .info-item strong {
       display: inline-block;
+      width: 150px;
+      color: #1e73be;
     }
 
     @media (max-width: 600px) {
@@ -105,9 +114,8 @@
         padding: 20px;
       }
 
-      .profile-card img {
-        width: 100px;
-        height: 100px;
+      .info-item strong {
+        width: 120px;
       }
     }
   </style>
@@ -120,39 +128,72 @@
 
   <div class="profile-card">
     <img id="studentPassport" src="default-avatar.png" alt="Student Passport" />
-    <h2 id="studentName">Student Name</h2>
+    <h2 id="studentName">Loading...</h2>
 
-    <div class="profile-info">
-      <p><strong>Email:</strong> <span id="studentEmail">N/A</span></p>
-      <p><strong>Phone:</strong> <span id="studentPhone">N/A</span></p>
-      <p><strong>Matric No:</strong> <span id="studentMatric">N/A</span></p>
-      <p><strong>Department:</strong> <span id="studentDept">N/A</span></p>
-      <p><strong>Level:</strong> <span id="studentLevel">N/A</span></p>
-    </div>
+    <section id="personal-info">
+      <h3>Personal Information</h3>
+      <div class="info-item"><strong>Email:</strong> <span id="studentEmail">N/A</span></div>
+      <div class="info-item"><strong>Phone:</strong> <span id="studentPhone">N/A</span></div>
+      <div class="info-item"><strong>Matric No:</strong> <span id="studentMatric">N/A</span></div>
+      <div class="info-item"><strong>Department:</strong> <span id="studentDept">N/A</span></div>
+      <div class="info-item"><strong>Level:</strong> <span id="studentLevel">N/A</span></div>
+    </section>
+
+    <section id="origin-address">
+      <h3>Origin & Address</h3>
+      <div class="info-item"><strong>State of Origin:</strong> <span id="studentState">N/A</span></div>
+      <div class="info-item"><strong>LGA of Origin:</strong> <span id="studentLga">N/A</span></div>
+      <div class="info-item"><strong>Home Address:</strong> <span id="studentAddress">N/A</span></div>
+    </section>
+
+    <section id="next-of-kin">
+      <h3>Next of Kin Information</h3>
+      <div class="info-item"><strong>Name:</strong> <span id="studentNokName">N/A</span></div>
+      <div class="info-item"><strong>Relation:</strong> <span id="studentNokRelation">N/A</span></div>
+      <div class="info-item"><strong>Phone:</strong> <span id="studentNokPhone">N/A</span></div>
+    </section>
   </div>
 
-        <script>
-// Check login
-const studentData = JSON.parse(localStorage.getItem("studentData"));
-if (!studentData || !studentData._id) {
-  window.location.href = "login.html";
-} else {
-  // Build full name
-  const fullName = [studentData.surname, studentData.firstname, studentData.middlename]
-    .filter(Boolean)
-    .join(" ");
+  <script>
+    const backendURL = "https://ict-reg.onrender.com";
+    const studentData = JSON.parse(localStorage.getItem("studentData"));
 
-  // Update profile elements
-  document.getElementById("studentName").textContent = fullName || "Student";
-  document.getElementById("studentEmail").textContent = studentData.email || "N/A";
-  document.getElementById("studentPhone").textContent = studentData.phone || "N/A";
-  document.getElementById("studentMatric").textContent = studentData.matric || "N/A";
-  document.getElementById("studentDept").textContent = studentData.department || "N/A";
-  document.getElementById("studentLevel").textContent = studentData.level || "N/A";
+    if (!studentData || !studentData._id) {
+      window.location.href = "login.html";
+    } else {
+      // Fetch full profile from backend (to get latest data)
+      fetch(`${backendURL}/api/students/${studentData._id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success || !data.student) {
+            console.error("Profile not found:", data);
+            return;
+          }
 
-  const passportImg = document.getElementById("studentPassport");
-  passportImg.src = studentData.passport || "default-avatar.png";
-}
-</script>
+          const s = data.student;
+          const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ");
+
+          document.getElementById("studentName").textContent = fullName || "Student";
+          document.getElementById("studentEmail").textContent = s.email || "N/A";
+          document.getElementById("studentPhone").textContent = s.phone || "N/A";
+          document.getElementById("studentMatric").textContent = s.regNo || "N/A";
+          document.getElementById("studentDept").textContent = s.department || "N/A";
+          document.getElementById("studentLevel").textContent = s.level || "N/A";
+          document.getElementById("studentState").textContent = s.stateOrigin || "N/A";
+          document.getElementById("studentLga").textContent = s.lgaOrigin || "N/A";
+          document.getElementById("studentAddress").textContent = s.address || "N/A";
+
+          // Next of kin
+          const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ");
+          document.getElementById("studentNokName").textContent = nokFullName || "N/A";
+          document.getElementById("studentNokRelation").textContent = s.nokRelation || "N/A";
+          document.getElementById("studentNokPhone").textContent = s.nokPhone || "N/A";
+
+          // Passport
+          document.getElementById("studentPassport").src = s.passport || "default-avatar.png";
+        })
+        .catch(err => console.error("Error loading profile:", err));
+    }
+  </script>
 </body>
 </html>
