@@ -152,6 +152,23 @@ const DocumentSchema = new mongoose.Schema({
 
 const Document = mongoose.model("DocumentUpload", DocumentSchema);
 
+//========== Courses Schema =========
+const courseSchema = new mongoose.Schema({
+  level: { type: String, required: true },        // ND1, ND2
+  department: { type: String, required: true },   // Computer Science etc
+  semester: { type: Number, required: true },     // 1 or 2
+  courses: [
+    {
+      code: { type: String, required: true },
+      title: { type: String, required: true },
+      unit: { type: Number, required: true },
+      lecturer: { type: String, required: true }
+    }
+  ],
+  createdAt: { type: Date, default: Date.now }
+});
+
+const CourseCollection = mongoose.model('CourseCollection', courseSchema);
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
   return String(email || "").trim().toLowerCase();
@@ -633,6 +650,36 @@ app.get("/api/students/export/pdf", async (req, res) => {
   } catch (err) {
     console.error("❌ export/pdf error:", err);
     res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST route to save courses
+app.post('/api/courses', async (req, res) => {
+  try {
+    const { level, department, semester, courses } = req.body;
+
+    if (!level || !department || !semester || !courses || !courses.length) {
+      return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+
+    const newEntry = new CourseCollection({ level, department, semester, courses });
+    await newEntry.save();
+
+    return res.json({ success: true, message: 'Courses saved successfully.' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+// Optional: GET route to fetch courses
+app.get('/api/courses', async (req, res) => {
+  try {
+    const allCourses = await CourseCollection.find().sort({ createdAt: -1 });
+    res.json({ success: true, data: allCourses });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
 
