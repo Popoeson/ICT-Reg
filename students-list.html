@@ -24,7 +24,7 @@
     }
 
     .container {
-      max-width: 950px;
+      max-width: 900px;
       margin: 40px auto;
       background: white;
       border-radius: 12px;
@@ -39,7 +39,7 @@
       margin-bottom: 20px;
       border: 1px solid #e0e0e0;
       overflow: hidden;
-      width: 90%;
+      width: 85%;
       margin-left: auto;
       margin-right: auto;
       transition: all 0.3s ease;
@@ -65,8 +65,8 @@
       background: #f9f9f9;
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.5s ease, opacity 0.5s ease;
       opacity: 0;
+      transition: max-height 0.5s ease, opacity 0.5s ease;
     }
 
     .filter-body.open {
@@ -192,7 +192,7 @@
         <tr>
           <th>Passport</th>
           <th>Full Name</th>
-          <th>Matric Number</th>
+          <th>Matric No</th>
           <th>Department</th>
           <th>Level</th>
           <th>Email</th>
@@ -234,16 +234,20 @@
         }
 
         studentTableBody.innerHTML = data.data
-          .map(student => `
-            <tr>
-              <td><img src="${student.passport || 'https://via.placeholder.com/45'}" class="passport" /></td>
-              <td>${student.fullname || "N/A"}</td>
-              <td>${student.matricNumber || "N/A"}</td>
-              <td>${student.department || "N/A"}</td>
-              <td>${student.level || "N/A"}</td>
-              <td>${student.email || "N/A"}</td>
-            </tr>
-          `)
+          .map(student => {
+            // Build full name like profile.html
+            const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ");
+            return `
+              <tr>
+                <td><img src="${student.passport || 'https://via.placeholder.com/45'}" class="passport" /></td>
+                <td>${fullName || "N/A"}</td>
+                <td>${student.matricNo || "N/A"}</td>
+                <td>${student.department || "N/A"}</td>
+                <td>${student.level || "N/A"}</td>
+                <td>${student.email || "N/A"}</td>
+              </tr>
+            `;
+          })
           .join("");
       } catch (err) {
         console.error("Error fetching students:", err);
