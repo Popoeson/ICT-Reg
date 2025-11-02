@@ -511,25 +511,15 @@ docBody.innerHTML = `
 `;
 
 // -------------------- Collapsible Toggle Logic --------------------
-document.querySelectorAll(".collapsible-card .card-header").forEach(header => {
+const allHeaders = docBody.querySelectorAll(".collapsible-card .card-header");
+allHeaders.forEach(header => {
   header.addEventListener("click", () => {
     const body = header.nextElementSibling;
-    body.style.display = body.style.display === "block" ? "none" : "block";
-    header.querySelector(".toggle-icon").textContent = body.style.display === "block" ? "▴" : "▾";
+    const isOpen = body.style.display === "block";
+    body.style.display = isOpen ? "none" : "block";
+    header.querySelector(".toggle-icon").textContent = isOpen ? "▾" : "▴";
   });
 });
-
-      // Edit Button Placeholder
-      document.getElementById("editStudentBtn").addEventListener("click", () => {
-        alert("Edit functionality to be implemented...");
-      });
-
-    } catch (err) {
-      console.error(err);
-      document.getElementById("documentsBody").innerHTML = "<p style='color:red;text-align:center;'>Error loading documents.</p>";
-    }
-  })();
-}
 
 // -------------------- Overlay Functions --------------------
 function openOverlay(src) {
