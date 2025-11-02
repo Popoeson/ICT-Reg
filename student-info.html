@@ -354,6 +354,7 @@ th {
 
   <script>
 const backendURL = "https://ict-reg.onrender.com";
+
 // Get student ID from URL
 const urlParams = new URLSearchParams(window.location.search);
 const studentId = urlParams.get("id");
@@ -367,12 +368,9 @@ if (!studentId) {
       // Fetch Student Info
       const res = await fetch(`${backendURL}/api/students/${studentId}`);
       const data = await res.json();
-      if (!data.success || !data.student) return;
-      const s = data.student;
 
-      // ... 
-      const data = await res.json();
       if (!data.success || !data.student) return;
+
       const s = data.student;
 
       // Populate Hero Card
