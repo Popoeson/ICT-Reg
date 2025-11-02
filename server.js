@@ -733,63 +733,49 @@ app.delete('/api/courses/:docId/:courseId', async (req, res) => {
 // ==≠====== Admin Registration =========
 
 // ✅ Register Admin (Super Admin only)
-
 app.post("/api/admins/register", upload.single("passport"), async (req, res) => {
   try {
-    const {
-      surname,
-      firstname,
-      middlename,
-      email,
-      phone,
-      department,
-      password,
-      role,
-    } = req.body;
+    const { fullname, email, phone, department, password, role } = req.body;
 
-    // Validate fields
-    if (!surname || !firstname || !email || !phone || !password || !role) {
-      return res.status(400).json({ message: "All required fields must be filled" });
+    // Validate required fields
+    if (!fullname || !email || !phone || !password || !role) {
+      return res.status(400).json({ message: "All required fields must be filled." });
     }
 
-    // Check if email already exists
+    // Check for existing email
     const existingAdmin = await Admin.findOne({ email });
     if (existingAdmin) {
-      return res.status(400).json({ message: "Email already registered" });
+      return res.status(400).json({ message: "Email already registered." });
     }
 
     // Upload passport to Cloudinary
-    let passportUrl = "";
-    if (req.file) {
-      const uploaded = await cloudinary.uploader.upload(req.file.path, {
-        folder: "admin_passports",
-      });
-      passportUrl = uploaded.secure_url;
-    } else {
-      return res.status(400).json({ message: "Passport image is required" });
+    if (!req.file) {
+      return res.status(400).json({ message: "Passport image is required." });
     }
 
-    // If superadmin, ignore department
-    const finalDepartment = role === "superadmin" ? "N/A" : department;
+    const uploaded = await cloudinary.uploader.upload(req.file.path, {
+      folder: "admin_passports",
+    });
 
-    // Save new admin
+    // Determine department (Super Admin has no department)
+    const finalDepartment = role === "Super Admin" ? "N/A" : department;
+
+    // Save admin
     const newAdmin = new Admin({
-      surname,
-      firstname,
-      middlename,
+      fullname,
       email,
       phone,
       department: finalDepartment,
-      password, // not hashed yet
+      password, // plain for now (no hashing yet)
       role,
-      passport: passportUrl,
+      passport: uploaded.secure_url,
     });
 
     await newAdmin.save();
 
     res.status(201).json({
       success: true,
-      message: `${role === "superadmin" ? "Super Admin" : "Admin"} registered successfully`,
+      message: `${role} registered successfully.`,
       admin: newAdmin,
     });
   } catch (err) {
