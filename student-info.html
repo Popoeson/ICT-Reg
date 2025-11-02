@@ -359,10 +359,8 @@ if (!studentData || !studentData._id) {
         // O'Level thumbnails
         let oLevelThumbs = "";
         if (doc.oLevelInputs?.length) {
-          doc.oLevelInputs.forEach((r, i) => {
-            if (r.uploadUrl) {
-              oLevelThumbs += createThumbnail(r.uploadUrl, `${r.examType} ${r.examYear} - ${r.subject}`);
-            }
+          doc.oLevelInputs.forEach(r => {
+            if (r.uploadUrl) oLevelThumbs += createThumbnail(r.uploadUrl, `${r.examType} ${r.examYear} - ${r.subject}`);
           });
         } else {
           oLevelThumbs = `<div class="no-file">No O'Level documents uploaded</div>`;
@@ -398,7 +396,7 @@ if (!studentData || !studentData._id) {
           ${createThumbnail(doc.files?.deptFee, "Departmental Fee")}
         `;
 
-        // Combine sections
+        // Render all document sections
         docBody.innerHTML = `
           <h4>O'Level Documents</h4>
           <div class="thumbnail-grid">${oLevelThumbs}</div>
@@ -411,8 +409,9 @@ if (!studentData || !studentData._id) {
         console.error(err);
         docBody.innerHTML = "<p style='color:red;text-align:center;'>Error loading documents.</p>";
       }
-    })
+    }) // <-- make sure this closes the .then block
     .catch(err => console.error("Error fetching student info:", err));
+}
 
 // Collapsible sections
 document.querySelectorAll(".card-header").forEach(header => {
