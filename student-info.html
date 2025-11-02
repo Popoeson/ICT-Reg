@@ -337,80 +337,152 @@ if (!studentData || !studentData._id) {
       document.getElementById("studentNokPhone").textContent = s.nokPhone || "N/A";
 
       // -------------------- Documents Section --------------------
-      const docBody = document.getElementById("documentsBody");
-      docBody.innerHTML = "Loading documents...";
+const docBody = document.getElementById("documentsBody");
+docBody.innerHTML = "Loading documents...";
 
-      try {
-        const docRes = await fetch(`${backendURL}/api/documents/${studentData._id}`);
-        const docData = await docRes.json();
+try {
+  const docRes = await fetch(`${backendURL}/api/documents/${studentData._id}`);
+  const docData = await docRes.json();
 
-        if (!docData.success || !docData.data) {
-          docBody.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
-          return;
-        }
+  if (!docData.success || !docData.data) {
+    docBody.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
+    return;
+  }
 
-        const doc = docData.data;
+  const doc = docData.data;
+  const files = doc.files || {};
 
-        const createThumbnail = (url, label) => {
-          if (!url || url === "N/A") return `<div class="no-file">${label}<br>File not yet uploaded</div>`;
-          return `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`;
-        };
+  // Helper to create thumbnails
+  const createThumbnail = (url, label) => {
+    return url && url !== "N/A"
+      ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
+      : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
+  };
 
-        // O'Level thumbnails
-        let oLevelThumbs = "";
-        if (doc.oLevelInputs?.length) {
-          doc.oLevelInputs.forEach(r => {
-            if (r.uploadUrl) oLevelThumbs += createThumbnail(r.uploadUrl, `${r.examType} ${r.examYear} - ${r.subject}`);
-          });
-        } else {
-          oLevelThumbs = `<div class="no-file">No O'Level documents uploaded</div>`;
-        }
+  // O'Level Result Table
+  const oLevelTable = `
+    <section>
+      <h4>O'Level Result Input</h4>
+      ${doc.oLevelInputs?.length ? `
+        <table>
+          <thead>
+            <tr>
+              <th>Exam Year</th>
+              <th>Exam Type</th>
+              <th>Exam Number</th>
+              <th>Subject</th>
+              <th>Grade</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${doc.oLevelInputs.map(r => `
+              <tr>
+                <td>${r.examYear}</td>
+                <td>${r.examType}</td>
+                <td>${r.examNumber}</td>
+                <td>${r.subject}</td>
+                <td>${r.grade}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      ` : `<div class="no-file">No O'Level record found</div>`}
 
-        // JAMB thumbnails
-        const jambThumbs = `
-          ${createThumbnail(doc.files?.jambUpload, "JAMB Result")}
-          ${createThumbnail(doc.files?.jambAdmission, "JAMB Admission Letter")}
-        `;
+      <!-- O'Level thumbnails -->
+      ${files.oLevelUploads?.length ? `
+        <div class="thumbnail-grid" style="margin-top: 15px;">
+          ${files.oLevelUploads.map((url, i) => `
+            <div class="thumbnail">
+              <img src="${url}" onclick="openOverlay('${url}')">
+              <p>O'Level Result ${i + 1}</p>
+            </div>
+          `).join('')}
+        </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}
+    </section>
+  `;
 
-        // ND / School Forms / Other documents
-        const otherThumbs = `
-          ${createThumbnail(doc.files?.applicationForm, "Application Form")}
-          ${createThumbnail(doc.files?.acceptanceForm, "Acceptance Form")}
-          ${createThumbnail(doc.files?.guarantorForm, "Guarantor’s Form")}
-          ${createThumbnail(doc.files?.codeOfConduct, "Code of Conduct")}
-          ${createThumbnail(doc.files?.nd1First, "ND1 First Sem")}
-          ${createThumbnail(doc.files?.nd1Second, "ND1 Second Sem")}
-          ${createThumbnail(doc.files?.nd2First, "ND2 First Sem")}
-          ${createThumbnail(doc.files?.nd2Second, "ND2 Second Sem")}
-          ${createThumbnail(doc.files?.ict1, "ICT Receipt 1")}
-          ${createThumbnail(doc.files?.ict2, "ICT Receipt 2")}
-          ${createThumbnail(doc.files?.ict3, "ICT Receipt 3")}
-          ${createThumbnail(doc.files?.ict4, "ICT Receipt 4")}
-          ${createThumbnail(doc.files?.fee1, "School Fees 1")}
-          ${createThumbnail(doc.files?.fee2, "School Fees 2")}
-          ${createThumbnail(doc.files?.fee3, "School Fees 3")}
-          ${createThumbnail(doc.files?.fee4, "School Fees 4")}
-          ${createThumbnail(doc.files?.acceptanceFee, "Acceptance Fee")}
-          ${createThumbnail(doc.files?.stateOfOrigin, "State of Origin")}
-          ${createThumbnail(doc.files?.nin, "NIN Upload")}
-          ${createThumbnail(doc.files?.deptFee, "Departmental Fee")}
-        `;
+  // JAMB Info Section
+  const jambInfo = `
+    <section style="margin-top: 20px;">
+      <h4>JAMB Details</h4>
+      <label>JAMB Reg No</label>
+      <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
+      <label>JAMB Score</label>
+      <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
+    </section>
+  `;
 
-        // Render all document sections
-        docBody.innerHTML = `
-          <h4>O'Level Documents</h4>
-          <div class="thumbnail-grid">${oLevelThumbs}</div>
-          <h4>JAMB Documents</h4>
-          <div class="thumbnail-grid">${jambThumbs}</div>
-          <h4>Other Documents</h4>
-          <div class="thumbnail-grid">${otherThumbs}</div>
-        `;
-      } catch (err) {
-        console.error(err);
-        docBody.innerHTML = "<p style='color:red;text-align:center;'>Error loading documents.</p>";
-      }
-    }) // <-- make sure this closes the .then block
-    .catch(err => console.error("Error fetching student info:", err));
+  // JAMB Documents
+  const jambDocs = `
+    <section>
+      <h4>JAMB Documents</h4>
+      <div class="thumbnail-grid">
+        ${createThumbnail(files.jambUpload, "JAMB Result Upload")}
+        ${createThumbnail(files.jambAdmission, "JAMB Admission Letter")}
+      </div>
+    </section>
+  `;
+
+  // School Forms
+  const schoolForms = `
+    <section>
+      <h4>School Forms</h4>
+      <div class="thumbnail-grid">
+        ${createThumbnail(files.applicationForm, "Application Form")}
+        ${createThumbnail(files.acceptanceForm, "Acceptance Form")}
+        ${createThumbnail(files.guarantorForm, "Guarantor’s Form")}
+        ${createThumbnail(files.codeOfConduct, "Code of Conduct")}
+      </div>
+    </section>
+  `;
+
+  // Course & Receipts
+  const courseReceipts = `
+    <section>
+      <h4>Course & Receipts</h4>
+      <div class="thumbnail-grid">
+        ${createThumbnail(files.nd1First, "ND1 - First Semester Course Form")}
+        ${createThumbnail(files.nd1Second, "ND1 - Second Semester Course Form")}
+        ${createThumbnail(files.nd2First, "ND2 - First Semester Course Form")}
+        ${createThumbnail(files.nd2Second, "ND2 - Second Semester Course Form")}
+        ${createThumbnail(files.ict1, "ICT Receipt 1")}
+        ${createThumbnail(files.ict2, "ICT Receipt 2")}
+        ${createThumbnail(files.ict3, "ICT Receipt 3")}
+        ${createThumbnail(files.ict4, "ICT Receipt 4")}
+        ${createThumbnail(files.fee1, "School Fees Receipt 1")}
+        ${createThumbnail(files.fee2, "School Fees Receipt 2")}
+        ${createThumbnail(files.fee3, "School Fees Receipt 3")}
+        ${createThumbnail(files.fee4, "School Fees Receipt 4")}
+      </div>
+    </section>
+  `;
+
+  // Other Documents
+  const otherDocs = `
+    <section>
+      <h4>Other Documents</h4>
+      <div class="thumbnail-grid">
+        ${createThumbnail(files.acceptanceFee, "Acceptance Fee")}
+        ${createThumbnail(files.stateOfOrigin, "State of Origin")}
+        ${createThumbnail(files.nin, "NIN Upload")}
+        ${createThumbnail(files.deptFee, "Departmental Fee Receipt")}
+      </div>
+    </section>
+  `;
+
+  // Combine all sections
+  docBody.innerHTML = `
+    ${oLevelTable}
+    ${jambInfo}
+    ${jambDocs}
+    ${schoolForms}
+    ${courseReceipts}
+    ${otherDocs}
+  `;
+
+} catch (err) {
+  console.error(err);
+  docBody.innerHTML = "<p style='color:red;text-align:center;'>Error loading documents.</p>";
 }
 
 // Collapsible sections
