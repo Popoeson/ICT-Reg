@@ -172,142 +172,157 @@
     <img id="overlayImg" src="" alt="Preview">
   </div>
 
-  <script>
-  const studentId = localStorage.getItem("studentId");
-  const baseURL = "https://ict-reg.onrender.com";
+<script>
+const studentId = localStorage.getItem("studentId");
+const baseURL = "https://ict-reg.onrender.com";
 
-  async function fetchDocuments() {
-    try {
-      const res = await fetch(`${baseURL}/api/documents/${studentId}`);
-      const data = await res.json();
+async function fetchDocuments() {
+  try {
+    const res = await fetch(`${baseURL}/api/documents/${studentId}`);
+    const data = await res.json();
 
-      const main = document.getElementById("uploadsContainer");
-      main.innerHTML = "";
+    const main = document.getElementById("uploadsContainer");
+    main.innerHTML = "";
 
-      // ✅ Fix: use data.data instead of data.document
-      if (!data.success || !data.data) {
-        main.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
-        return;
-      }
-
-      const doc = data.data;
-
-      const oLevelTable = `
-        <section>
-          <h2 class="section-title">O'Level Result Input</h2>
-          ${doc.oLevelInputs?.length ? `
-            <table>
-              <thead>
-                <tr>
-                  <th>Exam Year</th>
-                  <th>Exam Type</th>
-                  <th>Exam Number</th>
-                  <th>Subject</th>
-                  <th>Grade</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${doc.oLevelInputs.map(r => `
-                  <tr>
-                    <td>${r.examYear}</td>
-                    <td>${r.examType}</td>
-                    <td>${r.examNumber}</td>
-                    <td>${r.subject}</td>
-                    <td>${r.grade}</td>
-                  </tr>`).join('')}
-              </tbody>
-            </table>
-          ` : `<div class="no-file">No O'Level record found</div>`}
-        </section>`;
-
-      const jambInfo = `
-        <section>
-          <h2 class="section-title">JAMB Details</h2>
-          <label>JAMB Reg No</label>
-          <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
-          <label>JAMB Score</label>
-          <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
-        </section>`;
-
-      const createThumbnail = (url, label) => {
-        return url && url !== "N/A"
-          ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
-          : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
-      };
-
-      const files = doc.files || {};
-
-      const sections = `
-        ${oLevelTable}
-        ${jambInfo}
-
-        <section>
-          <h2 class="section-title">JAMB Documents</h2>
-          <div class="thumbnail-grid">
-            ${createThumbnail(files.jambUpload, "JAMB Result Upload")}
-            ${createThumbnail(files.jambAdmission, "JAMB Admission Letter")}
-          </div>
-        </section>
-
-        <section>
-          <h2 class="section-title">School Forms</h2>
-          <div class="thumbnail-grid">
-            ${createThumbnail(files.applicationForm, "Application Form")}
-            ${createThumbnail(files.acceptanceForm, "Acceptance Form")}
-            ${createThumbnail(files.guarantorForm, "Guarantor’s Form")}
-            ${createThumbnail(files.codeOfConduct, "Code of Conduct")}
-          </div>
-        </section>
-
-        <section>
-          <h2 class="section-title">Course & Receipts</h2>
-          <div class="thumbnail-grid">
-            ${createThumbnail(files.nd1First, "ND1 - First Semester Course Form")}
-            ${createThumbnail(files.nd1Second, "ND1 - Second Semester Course Form")}
-            ${createThumbnail(files.nd2First, "ND2 - First Semester Course Form")}
-            ${createThumbnail(files.nd2Second, "ND2 - Second Semester Course Form")}
-            ${createThumbnail(files.ict1, "ICT Receipt 1")}
-            ${createThumbnail(files.ict2, "ICT Receipt 2")}
-            ${createThumbnail(files.ict3, "ICT Receipt 3")}
-            ${createThumbnail(files.ict4, "ICT Receipt 4")}
-            ${createThumbnail(files.fee1, "School Fees Receipt 1")}
-            ${createThumbnail(files.fee2, "School Fees Receipt 2")}
-            ${createThumbnail(files.fee3, "School Fees Receipt 3")}
-            ${createThumbnail(files.fee4, "School Fees Receipt 4")}
-          </div>
-        </section>
-
-        <section>
-          <h2 class="section-title">Other Documents</h2>
-          <div class="thumbnail-grid">
-            ${createThumbnail(files.acceptanceFee, "Acceptance Fee")}
-            ${createThumbnail(files.stateOfOrigin, "State of Origin")}
-            ${createThumbnail(files.nin, "NIN Upload")}
-            ${createThumbnail(files.deptFee, "Departmental Fee Receipt")}
-          </div>
-        </section>
-      `;
-
-      main.innerHTML = sections;
-    } catch (err) {
-      console.error(err);
-      document.getElementById("uploadsContainer").innerHTML =
-        "<p style='color:red; text-align:center;'>Error loading documents.</p>";
+    if (!data.success || !data.data) {
+      main.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
+      return;
     }
-  }
 
-  function openOverlay(src) {
-    const overlay = document.getElementById("imageOverlay");
-    const overlayImg = document.getElementById("overlayImg");
-    overlayImg.src = src;
-    overlay.style.display = "flex";
-  }
+    const doc = data.data;
+    const files = doc.files || {};
 
-  function closeOverlay() {
-    document.getElementById("imageOverlay").style.display = "none";
-  }
+    // Helper to create thumbnails
+    const createThumbnail = (url, label) => {
+      return url && url !== "N/A"
+        ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
+        : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
+    };
 
-  fetchDocuments();
+    // O'Level table
+    const oLevelTable = `
+      <section>
+        <h2 class="section-title">O'Level Result Input</h2>
+        ${doc.oLevelInputs?.length ? `
+          <table>
+            <thead>
+              <tr>
+                <th>Exam Year</th>
+                <th>Exam Type</th>
+                <th>Exam Number</th>
+                <th>Subject</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${doc.oLevelInputs.map(r => `
+                <tr>
+                  <td>${r.examYear}</td>
+                  <td>${r.examType}</td>
+                  <td>${r.examNumber}</td>
+                  <td>${r.subject}</td>
+                  <td>${r.grade}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        ` : `<div class="no-file">No O'Level record found</div>`}
+
+        <!-- O'Level thumbnails -->
+        ${files.oLevelUploads?.length ? `
+          <div class="thumbnail-grid" style="margin-top: 15px;">
+            ${files.oLevelUploads.map((url, i) => `
+              <div class="thumbnail">
+                <img src="${url}" onclick="openOverlay('${url}')">
+                <p>O'Level Result ${i + 1}</p>
+              </div>
+            `).join('')}
+          </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}
+      </section>
+    `;
+
+    // JAMB info section
+    const jambInfo = `
+      <section>
+        <h2 class="section-title">JAMB Details</h2>
+        <label>JAMB Reg No</label>
+        <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
+        <label>JAMB Score</label>
+        <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
+      </section>
+    `;
+
+    // Other sections
+    const sections = `
+      ${oLevelTable}
+      ${jambInfo}
+
+      <section>
+        <h2 class="section-title">JAMB Documents</h2>
+        <div class="thumbnail-grid">
+          ${createThumbnail(files.jambUpload, "JAMB Result Upload")}
+          ${createThumbnail(files.jambAdmission, "JAMB Admission Letter")}
+        </div>
+      </section>
+
+      <section>
+        <h2 class="section-title">School Forms</h2>
+        <div class="thumbnail-grid">
+          ${createThumbnail(files.applicationForm, "Application Form")}
+          ${createThumbnail(files.acceptanceForm, "Acceptance Form")}
+          ${createThumbnail(files.guarantorForm, "Guarantor’s Form")}
+          ${createThumbnail(files.codeOfConduct, "Code of Conduct")}
+        </div>
+      </section>
+
+      <section>
+        <h2 class="section-title">Course & Receipts</h2>
+        <div class="thumbnail-grid">
+          ${createThumbnail(files.nd1First, "ND1 - First Semester Course Form")}
+          ${createThumbnail(files.nd1Second, "ND1 - Second Semester Course Form")}
+          ${createThumbnail(files.nd2First, "ND2 - First Semester Course Form")}
+          ${createThumbnail(files.nd2Second, "ND2 - Second Semester Course Form")}
+          ${createThumbnail(files.ict1, "ICT Receipt 1")}
+          ${createThumbnail(files.ict2, "ICT Receipt 2")}
+          ${createThumbnail(files.ict3, "ICT Receipt 3")}
+          ${createThumbnail(files.ict4, "ICT Receipt 4")}
+          ${createThumbnail(files.fee1, "School Fees Receipt 1")}
+          ${createThumbnail(files.fee2, "School Fees Receipt 2")}
+          ${createThumbnail(files.fee3, "School Fees Receipt 3")}
+          ${createThumbnail(files.fee4, "School Fees Receipt 4")}
+        </div>
+      </section>
+
+      <section>
+        <h2 class="section-title">Other Documents</h2>
+        <div class="thumbnail-grid">
+          ${createThumbnail(files.acceptanceFee, "Acceptance Fee")}
+          ${createThumbnail(files.stateOfOrigin, "State of Origin")}
+          ${createThumbnail(files.nin, "NIN Upload")}
+          ${createThumbnail(files.deptFee, "Departmental Fee Receipt")}
+        </div>
+      </section>
+    `;
+
+    main.innerHTML = sections;
+  } catch (err) {
+    console.error(err);
+    document.getElementById("uploadsContainer").innerHTML =
+      "<p style='color:red; text-align:center;'>Error loading documents.</p>";
+  }
+}
+
+function openOverlay(src) {
+  const overlay = document.getElementById("imageOverlay");
+  const overlayImg = document.getElementById("overlayImg");
+  overlayImg.src = src;
+  overlay.style.display = "flex";
+}
+
+function closeOverlay() {
+  document.getElementById("imageOverlay").style.display = "none";
+}
+
+fetchDocuments();
 </script>
 </body>
 </html>
