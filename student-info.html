@@ -391,131 +391,130 @@ if (!studentData || !studentData._id) {
             : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
         };
 
-        // -------------------- Generate all document sections --------------------
-        const oLevelTable = `
-          <section class="section-title">
-            <h4>O'Level Result Input</h4>
-            ${doc.oLevelInputs?.length ? `
-              <table>
-                <thead>
+        // -------------------- Generate all document sections with nested collapsibles --------------------
+        const createSection = (title, contentHtml, sectionId) => `
+          <section class="document-section">
+            <div class="section-header" data-target="${sectionId}">
+              <h4>${title}</h4>
+              <span class="toggle-icon">▾</span>
+            </div>
+            <div class="section-body" id="${sectionId}">
+              ${contentHtml}
+            </div>
+          </section>
+        `;
+
+        // O'Level Table
+        const oLevelContent = `
+          ${doc.oLevelInputs?.length ? `
+            <table>
+              <thead>
+                <tr>
+                  <th>Exam Year</th>
+                  <th>Exam Type</th>
+                  <th>Exam Number</th>
+                  <th>Subject</th>
+                  <th>Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${doc.oLevelInputs.map(r => `
                   <tr>
-                    <th>Exam Year</th>
-                    <th>Exam Type</th>
-                    <th>Exam Number</th>
-                    <th>Subject</th>
-                    <th>Grade</th>
+                    <td>${r.examYear || ''}</td>
+                    <td>${r.examType || ''}</td>
+                    <td>${r.examNumber || ''}</td>
+                    <td>${r.subject || ''}</td>
+                    <td>${r.grade || ''}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  ${doc.oLevelInputs.map(r => `
-                    <tr>
-                      <td>${r.examYear || ''}</td>
-                      <td>${r.examType || ''}</td>
-                      <td>${r.examNumber || ''}</td>
-                      <td>${r.subject || ''}</td>
-                      <td>${r.grade || ''}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            ` : `<div class="no-file">No O'Level record found</div>`}
-
-            ${files.oLevelUploads?.length ? `
-              <div class="thumbnail-grid" style="margin-top: 15px;">
-                ${files.oLevelUploads.map((url, i) => `
-                  <div class="thumbnail">
-                    <img src="${url}" onclick="openOverlay('${url}')">
-                    <p>O'Level Result ${i + 1}</p>
-                  </div>
                 `).join('')}
-              </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}
-          </section>
+              </tbody>
+            </table>
+          ` : `<div class="no-file">No O'Level record found</div>`}
+
+          ${files.oLevelUploads?.length ? `
+            <div class="thumbnail-grid" style="margin-top: 15px;">
+              ${files.oLevelUploads.map((url, i) => `
+                <div class="thumbnail">
+                  <img src="${url}" onclick="openOverlay('${url}')">
+                  <p>O'Level Result ${i + 1}</p>
+                </div>
+              `).join('')}
+            </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}
         `;
 
-        const jambInfo = `
-          <section class="section-title" style="margin-top: 20px;">
-            <h4>JAMB Details</h4>
-            <label>JAMB Reg No</label>
-            <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
-            <label>JAMB Score</label>
-            <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
-          </section>
+        // JAMB Info
+        const jambContent = `
+          <label>JAMB Reg No</label>
+          <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
+          <label>JAMB Score</label>
+          <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
         `;
 
-        const jambDocs = `
-          <section>
-            <h4>JAMB Documents</h4>
-            <div class="thumbnail-grid">
-              ${createThumbnail(files.jambUpload, "JAMB Result Upload")}
-              ${createThumbnail(files.jambAdmission, "JAMB Admission Letter")}
-            </div>
-          </section>
+        // JAMB Documents
+        const jambDocsContent = `
+          <div class="thumbnail-grid">
+            ${createThumbnail(files.jambUpload, "JAMB Result Upload")}
+            ${createThumbnail(files.jambAdmission, "JAMB Admission Letter")}
+          </div>
         `;
 
-        const schoolForms = `
-          <section>
-            <h4>School Forms</h4>
-            <div class="thumbnail-grid">
-              ${createThumbnail(files.applicationForm, "Application Form")}
-              ${createThumbnail(files.acceptanceForm, "Acceptance Form")}
-              ${createThumbnail(files.guarantorForm, "Guarantor’s Form")}
-              ${createThumbnail(files.codeOfConduct, "Code of Conduct")}
-            </div>
-          </section>
+        // School Forms
+        const schoolFormsContent = `
+          <div class="thumbnail-grid">
+            ${createThumbnail(files.applicationForm, "Application Form")}
+            ${createThumbnail(files.acceptanceForm, "Acceptance Form")}
+            ${createThumbnail(files.guarantorForm, "Guarantor’s Form")}
+            ${createThumbnail(files.codeOfConduct, "Code of Conduct")}
+          </div>
         `;
 
-        const courseReceipts = `
-          <section>
-            <h4>Course & Receipts</h4>
-            <div class="thumbnail-grid">
-              ${createThumbnail(files.nd1First, "ND1 - First Semester Course Form")}
-              ${createThumbnail(files.nd1Second, "ND1 - Second Semester Course Form")}
-              ${createThumbnail(files.nd2First, "ND2 - First Semester Course Form")}
-              ${createThumbnail(files.nd2Second, "ND2 - Second Semester Course Form")}
-              ${createThumbnail(files.ict1, "ICT Receipt 1")}
-              ${createThumbnail(files.ict2, "ICT Receipt 2")}
-              ${createThumbnail(files.ict3, "ICT Receipt 3")}
-              ${createThumbnail(files.ict4, "ICT Receipt 4")}
-              ${createThumbnail(files.fee1, "School Fees Receipt 1")}
-              ${createThumbnail(files.fee2, "School Fees Receipt 2")}
-              ${createThumbnail(files.fee3, "School Fees Receipt 3")}
-              ${createThumbnail(files.fee4, "School Fees Receipt 4")}
-            </div>
-          </section>
+        // Course & Receipts
+        const courseReceiptsContent = `
+          <div class="thumbnail-grid">
+            ${createThumbnail(files.nd1First, "ND1 - First Semester Course Form")}
+            ${createThumbnail(files.nd1Second, "ND1 - Second Semester Course Form")}
+            ${createThumbnail(files.nd2First, "ND2 - First Semester Course Form")}
+            ${createThumbnail(files.nd2Second, "ND2 - Second Semester Course Form")}
+            ${createThumbnail(files.ict1, "ICT Receipt 1")}
+            ${createThumbnail(files.ict2, "ICT Receipt 2")}
+            ${createThumbnail(files.ict3, "ICT Receipt 3")}
+            ${createThumbnail(files.ict4, "ICT Receipt 4")}
+            ${createThumbnail(files.fee1, "School Fees Receipt 1")}
+            ${createThumbnail(files.fee2, "School Fees Receipt 2")}
+            ${createThumbnail(files.fee3, "School Fees Receipt 3")}
+            ${createThumbnail(files.fee4, "School Fees Receipt 4")}
+          </div>
         `;
 
-        const otherDocs = `
-          <section>
-            <h4>Other Documents</h4>
-            <div class="thumbnail-grid">
-              ${createThumbnail(files.acceptanceFee, "Acceptance Fee")}
-              ${createThumbnail(files.stateOfOrigin, "State of Origin")}
-              ${createThumbnail(files.nin, "NIN Upload")}
-              ${createThumbnail(files.deptFee, "Departmental Fee Receipt")}
-            </div>
-          </section>
+        // Other Documents
+        const otherDocsContent = `
+          <div class="thumbnail-grid">
+            ${createThumbnail(files.acceptanceFee, "Acceptance Fee")}
+            ${createThumbnail(files.stateOfOrigin, "State of Origin")}
+            ${createThumbnail(files.nin, "NIN Upload")}
+            ${createThumbnail(files.deptFee, "Departmental Fee Receipt")}
+          </div>
         `;
 
+        // Combine all sections
         docBody.innerHTML = `
-          ${oLevelTable}
-          ${jambInfo}
-          ${jambDocs}
-          ${schoolForms}
-          ${courseReceipts}
-          ${otherDocs}
+          ${createSection("O'Level Result Input", oLevelContent, "sectionOLevel")}
+          ${createSection("JAMB Details", jambContent, "sectionJambInfo")}
+          ${createSection("JAMB Documents", jambDocsContent, "sectionJambDocs")}
+          ${createSection("School Forms", schoolFormsContent, "sectionSchoolForms")}
+          ${createSection("Course & Receipts", courseReceiptsContent, "sectionCourseReceipts")}
+          ${createSection("Other Documents", otherDocsContent, "sectionOtherDocs")}
         `;
       }
 
-      // -------------------- Collapsible Logic --------------------
+      // -------------------- Collapsible Logic (for all headers) --------------------
       function setupCollapsibles() {
-        document.querySelectorAll(".card-header").forEach(header => {
+        document.querySelectorAll(".card-header, .section-header").forEach(header => {
           header.addEventListener("click", () => {
             const targetId = header.getAttribute("data-target");
             const body = document.getElementById(targetId);
             if (!body) return;
-            // toggle open class
             body.classList.toggle("open");
-            // update icon
             const icon = header.querySelector(".toggle-icon");
             if (icon) icon.textContent = body.classList.contains("open") ? "▴" : "▾";
           });
