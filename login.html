@@ -124,59 +124,58 @@
   <div id="spinnerOverlay"><div class="spinner"></div></div>
 
   <script>
-    const backendURL = "https://ict-reg.onrender.com";
-    const form = document.getElementById("loginForm");
-    const errorBox = document.getElementById("errorBox");
-    const spinnerOverlay = document.getElementById("spinnerOverlay");
-    const loginBtn = document.getElementById("loginBtn");
+const backendURL = "https://ict-reg.onrender.com";
+const form = document.getElementById("loginForm");
+const errorBox = document.getElementById("errorBox");
+const spinnerOverlay = document.getElementById("spinnerOverlay");
+const loginBtn = document.getElementById("loginBtn");
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-      spinnerOverlay.style.display = "flex";
-      loginBtn.disabled = true;
-      errorBox.style.display = "none";
+  spinnerOverlay.style.display = "flex";
+  loginBtn.disabled = true;
+  errorBox.style.display = "none";
 
-      try {
-        const res = await fetch(`${backendURL}/api/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-
-        const result = await res.json();
-
-        if (!res.ok) {
-          errorBox.style.display = "block";
-          errorBox.textContent = result.message || "Login failed";
-          return;
-        }
-
-        const { role, user } = result;
-
-        // 🔹 Store user info in localStorage
-        localStorage.setItem("userData", JSON.stringify(user));
-        localStorage.setItem("userRole", role);
-
-        // 🔹 Redirect based on role
-        if (role === "student") {
-          window.location.href = "dashboard.html";
-        } else {
-          window.location.href = "admin-dashboard.html";
-        }
-
-      } catch (error) {
-        errorBox.style.display = "block";
-        errorBox.textContent = "Unable to connect to server";
-        console.error(error);
-      } finally {
-        spinnerOverlay.style.display = "none";
-        loginBtn.disabled = false;
-      }
+  try {
+    const res = await fetch(`${backendURL}/api/universal-login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
     });
-  </script>
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      errorBox.style.display = "block";
+      errorBox.textContent = result.message || "Login failed";
+      return;
+    }
+
+    const { role, user } = result;
+
+    if (role === "student") {
+      localStorage.setItem("studentData", JSON.stringify(user));
+      localStorage.setItem("studentId", user._id);
+      window.location.href = "dashboard.html";
+    } else if (role === "admin" || role === "superadmin") {
+      localStorage.setItem("adminName", user.fullname);
+      localStorage.setItem("adminRole", role);
+      localStorage.setItem("adminId", user._id);
+      window.location.href = "admin-dashboard.html";
+    }
+  } catch (error) {
+    console.error("Login error:", error);
+    errorBox.style.display = "block";
+    errorBox.textContent = "Unable to connect to server";
+  } finally {
+    spinnerOverlay.style.display = "none";
+    loginBtn.disabled = false;
+  }
+});
+</script>
 </body>
 </html>
