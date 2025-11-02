@@ -506,23 +506,24 @@ if (!studentData || !studentData._id) {
         `;
       }
 
-      // -------------------- Setup Collapsible Sections --------------------
+      // -------------------- Collapsible Logic --------------------
       function setupCollapsibles() {
         document.querySelectorAll(".card-header").forEach(header => {
           header.addEventListener("click", () => {
             const targetId = header.getAttribute("data-target");
             const body = document.getElementById(targetId);
             if (!body) return;
+            // toggle open class
             body.classList.toggle("open");
+            // update icon
             const icon = header.querySelector(".toggle-icon");
             if (icon) icon.textContent = body.classList.contains("open") ? "▴" : "▾";
           });
         });
       }
 
-      // Initialize collapsibles after async content is loaded
+      // Always run after content load
       setupCollapsibles();
-      setTimeout(setupCollapsibles, 500); // fallback
 
     } catch (err) {
       console.error(err);
