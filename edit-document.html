@@ -304,9 +304,10 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   fileInputs.forEach(f => {
     if (f.files[0]) {
       files.push(f.files[0]);
-      formData.append(f.id, f.files[0]); // append each file
+      formData.append(f.id, f.files[0]);
     }
   });
+
   if (files.length === 0) {
     alert("Please select at least one file to preview.");
     return;
@@ -316,28 +317,32 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   // Proceed submission after preview
   document.getElementById("proceedBtn").onclick = async () => {
     modal.classList.remove("active");
-    spinner.style.display = "flex"; // Show spinner
+    spinner.style.display = "flex";
 
     try {
       // ===== Gather O'Level table input values =====
       const oLevelData = [];
       olevelTable.querySelectorAll("tr").forEach(row => {
-        const vals = Array.from(row.querySelectorAll("input")).map(i => i.value || "");
-        oLevelData.push({
-          examYear: vals[0],
-          examType: vals[1],
-          examNumber: vals[2],
-          subject: vals[3],
-          grade: vals[4]
-        });
+        const vals = Array.from(row.querySelectorAll("input")).map(i => i.value.trim());
+        // Only include rows that have at least one filled field
+        if (vals.some(v => v !== "")) {
+          oLevelData.push({
+            examYear: vals[0],
+            examType: vals[1],
+            examNumber: vals[2],
+            subject: vals[3],
+            grade: vals[4]
+          });
+        }
       });
       formData.append("oLevelInputs", JSON.stringify(oLevelData));
 
       // ===== Gather JAMB inputs =====
-      const jambInput = {
-        regNo: document.getElementById("jambRegNo").value || "",
-        score: document.getElementById("jambScore").value || ""
-      };
+      const jambRegNo = document.getElementById("jambRegNo").value.trim();
+      const jambScore = document.getElementById("jambScore").value.trim();
+      const jambInput = {};
+      if (jambRegNo) jambInput.regNo = jambRegNo;
+      if (jambScore) jambInput.score = jambScore;
       formData.append("jambInput", JSON.stringify(jambInput));
 
       // ===== Submit to backend =====
@@ -348,7 +353,7 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
       const data = await res.json();
       alert(data.success ? "Documents uploaded successfully!" : "Upload failed: " + data.message);
 
-      // ===== Preserve existing data: only clear file inputs after successful upload =====
+      // Clear file inputs after successful upload
       if (data.success) {
         document.querySelectorAll("input[type=file]").forEach(f => f.value = "");
       }
