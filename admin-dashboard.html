@@ -103,6 +103,7 @@
       box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
       text-align: center;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
     }
 
     .card:hover {
@@ -172,19 +173,22 @@
 
   <main>
     <div class="stats-container">
-      <div class="card">
+      <!-- Clickable Total Students Card -->
+      <div class="card" id="total-students-card">
         <div class="icon">👥</div>
         <h3>Total Students</h3>
         <p id="students-count">0</p>
       </div>
 
-      <div class="card">
+      <!-- Clickable Total Courses Card -->
+      <div class="card" id="total-courses-card">
         <div class="icon">📘</div>
         <h3>Total Courses</h3>
         <p id="courses-count">0</p>
       </div>
 
-      <div class="card">
+      <!-- Clickable Total Results Card -->
+      <div class="card" id="total-results-card">
         <div class="icon">📊</div>
         <h3>Total Results</h3>
         <p id="results-count">0</p>
@@ -219,7 +223,20 @@
       window.location.href = "login.html";
     });
 
-    // Fetch and display counts
+    // Make cards clickable
+    document.getElementById("total-students-card").addEventListener("click", () => {
+      window.location.href = "students-list.html";
+    });
+
+    document.getElementById("total-courses-card").addEventListener("click", () => {
+      window.location.href = "courses.html";
+    });
+
+    document.getElementById("total-results-card").addEventListener("click", () => {
+      window.location.href = "results-list.html";
+    });
+
+    // Fetch and display stats
     async function fetchStats() {
       try {
         const [studentsRes, coursesRes, resultsRes] = await Promise.all([
