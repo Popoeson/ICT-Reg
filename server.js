@@ -536,7 +536,7 @@ app.get("/api/profile/:regNo", async (req, res) => {
   }
 });
 
-// ✅ UPDATED: List students with correct field names, search & pagination
+// ✅ Admin route: list students with profile fields merged
 app.get("/api/students", async (req, res) => {
   try {
     const { q = "", department = "", level = "", page = 1, limit = 50 } = req.query;
@@ -544,7 +544,7 @@ app.get("/api/students", async (req, res) => {
     const search = q.trim();
     const query = {};
 
-    // 🔍 Search (by surname, firstname, middlename, matricNo, or email)
+    // 🔍 Search across surname, firstname, middlename, matricNo, email, phone
     if (search) {
       const regex = new RegExp(search, "i");
       query.$or = [
@@ -558,39 +558,39 @@ app.get("/api/students", async (req, res) => {
     }
 
     // 🏫 Department filter
-    if (department) {
-      query.department = department;
-    }
+    if (department) query.department = department;
 
     // 🎓 Level filter
-    if (level) {
-      query.level = level;
-    }
+    if (level) query.level = level;
 
     const perPage = Math.max(1, parseInt(limit, 10));
     const skip = (Math.max(1, parseInt(page, 10)) - 1) * perPage;
 
-    const students = await Student.find(query)
-      .sort({ createdAt: -1 }) // using createdAt instead of dateRegistered
-      .skip(skip)
-      .limit(perPage)
-      .lean();
+    // Fetch students from Student collection
+    const students = await Student.find(query).sort({ createdAt: -1 }).skip(skip).limit(perPage).lean();
+
+    // Merge profile info for each student
+    const mergedStudents = await Promise.all(
+      students.map(async s => {
+        const profile = await StudentProfile.findOne({ email: s.email }).lean();
+
+        return {
+          ...profile,       // profile fields first
+          ...s,             // then student fields overwrite if conflict
+          fullname: [s.surname, s.firstname, s.middlename].filter(Boolean).join(" "),
+          matricNo: s.matricNo || profile?.matricNo || "N/A",
+          department: s.department || profile?.department || "N/A",
+          level: s.level || profile?.level || "N/A",
+          passport: s.passport || profile?.passport || null
+        };
+      })
+    );
 
     const total = await Student.countDocuments(query);
 
-    // 🧩 Add computed fullname for convenience
-    const formattedStudents = students.map(s => ({
-      ...s,
-      fullname: [s.surname, s.firstname, s.middlename].filter(Boolean).join(" "),
-      matricNo: s.matricNo || "N/A",
-      department: s.department || "N/A",
-      level: s.level || "N/A",
-      passport: s.passport || null
-    }));
-
     res.json({
       success: true,
-      data: formattedStudents,
+      data: mergedStudents,
       total,
       currentPage: parseInt(page, 10),
       totalPages: Math.ceil(total / perPage),
