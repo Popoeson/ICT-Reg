@@ -170,27 +170,23 @@ const courseSchema = new mongoose.Schema({
 
 const CourseCollection = mongoose.model('CourseCollection', courseSchema);
 
-//======= Admin Schema ========
-
+// ====== Admin Schema ======
 const adminSchema = new mongoose.Schema({
-  surname: { type: String, required: true },
-  firstname: { type: String, required: true },
-  middlename: { type: String },
+  fullname: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
   department: { type: String, required: true },
   password: { type: String, required: true },
   passport: { type: String, required: true },
-  role: { 
-    type: String, 
-    enum: ["superadmin", "admin"], 
-    default: "admin" 
+  role: {
+    type: String,
+    enum: ["Super Admin", "Admin"],
+    default: "Admin"
   },
   dateRegistered: { type: Date, default: Date.now },
 });
 
 const Admin = mongoose.model("Admin", adminSchema);
-
 
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
@@ -731,44 +727,45 @@ app.delete('/api/courses/:docId/:courseId', async (req, res) => {
 });
 
 // ==≠====== Admin Registration =========
-
-// ✅ Register Admin (Super Admin only)
+// ✅ Admin Registration (Super Admin Only)
 app.post("/api/admins/register", upload.single("passport"), async (req, res) => {
   try {
     const { fullname, email, phone, department, password, role } = req.body;
 
-    // Validate required fields
+    // ✅ Basic validation
     if (!fullname || !email || !phone || !password || !role) {
       return res.status(400).json({ message: "All required fields must be filled." });
     }
 
-    // Check for existing email
+    // ✅ Check if admin already exists
     const existingAdmin = await Admin.findOne({ email });
     if (existingAdmin) {
       return res.status(400).json({ message: "Email already registered." });
     }
 
-    // Upload passport to Cloudinary
-    if (!req.file) {
+    // ✅ Upload passport to Cloudinary
+    let passportUrl = "";
+    if (req.file) {
+      const uploaded = await cloudinary.uploader.upload(req.file.path, {
+        folder: "admin_passports",
+      });
+      passportUrl = uploaded.secure_url;
+    } else {
       return res.status(400).json({ message: "Passport image is required." });
     }
 
-    const uploaded = await cloudinary.uploader.upload(req.file.path, {
-      folder: "admin_passports",
-    });
+    // ✅ Department logic (hidden if Super Admin)
+    const finalDepartment = role === "Super Admin" ? "N/A" : department || "N/A";
 
-    // Determine department (Super Admin has no department)
-    const finalDepartment = role === "Super Admin" ? "N/A" : department;
-
-    // Save admin
+    // ✅ Create new admin
     const newAdmin = new Admin({
       fullname,
       email,
       phone,
       department: finalDepartment,
-      password, // plain for now (no hashing yet)
+      password, // (no hashing yet)
       role,
-      passport: uploaded.secure_url,
+      passport: passportUrl,
     });
 
     await newAdmin.save();
@@ -783,7 +780,6 @@ app.post("/api/admins/register", upload.single("passport"), async (req, res) => 
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
