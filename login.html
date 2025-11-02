@@ -160,9 +160,16 @@ form.addEventListener("submit", async (e) => {
     const { role, user } = result;
 
     if (role?.toLowerCase() === "student") {
+  localStorage.setItem("studentData", JSON.stringify(user));
+  localStorage.setItem("studentId", user._id);
   window.location.href = "dashboard.html";
-} else if (role?.toLowerCase().replace(/\s/g, "") === "admin" ||
-           role?.toLowerCase().replace(/\s/g, "") === "superadmin") {
+} else if (
+  role?.toLowerCase().replace(/\s/g, "") === "admin" ||
+  role?.toLowerCase().replace(/\s/g, "") === "superadmin"
+) {
+  localStorage.setItem("adminName", user.fullname);
+  localStorage.setItem("adminRole", role);
+  localStorage.setItem("adminId", user._id);
   window.location.href = "admin-dashboard.html";
 } else {
   console.log("Unexpected role:", role);
