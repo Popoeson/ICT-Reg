@@ -169,6 +169,29 @@ const courseSchema = new mongoose.Schema({
 });
 
 const CourseCollection = mongoose.model('CourseCollection', courseSchema);
+
+//======= Admin Registration=========
+
+const adminSchema = new mongoose.Schema({
+  surname: { type: String, required: true },
+  firstname: { type: String, required: true },
+  middlename: { type: String },
+  email: { type: String, required: true, unique: true },
+  phone: { type: String, required: true },
+  department: { type: String, required: true },
+  password: { type: String, required: true },
+  passport: { type: String, required: true },
+  role: { 
+    type: String, 
+    enum: ["superadmin", "admin"], 
+    default: "admin" 
+  },
+  dateRegistered: { type: Date, default: Date.now },
+});
+
+const Admin = mongoose.model("Admin", adminSchema);
+
+
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
   return String(email || "").trim().toLowerCase();
@@ -183,6 +206,7 @@ function isValidPhone(phone = "") {
 function isValidEmail(email = "") {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
+
 
 // ====== Routes ======
 
@@ -703,6 +727,74 @@ app.delete('/api/courses/:docId/:courseId', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ==≠====== Admin Registration =========
+
+// ✅ Register Admin (Super Admin only)
+
+app.post("/api/admins/register", upload.single("passport"), async (req, res) => {
+  try {
+    const {
+      surname,
+      firstname,
+      middlename,
+      email,
+      phone,
+      department,
+      password,
+      role,
+    } = req.body;
+
+    // Validate fields
+    if (!surname || !firstname || !email || !phone || !password || !role) {
+      return res.status(400).json({ message: "All required fields must be filled" });
+    }
+
+    // Check if email already exists
+    const existingAdmin = await Admin.findOne({ email });
+    if (existingAdmin) {
+      return res.status(400).json({ message: "Email already registered" });
+    }
+
+    // Upload passport to Cloudinary
+    let passportUrl = "";
+    if (req.file) {
+      const uploaded = await cloudinary.uploader.upload(req.file.path, {
+        folder: "admin_passports",
+      });
+      passportUrl = uploaded.secure_url;
+    } else {
+      return res.status(400).json({ message: "Passport image is required" });
+    }
+
+    // If superadmin, ignore department
+    const finalDepartment = role === "superadmin" ? "N/A" : department;
+
+    // Save new admin
+    const newAdmin = new Admin({
+      surname,
+      firstname,
+      middlename,
+      email,
+      phone,
+      department: finalDepartment,
+      password, // not hashed yet
+      role,
+      passport: passportUrl,
+    });
+
+    await newAdmin.save();
+
+    res.status(201).json({
+      success: true,
+      message: `${role === "superadmin" ? "Super Admin" : "Admin"} registered successfully`,
+      admin: newAdmin,
+    });
+  } catch (err) {
+    console.error("❌ Admin registration error:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
