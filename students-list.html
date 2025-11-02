@@ -24,8 +24,8 @@
     }
 
     .container {
-      max-width: 900px;
-      margin: 40px auto;
+      max-width: 1000px;
+      margin: 30px auto;
       background: white;
       border-radius: 12px;
       box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
@@ -39,7 +39,7 @@
       margin-bottom: 20px;
       border: 1px solid #e0e0e0;
       overflow: hidden;
-      width: 85%;
+      width: 90%;
       margin-left: auto;
       margin-right: auto;
       transition: all 0.3s ease;
@@ -82,7 +82,6 @@
       border-radius: 10px;
       font-size: 0.95rem;
       background: #fff;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
     }
 
     #clearFilters {
@@ -101,47 +100,75 @@
       background: #c82333;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
+    .student-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
     }
 
-    th, td {
+    .student-card {
+      background: #f9f9f9;
       border: 1px solid #ddd;
-      text-align: left;
-      padding: 10px;
-      font-size: 0.95rem;
+      border-radius: 12px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      cursor: pointer;
     }
 
-    th {
-      background-color: #f0f0f0;
-    }
-
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
+    .student-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 5px 10px rgba(0,0,0,0.15);
     }
 
     .passport {
-      width: 45px;
-      height: 45px;
+      width: 70px;
+      height: 70px;
       border-radius: 50%;
       object-fit: cover;
+      margin-bottom: 10px;
+      border: 2px solid #007bff;
     }
 
-    @media (max-width: 768px) {
-      .container {
-        width: 95%;
-        margin: 20px auto;
-      }
+    .fullname {
+      font-weight: 600;
+      color: #007bff;
+      margin-bottom: 6px;
+    }
 
-      .filter-card {
-        width: 100%;
-      }
+    .serial {
+      position: absolute;
+      top: 8px;
+      left: 10px;
+      font-size: 13px;
+      background: #007bff;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
 
-      th, td {
-        font-size: 0.85rem;
-        padding: 8px;
+    .delete-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 8px;
+      transition: background 0.3s ease;
+    }
+
+    .delete-btn:hover {
+      background: #b52a37;
+    }
+
+    @media (max-width: 600px) {
+      .student-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       }
     }
   </style>
@@ -186,27 +213,15 @@
       </div>
     </div>
 
-    <!-- Student Table -->
-    <table>
-      <thead>
-        <tr>
-          <th>Passport</th>
-          <th>Full Name</th>
-          <th>Matric No</th>
-          <th>Department</th>
-          <th>Level</th>
-          <th>Email</th>
-        </tr>
-      </thead>
-      <tbody id="studentTableBody">
-        <tr><td colspan="6" style="text-align:center;">Loading students...</td></tr>
-      </tbody>
-    </table>
+    <!-- Student Cards -->
+    <div id="studentGrid" class="student-grid">
+      <p style="text-align:center;">Loading students...</p>
+    </div>
   </div>
 
   <script>
     const backendBaseUrl = "https://ict-reg.onrender.com";
-    const studentTableBody = document.getElementById("studentTableBody");
+    const studentGrid = document.getElementById("studentGrid");
     const filterToggle = document.getElementById("filterToggle");
     const filterBody = document.getElementById("filterBody");
     const toggleIcon = document.getElementById("toggleIcon");
@@ -217,45 +232,66 @@
       toggleIcon.textContent = filterBody.classList.contains("open") ? "▴" : "▾";
     });
 
-    // Fetch and display students
     async function fetchStudents() {
       const q = document.getElementById("searchInput").value.trim();
       const department = document.getElementById("departmentFilter").value;
       const level = document.getElementById("levelFilter").value;
-
       const queryParams = new URLSearchParams({ q, department, level });
+
       try {
         const res = await fetch(`${backendBaseUrl}/api/students?${queryParams}`);
         const data = await res.json();
 
         if (!data.success || data.data.length === 0) {
-          studentTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No students found</td></tr>`;
+          studentGrid.innerHTML = `<p style="text-align:center;">No students found</p>`;
           return;
         }
 
-        studentTableBody.innerHTML = data.data
-          .map(student => {
-            // Build full name like profile.html
-            const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ");
+        studentGrid.innerHTML = data.data
+          .map((s, index) => {
+            const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ");
             return `
-              <tr>
-                <td><img src="${student.passport || 'https://via.placeholder.com/45'}" class="passport" /></td>
-                <td>${fullName || "N/A"}</td>
-                <td>${student.matricNo || "N/A"}</td>
-                <td>${student.department || "N/A"}</td>
-                <td>${student.level || "N/A"}</td>
-                <td>${student.email || "N/A"}</td>
-              </tr>
+              <div class="student-card" onclick="viewStudent('${s._id}')">
+                <span class="serial">#${index + 1}</span>
+                <img src="${s.passport || 'https://via.placeholder.com/70'}" class="passport" alt="passport"/>
+                <div class="fullname">${fullName || "N/A"}</div>
+                <div>${s.matricNo || "N/A"}</div>
+                <div style="font-size:13px; color:#666;">${s.department || "N/A"} • ${s.level || "N/A"}</div>
+                <button class="delete-btn" onclick="event.stopPropagation(); deleteStudent('${s._id}')">Delete</button>
+              </div>
             `;
           })
           .join("");
       } catch (err) {
         console.error("Error fetching students:", err);
-        studentTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;">Error loading students</td></tr>`;
+        studentGrid.innerHTML = `<p style="text-align:center;color:red;">Error loading students</p>`;
       }
     }
 
-    // Event listeners for filters
+    // Redirect to student-info.html
+    function viewStudent(id) {
+      window.location.href = `student-info.html?id=${id}`;
+    }
+
+    // Delete student
+    async function deleteStudent(id) {
+      if (!confirm("Are you sure you want to delete this student?")) return;
+      try {
+        const res = await fetch(`${backendBaseUrl}/api/students/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (data.success) {
+          alert("Student deleted successfully!");
+          fetchStudents();
+        } else {
+          alert("Failed to delete student.");
+        }
+      } catch (err) {
+        console.error("Delete error:", err);
+        alert("An error occurred while deleting student.");
+      }
+    }
+
+    // Filter events
     document.getElementById("searchInput").addEventListener("input", fetchStudents);
     document.getElementById("departmentFilter").addEventListener("change", fetchStudents);
     document.getElementById("levelFilter").addEventListener("change", fetchStudents);
