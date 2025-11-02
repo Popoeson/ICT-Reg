@@ -397,7 +397,7 @@ if (!studentData || !studentData._id) {
       };
 
       const createCollapsibleSection = (title, content, defaultOpen = false) => `
-        <div class="collapsible-card">
+        <div class="collapsible-card card-section">
           <div class="card-header">
             <span>${title}</span>
             <span class="toggle-icon">${defaultOpen ? "▴" : "▾"}</span>
@@ -496,22 +496,29 @@ if (!studentData || !studentData._id) {
         ${createCollapsibleSection("Other Documents", otherDocsContent)}
       `;
 
-      // -------------------- Collapsible Toggle Logic --------------------
-      const allHeaders = docBody.querySelectorAll(".collapsible-card .card-header");
-      allHeaders.forEach(header => {
-        header.addEventListener("click", () => {
-          const body = header.nextElementSibling;
-          body.classList.toggle("open");
-          header.querySelector(".toggle-icon").textContent = body.classList.contains("open") ? "▴" : "▾";
-        });
-      });
-
     } catch (err) {
       console.error(err);
       document.getElementById("documentsBody").innerHTML = "<p style='color:red;text-align:center;'>Error loading student data.</p>";
     }
   })();
 }
+
+// -------------------- Universal Collapsible Toggle --------------------
+function setupCollapsibles() {
+  document.querySelectorAll(".card-header").forEach(header => {
+    header.addEventListener("click", () => {
+      const body = header.nextElementSibling;
+      if (!body) return;
+      body.classList.toggle("open");
+      const icon = header.querySelector(".toggle-icon");
+      if (icon) icon.textContent = body.classList.contains("open") ? "▴" : "▾";
+    });
+  });
+}
+
+// Run after page load and after async content is injected
+window.addEventListener("DOMContentLoaded", setupCollapsibles);
+setTimeout(setupCollapsibles, 1000); // fallback for dynamic sections
 
 // -------------------- Overlay Functions --------------------
 function openOverlay(src) {
