@@ -251,6 +251,52 @@
       border-radius: 10px;
     }
 
+     /* ---------- Subsection collapsibles ---------- */
+.document-section {
+  margin-top: 15px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.section-header {
+  background: #007bff;
+  color: white;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  justify-content: space-between; /* icon to the right */
+  align-items: center;
+  border-radius: 8px 8px 0 0;
+}
+
+.section-body {
+  display: none; /* hidden by default */
+  padding: 15px 16px;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+}
+
+.section-body.open {
+  display: block; /* show when open */
+}
+
+/* Optional smooth collapse animation */
+.section-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.section-body.open {
+  max-height: 2000px; /* big enough to fit content */
+  padding: 15px 16px;
+}
+
     @media (max-width: 600px) {
       .hero-card {
         flex-direction: column;
@@ -509,28 +555,23 @@ if (!studentData || !studentData._id) {
 
       // -------------------- Collapsible Logic (for all headers) --------------------
       function setupCollapsibles() {
-        document.querySelectorAll(".card-header, .section-header").forEach(header => {
-          header.addEventListener("click", () => {
-            const targetId = header.getAttribute("data-target");
-            const body = document.getElementById(targetId);
-            if (!body) return;
-            body.classList.toggle("open");
-            const icon = header.querySelector(".toggle-icon");
-            if (icon) icon.textContent = body.classList.contains("open") ? "▴" : "▾";
-          });
-        });
-      }
+  document.querySelectorAll(".card-header, .section-header").forEach(header => {
+    header.addEventListener("click", () => {
+      const targetId = header.getAttribute("data-target");
+      const body = document.getElementById(targetId);
+      if (!body) return;
 
-      // Always run after content load
-      setupCollapsibles();
+      body.classList.toggle("open"); // toggle visibility
 
-    } catch (err) {
-      console.error(err);
-      document.getElementById("documentsBody").innerHTML = "<p style='color:red;text-align:center;'>Error loading student data.</p>";
-    }
-  })();
+      // Toggle icon
+      const icon = header.querySelector(".toggle-icon");
+      if (icon) icon.textContent = body.classList.contains("open") ? "▴" : "▾";
+    });
+  });
 }
 
+// Run after content is rendered
+setupCollapsibles();
 // -------------------- Overlay Functions --------------------
 function openOverlay(src) {
   const overlay = document.getElementById("imageOverlay");
