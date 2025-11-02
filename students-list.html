@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard | ICT Registration Portal</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #007bff;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #0056b3;
+      color: white;
+      padding: 15px 25px;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+      padding: 20px;
+    }
+
+    .filter-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      border: 1px solid #e0e0e0;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .filter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      font-weight: 600;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .filter-body {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 15px;
+      background: #f9f9f9;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+
+    .filter-body.open {
+      max-height: 250px;
+    }
+
+    .filter-body input,
+    .filter-body select {
+      flex: 1 1 200px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+
+    #clearFilters {
+      background: #dc3545;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      text-align: left;
+      padding: 10px;
+      font-size: 0.95rem;
+    }
+
+    th {
+      background-color: #f0f0f0;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .passport {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    @media (max-width: 768px) {
+      .filter-body {
+        flex-direction: column;
+      }
+
+      th, td {
+        font-size: 0.85rem;
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>📊 Admin Dashboard</header>
+
+  <div class="container">
+    <!-- Collapsible Filter Section -->
+    <div class="filter-card">
+      <div class="filter-header" id="filterToggle">
+        <span>🔍 Filter & Search Students</span>
+        <span id="toggleIcon">▾</span>
+      </div>
+
+      <div class="filter-body" id="filterBody">
+        <input type="text" id="searchInput" placeholder="Search by name or matric number">
+
+        <select id="departmentFilter">
+          <option value="">All Departments</option>
+          <option value="Computer Science">Computer Science</option>
+          <option value="Computer Engineering">Computer Engineering</option>
+          <option value="Business Admin">Business Admin</option>
+          <option value="Science Lab Tech">Science Lab Tech</option>
+          <option value="Estate Management">Estate Management</option>
+          <option value="Accountancy">Accountancy</option>
+          <option value="Mass Communication">Mass Communication</option>
+          <option value="Electrical Engineering">Electrical Engineering</option>
+          <option value="Medical Lab Tech">Medical Lab Tech</option>
+        </select>
+
+        <select id="levelFilter">
+          <option value="">All Levels</option>
+          <option value="ND 1">ND 1</option>
+          <option value="ND 2">ND 2</option>
+          <option value="HND 1">HND 1</option>
+          <option value="HND 2">HND 2</option>
+        </select>
+
+        <button id="clearFilters">Clear Filters</button>
+      </div>
+    </div>
+
+    <!-- Student Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>Passport</th>
+          <th>Full Name</th>
+          <th>Matric Number</th>
+          <th>Department</th>
+          <th>Level</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+      <tbody id="studentTableBody">
+        <tr><td colspan="6" style="text-align:center;">Loading students...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const backendBaseUrl = "https://ict-reg.onrender.com";
+    const studentTableBody = document.getElementById("studentTableBody");
+    const filterToggle = document.getElementById("filterToggle");
+    const filterBody = document.getElementById("filterBody");
+    const toggleIcon = document.getElementById("toggleIcon");
+
+    // Toggle filter animation
+    filterToggle.addEventListener("click", () => {
+      filterBody.classList.toggle("open");
+      toggleIcon.textContent = filterBody.classList.contains("open") ? "▴" : "▾";
+    });
+
+    // Fetch and display students
+    async function fetchStudents() {
+      const q = document.getElementById("searchInput").value.trim();
+      const department = document.getElementById("departmentFilter").value;
+      const level = document.getElementById("levelFilter").value;
+
+      const queryParams = new URLSearchParams({ q, department, level });
+      try {
+        const res = await fetch(`${backendBaseUrl}/api/students?${queryParams}`);
+        const data = await res.json();
+
+        if (!data.success || data.data.length === 0) {
+          studentTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No students found</td></tr>`;
+          return;
+        }
+
+        studentTableBody.innerHTML = data.data
+          .map(student => `
+            <tr>
+              <td><img src="${student.passport || 'https://via.placeholder.com/45'}" class="passport" /></td>
+              <td>${student.fullname || "N/A"}</td>
+              <td>${student.matricNumber || "N/A"}</td>
+              <td>${student.department || "N/A"}</td>
+              <td>${student.level || "N/A"}</td>
+              <td>${student.email || "N/A"}</td>
+            </tr>
+          `)
+          .join("");
+      } catch (err) {
+        console.error("Error fetching students:", err);
+        studentTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;">Error loading students</td></tr>`;
+      }
+    }
+
+    // Event listeners for filters
+    document.getElementById("searchInput").addEventListener("input", fetchStudents);
+    document.getElementById("departmentFilter").addEventListener("change", fetchStudents);
+    document.getElementById("levelFilter").addEventListener("change", fetchStudents);
+    document.getElementById("clearFilters").addEventListener("click", () => {
+      document.getElementById("searchInput").value = "";
+      document.getElementById("departmentFilter").value = "";
+      document.getElementById("levelFilter").value = "";
+      fetchStudents();
+    });
+
+    // Initial fetch
+    fetchStudents();
+  </script>
+
+</body>
+</html>
