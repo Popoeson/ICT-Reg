@@ -543,18 +543,8 @@ app.get("/api/students", async (req, res) => {
     const perPage = Math.max(1, parseInt(limit, 10));
     const skip = (Math.max(1, parseInt(page, 10)) - 1) * perPage;
 
-    // Step 1: fetch all students (optionally rough search by email/matricNo)
-    const search = q.trim();
-    const query = {};
-    if (search) {
-      const regex = new RegExp(search, "i");
-      query.$or = [
-        { email: regex },
-        { matricNo: regex }
-      ];
-    }
-
-    const students = await Student.find(query).sort({ createdAt: -1 }).lean();
+    // Step 1: fetch all students (no search at DB level)
+    const students = await Student.find({}).sort({ createdAt: -1 }).lean();
 
     // Step 2: merge with profile
     const mergedStudents = await Promise.all(
@@ -576,12 +566,9 @@ app.get("/api/students", async (req, res) => {
     let filteredStudents = mergedStudents;
 
     if (q) {
-      const regex = new RegExp(q, "i");
+      const regex = new RegExp(q.trim(), "i");
       filteredStudents = filteredStudents.filter(
         s =>
-          regex.test(s.surname || "") ||
-          regex.test(s.firstname || "") ||
-          regex.test(s.middlename || "") ||
           regex.test(s.fullname || "") ||
           regex.test(s.matricNo || "") ||
           regex.test(s.email || "") ||
@@ -590,11 +577,13 @@ app.get("/api/students", async (req, res) => {
     }
 
     if (department) {
-      filteredStudents = filteredStudents.filter(s => s.department === department);
+      const dep = department.trim().toLowerCase();
+      filteredStudents = filteredStudents.filter(s => (s.department || "").trim().toLowerCase() === dep);
     }
 
     if (level) {
-      filteredStudents = filteredStudents.filter(s => s.level === level);
+      const lev = level.trim().toLowerCase();
+      filteredStudents = filteredStudents.filter(s => (s.level || "").trim().toLowerCase() === lev);
     }
 
     const total = filteredStudents.length;
