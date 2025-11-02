@@ -160,7 +160,7 @@ form.addEventListener("submit", async (e) => {
     const { role, user } = result;
 
     if (role?.toLowerCase() === "student") {
-  window.location.href = "student-dashboard.html";
+  window.location.href = "dashboard.html";
 } else if (role?.toLowerCase().replace(/\s/g, "") === "admin" ||
            role?.toLowerCase().replace(/\s/g, "") === "superadmin") {
   window.location.href = "admin-dashboard.html";
