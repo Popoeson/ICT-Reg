@@ -118,8 +118,9 @@ const DocumentSchema = new mongoose.Schema({
     score: String,
   },
 
-  // 🆕 Add this field to store all uploaded file URLs
+  // Store all uploaded file URLs
   files: {
+    oLevelUploads: { type: [String], default: [] }, // <-- New field for O'Level result images
     jambUpload: String,
     jambAdmission: String,
     applicationForm: String,
@@ -346,14 +347,13 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
   try {
     const { studentId, oLevelInputs, jambInput } = req.body;
     if (!studentId)
-      return res
-        .status(400)
-        .json({ success: false, message: "Student ID required." });
+      return res.status(400).json({ success: false, message: "Student ID required." });
 
     // Parse the received JSON strings safely
     const oLevel = JSON.parse(oLevelInputs || "[]");
     const jamb = JSON.parse(jambInput || "{}");
 
+    // Expected static file fields
     const expectedFiles = [
       "jambUpload", "jambAdmission", "applicationForm", "acceptanceForm",
       "guarantorForm", "codeOfConduct", "nd1First", "nd1Second",
@@ -362,41 +362,54 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
       "stateOfOrigin", "nin", "deptFee"
     ];
 
+    // Collect dynamic O'Level upload fields
+    const oLevelFiles = req.files.filter(f => f.fieldname.startsWith("oLevelUpload"));
+
     const uploadedFiles = {};
     const fileMap = {};
 
+    // Map all uploaded files
     for (const file of req.files) {
       fileMap[file.fieldname] = file;
     }
 
-    // Upload to Cloudinary or assign "N/A"
+    // Upload all static files
     for (const field of expectedFiles) {
       if (fileMap[field]) {
         const uploaded = await cloudinary.uploader.upload(fileMap[field].path, {
           folder: "student_documents",
         });
         uploadedFiles[field] = uploaded.secure_url;
-      } else {
-        uploadedFiles[field] = "N/A";
       }
+    }
+
+    // Upload O'Level files
+    const oLevelUploads = [];
+    for (const file of oLevelFiles) {
+      const uploaded = await cloudinary.uploader.upload(file.path, {
+        folder: "student_documents/olevel",
+      });
+      oLevelUploads.push(uploaded.secure_url);
     }
 
     // 🧠 Check if the student already has a document record
     let existingDoc = await Document.findOne({ studentId });
 
     if (existingDoc) {
-      // ✅ Update the existing record
-      existingDoc.oLevelInputs = oLevel.length > 0 ? oLevel : existingDoc.oLevelInputs;
-      existingDoc.jambInput = Object.keys(jamb).length > 0 ? jamb : existingDoc.jambInput;
+      // Merge O'Level table data
+      if (oLevel.length > 0) existingDoc.oLevelInputs = oLevel;
 
-      // Merge files (keep old ones if not re-uploaded)
+      // Merge JAMB data
+      if (Object.keys(jamb).length > 0) existingDoc.jambInput = jamb;
+
+      // Merge static files
       for (const field of expectedFiles) {
-        if (uploadedFiles[field] !== "N/A") {
-          existingDoc.files[field] = uploadedFiles[field];
-        } else if (!existingDoc.files[field]) {
-          existingDoc.files[field] = "N/A";
-        }
+        if (uploadedFiles[field]) existingDoc.files[field] = uploadedFiles[field];
       }
+
+      // Merge O'Level file URLs
+      if (!existingDoc.files.oLevelUploads) existingDoc.files.oLevelUploads = [];
+      if (oLevelUploads.length > 0) existingDoc.files.oLevelUploads.push(...oLevelUploads);
 
       await existingDoc.save();
 
@@ -406,12 +419,15 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
         data: existingDoc,
       });
     } else {
-      // 🆕 Create a new record
+      // Create new record
+      const newFiles = { ...uploadedFiles };
+      if (oLevelUploads.length > 0) newFiles.oLevelUploads = oLevelUploads;
+
       const newDoc = new Document({
         studentId,
         oLevelInputs: oLevel,
         jambInput: jamb,
-        files: uploadedFiles,
+        files: newFiles,
       });
 
       await newDoc.save();
