@@ -239,24 +239,31 @@
     // Fetch and display stats
     async function fetchStats() {
   try {
-    const [studentsRes, coursesRes, resultsRes] = await Promise.all([
-      fetch(`${backendBaseUrl}/api/students/all`),
-      fetch(`${backendBaseUrl}/api/courses`),
-      fetch(`${backendBaseUrl}/api/results`)
-    ]);
-
+    // Fetch all students (we only need the total count)
+    const studentsRes = await fetch(`${backendBaseUrl}/api/students?limit=10000`);
     const studentsData = await studentsRes.json();
+    const totalStudents = studentsData.success ? studentsData.total : 0;
+
+    // Fetch courses
+    const coursesRes = await fetch(`${backendBaseUrl}/api/courses`);
     const coursesData = await coursesRes.json();
-    const resultsData = await resultsRes.json();
+    const totalCourses = coursesData.success ? coursesData.data.length : 0;
 
-    // Check if success and extract data array
-    const students = studentsData.success ? studentsData.data : [];
-    const courses = coursesData.success ? coursesData.data : [];
-    const results = resultsData.success ? resultsData.data : [];
+    // Fetch results if endpoint exists
+    let totalResults = 0;
+    try {
+      const resultsRes = await fetch(`${backendBaseUrl}/api/results`);
+      const resultsData = await resultsRes.json();
+      totalResults = resultsData.success ? resultsData.data.length : 0;
+    } catch {
+      totalResults = 0;
+    }
 
-    document.getElementById("students-count").textContent = students.length;
-    document.getElementById("courses-count").textContent = courses.length;
-    document.getElementById("results-count").textContent = results.length;
+    // Update counts in DOM
+    document.getElementById("students-count").textContent = totalStudents;
+    document.getElementById("courses-count").textContent = totalCourses;
+    document.getElementById("results-count").textContent = totalResults;
+
   } catch (err) {
     console.error("Error fetching stats:", err);
   }
