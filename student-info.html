@@ -114,7 +114,7 @@
       padding: 15px 20px;
       display: none;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
       background: #f9f9f9;
     }
 
@@ -142,9 +142,75 @@
       font-weight: 600;
     }
 
+    /* Collapsible icon */
     .toggle-icon {
       font-weight: bold;
       font-size: 1.1rem;
+    }
+
+    /* Documents thumbnails */
+    .thumbnail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .thumbnail {
+      text-align: center;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 8px;
+      background: #f9fbff;
+      transition: 0.3s;
+    }
+
+    .thumbnail:hover {
+      background: #eef4ff;
+      transform: scale(1.02);
+    }
+
+    .thumbnail img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .thumbnail p {
+      font-size: 13px;
+      margin-top: 6px;
+      font-weight: 500;
+      color: #444;
+    }
+
+    .no-file {
+      text-align: center;
+      color: #777;
+      font-style: italic;
+      border: 1px dashed #ccc;
+      padding: 12px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+
+    /* Overlay for image preview */
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .overlay img {
+      max-width: 90%;
+      max-height: 85%;
+      border-radius: 10px;
     }
 
     @media (max-width: 600px) {
@@ -168,6 +234,7 @@
   <header>Admin Dashboard | Student Info</header>
 
   <main>
+    <!-- Hero Card -->
     <div class="hero-card">
       <img id="studentPassport" src="https://via.placeholder.com/120" alt="Student Passport" />
       <div class="hero-details">
@@ -179,6 +246,7 @@
       <button class="edit-btn" id="editStudentBtn">Edit Student</button>
     </div>
 
+    <!-- Personal Information Section -->
     <div class="card-section">
       <div class="card-header" data-target="personalInfoBody">
         Personal Information
@@ -201,16 +269,18 @@
       </div>
     </div>
 
+    <!-- Documents Section -->
     <div class="card-section">
       <div class="card-header" data-target="documentsBody">
         Documents
         <span class="toggle-icon">▾</span>
       </div>
       <div class="card-body" id="documentsBody">
-        <p>Documents will be listed here...</p>
+        <p>Loading documents...</p>
       </div>
     </div>
 
+    <!-- Results Section -->
     <div class="card-section">
       <div class="card-header" data-target="resultsBody">
         Results
@@ -222,64 +292,152 @@
     </div>
   </main>
 
+  <!-- Overlay for image preview -->
+  <div class="overlay" id="imageOverlay" onclick="closeOverlay()">
+    <img id="overlayImg" src="" alt="Preview">
+  </div>
+
   <script>
-    const backendURL = "https://ict-reg.onrender.com";
+const backendURL = "https://ict-reg.onrender.com";
+const studentData = JSON.parse(localStorage.getItem("studentData"));
 
-    // Get student ID from URL query
-    const urlParams = new URLSearchParams(window.location.search);
-    const studentId = urlParams.get("id");
+if (!studentData || !studentData._id) {
+  window.location.href = "login.html";
+} else {
+  fetch(`${backendURL}/api/students/${studentData._id}`)
+    .then(res => res.json())
+    .then(async data => {
+      if (!data.success || !data.student) return;
+      const s = data.student;
 
-    if (!studentId) {
-      alert("No student ID provided");
-      window.location.href = "student-list.html";
-    } else {
-      // Fetch student data dynamically based on ID
-      fetch(`${backendURL}/api/students/${studentId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (!data.success || !data.student) {
-            alert("Student not found");
-            return;
-          }
+      // Fullname
+      const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ");
+      document.getElementById("studentName").textContent = fullName || "N/A";
 
-          const s = data.student;
-          const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ");
-          document.getElementById("studentName").textContent = fullName || "N/A";
-          document.getElementById("studentDept").textContent = s.department || "N/A";
-          document.getElementById("studentMatric").textContent = s.matricNo || "N/A";
-          document.getElementById("studentLevel").textContent = s.level || "N/A";
-          document.getElementById("studentPassport").src = s.passport || "https://via.placeholder.com/120";
+      // Hero
+      document.getElementById("studentDept").textContent = s.department || "N/A";
+      document.getElementById("studentMatric").textContent = s.matricNo || "N/A";
+      document.getElementById("studentLevel").textContent = s.level || "N/A";
+      document.getElementById("studentPassport").src = s.passport || "https://via.placeholder.com/120";
 
-          document.getElementById("studentEmail").textContent = s.email || "N/A";
-          document.getElementById("studentPhone").textContent = s.phone || "N/A";
-          document.getElementById("regNo").textContent = s.regNo || "N/A";
+      // Personal Info
+      document.getElementById("studentEmail").textContent = s.email || "N/A";
+      document.getElementById("studentPhone").textContent = s.phone || "N/A";
+      document.getElementById("regNo").textContent = s.regNo || "N/A";
 
-          document.getElementById("studentState").textContent = s.stateOrigin || "N/A";
-          document.getElementById("studentLga").textContent = s.lgaOrigin || "N/A";
-          document.getElementById("studentAddress").textContent = s.address || "N/A";
+      // Origin & Address
+      document.getElementById("studentState").textContent = s.stateOrigin || "N/A";
+      document.getElementById("studentLga").textContent = s.lgaOrigin || "N/A";
+      document.getElementById("studentAddress").textContent = s.address || "N/A";
 
-          const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ");
-          document.getElementById("studentNokName").textContent = nokFullName || "N/A";
-          document.getElementById("studentNokRelation").textContent = s.nokRelation || "N/A";
-          document.getElementById("studentNokPhone").textContent = s.nokPhone || "N/A";
-        })
-        .catch(err => console.error("Error fetching student info:", err));
-    }
+      // Next of Kin
+      const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ");
+      document.getElementById("studentNokName").textContent = nokFullName || "N/A";
+      document.getElementById("studentNokRelation").textContent = s.nokRelation || "N/A";
+      document.getElementById("studentNokPhone").textContent = s.nokPhone || "N/A";
 
-    // Collapsible sections
-    document.querySelectorAll(".card-header").forEach(header => {
-      header.addEventListener("click", () => {
-        const targetId = header.getAttribute("data-target");
-        const body = document.getElementById(targetId);
-        body.classList.toggle("open");
-        header.querySelector(".toggle-icon").textContent = body.classList.contains("open") ? "▴" : "▾";
-      });
-    });
+      // -------------------- Documents Section --------------------
+      const docBody = document.getElementById("documentsBody");
+      docBody.innerHTML = "Loading documents...";
 
-    // Edit button placeholder
-    document.getElementById("editStudentBtn").addEventListener("click", () => {
-      alert("Edit functionality to be implemented...");
-    });
-  </script>
-</body>
-</html>
+      try {
+        const docRes = await fetch(`${backendURL}/api/documents/${studentData._id}`);
+        const docData = await docRes.json();
+
+        if (!docData.success || !docData.data) {
+          docBody.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
+          return;
+        }
+
+        const doc = docData.data;
+
+        const createThumbnail = (url, label) => {
+          if (!url || url === "N/A") return `<div class="no-file">${label}<br>File not yet uploaded</div>`;
+          return `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`;
+        };
+
+        // O'Level thumbnails
+        let oLevelThumbs = "";
+        if (doc.oLevelInputs?.length) {
+          doc.oLevelInputs.forEach((r, i) => {
+            if (r.uploadUrl) {
+              oLevelThumbs += createThumbnail(r.uploadUrl, `${r.examType} ${r.examYear} - ${r.subject}`);
+            }
+          });
+        } else {
+          oLevelThumbs = `<div class="no-file">No O'Level documents uploaded</div>`;
+        }
+
+        // JAMB thumbnails
+        const jambThumbs = `
+          ${createThumbnail(doc.files?.jambUpload, "JAMB Result")}
+          ${createThumbnail(doc.files?.jambAdmission, "JAMB Admission Letter")}
+        `;
+
+        // ND / School Forms / Other documents
+        const otherThumbs = `
+          ${createThumbnail(doc.files?.applicationForm, "Application Form")}
+          ${createThumbnail(doc.files?.acceptanceForm, "Acceptance Form")}
+          ${createThumbnail(doc.files?.guarantorForm, "Guarantor’s Form")}
+          ${createThumbnail(doc.files?.codeOfConduct, "Code of Conduct")}
+          ${createThumbnail(doc.files?.nd1First, "ND1 First Sem")}
+          ${createThumbnail(doc.files?.nd1Second, "ND1 Second Sem")}
+          ${createThumbnail(doc.files?.nd2First, "ND2 First Sem")}
+          ${createThumbnail(doc.files?.nd2Second, "ND2 Second Sem")}
+          ${createThumbnail(doc.files?.ict1, "ICT Receipt 1")}
+          ${createThumbnail(doc.files?.ict2, "ICT Receipt 2")}
+          ${createThumbnail(doc.files?.ict3, "ICT Receipt 3")}
+          ${createThumbnail(doc.files?.ict4, "ICT Receipt 4")}
+          ${createThumbnail(doc.files?.fee1, "School Fees 1")}
+          ${createThumbnail(doc.files?.fee2, "School Fees 2")}
+          ${createThumbnail(doc.files?.fee3, "School Fees 3")}
+          ${createThumbnail(doc.files?.fee4, "School Fees 4")}
+          ${createThumbnail(doc.files?.acceptanceFee, "Acceptance Fee")}
+          ${createThumbnail(doc.files?.stateOfOrigin, "State of Origin")}
+          ${createThumbnail(doc.files?.nin, "NIN Upload")}
+          ${createThumbnail(doc.files?.deptFee, "Departmental Fee")}
+        `;
+
+        // Combine sections
+        docBody.innerHTML = `
+          <h4>O'Level Documents</h4>
+          <div class="thumbnail-grid">${oLevelThumbs}</div>
+          <h4>JAMB Documents</h4>
+          <div class="thumbnail-grid">${jambThumbs}</div>
+          <h4>Other Documents</h4>
+          <div class="thumbnail-grid">${otherThumbs}</div>
+        `;
+      } catch (err) {
+        console.error(err);
+        docBody.innerHTML = "<p style='color:red;text-align:center;'>Error loading documents.</p>";
+      }
+    })
+    .catch(err => console.error("Error fetching student info:", err));
+
+// Collapsible sections
+document.querySelectorAll(".card-header").forEach(header => {
+  header.addEventListener("click", () => {
+    const targetId = header.getAttribute("data-target");
+    const body = document.getElementById(targetId);
+    body.classList.toggle("open");
+    header.querySelector(".toggle-icon").textContent = body.classList.contains("open") ? "▴" : "▾";
+  });
+});
+
+// Edit button placeholder
+document.getElementById("editStudentBtn").addEventListener("click", () => {
+  alert("Edit functionality to be implemented...");
+});
+
+// Overlay functions
+function openOverlay(src) {
+  const overlay = document.getElementById("imageOverlay");
+  const overlayImg = document.getElementById("overlayImg");
+  overlayImg.src = src;
+  overlay.style.display = "flex";
+}
+
+function closeOverlay() {
+  document.getElementById("imageOverlay").style.display = "none";
+}
+</script>
