@@ -352,31 +352,25 @@ if (!studentData || !studentData._id) {
 
       const s = data.student;
 
-      // -------------------- Hero Section --------------------
+      // -------------------- Populate Hero Card --------------------
       const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ") || "N/A";
-      const heroContent = `
-        <div style="display:flex; align-items:center; gap:15px;">
-          <img src="${s.passport || 'https://via.placeholder.com/120'}" style="width:120px; height:120px; border-radius:8px; object-fit:cover;">
-          <div>
-            <p><strong>Name:</strong> ${fullName}</p>
-            <p><strong>Department:</strong> ${s.department || "N/A"}</p>
-            <p><strong>Matric No:</strong> ${s.matricNo || "N/A"}</p>
-            <p><strong>Level:</strong> ${s.level || "N/A"}</p>
-          </div>
-        </div>
-      `;
+      document.getElementById("studentPassport").src = s.passport || "https://via.placeholder.com/120";
+      document.getElementById("studentName").textContent = fullName;
+      document.getElementById("studentDept").textContent = s.department || "N/A";
+      document.getElementById("studentMatric").textContent = s.matricNo || "N/A";
+      document.getElementById("studentLevel").textContent = s.level || "N/A";
 
-      // -------------------- Personal Info --------------------
+      // -------------------- Populate Personal Info --------------------
       const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ") || "N/A";
-      const personalInfoContent = `
-        <p><strong>Email:</strong> ${s.email || 'N/A'}</p>
-        <p><strong>Phone:</strong> ${s.phone || 'N/A'}</p>
-        <p><strong>Reg No:</strong> ${s.regNo || 'N/A'}</p>
-        <p><strong>State of Origin:</strong> ${s.stateOrigin || 'N/A'}</p>
-        <p><strong>LGA:</strong> ${s.lgaOrigin || 'N/A'}</p>
-        <p><strong>Address:</strong> ${s.address || 'N/A'}</p>
-        <p><strong>Next of Kin:</strong> ${nokFullName} (${s.nokRelation || 'N/A'}) - ${s.nokPhone || 'N/A'}</p>
-      `;
+      document.getElementById("studentEmail").textContent = s.email || "N/A";
+      document.getElementById("studentPhone").textContent = s.phone || "N/A";
+      document.getElementById("regNo").textContent = s.regNo || "N/A";
+      document.getElementById("studentState").textContent = s.stateOrigin || "N/A";
+      document.getElementById("studentLga").textContent = s.lgaOrigin || "N/A";
+      document.getElementById("studentAddress").textContent = s.address || "N/A";
+      document.getElementById("studentNokName").textContent = nokFullName;
+      document.getElementById("studentNokRelation").textContent = s.nokRelation || "N/A";
+      document.getElementById("studentNokPhone").textContent = s.nokPhone || "N/A";
 
       // -------------------- Documents Section --------------------
       const docBody = document.getElementById("documentsBody");
@@ -393,58 +387,56 @@ if (!studentData || !studentData._id) {
       const doc = docData.data;
       const files = doc.files || {};
 
-      // Helper to create thumbnails
       const createThumbnail = (url, label) => {
         return url && url !== "N/A"
-          ? `<div class="thumbnail" style="margin:5px; text-align:center;">
-               <img src="${url}" style="width:100px; height:100px; object-fit:cover; cursor:pointer;" onclick="openOverlay('${url}')">
+          ? `<div class="thumbnail">
+               <img src="${url}" alt="${label}" onclick="openOverlay('${url}')">
                <p>${label}</p>
              </div>`
-          : `<div class="no-file" style="margin:5px; text-align:center;">${label}<br>File not yet uploaded</div>`;
+          : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
       };
 
-      // Function to wrap section in collapsible card
       const createCollapsibleSection = (title, content, defaultOpen = false) => `
-        <div class="collapsible-card" style="margin-bottom:10px; border:1px solid #ccc; border-radius:6px; overflow:hidden;">
-          <div class="card-header" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:#eee; padding:10px;">
+        <div class="collapsible-card">
+          <div class="card-header">
             <span>${title}</span>
             <span class="toggle-icon">${defaultOpen ? "▴" : "▾"}</span>
           </div>
-          <div class="card-body" style="display:${defaultOpen ? "block" : "none"}; padding:10px;">
+          <div class="card-body ${defaultOpen ? "open" : ""}">
             ${content}
           </div>
         </div>
       `;
 
-      // O'Level Result Table + Thumbnails
+      // -------------------- O'Level Results --------------------
       const oLevelContent = `
         ${doc.oLevelInputs?.length ? `
-          <table style="width:100%; border-collapse:collapse;">
+          <table>
             <thead>
               <tr>
-                <th style="border:1px solid #ddd; padding:5px;">Exam Year</th>
-                <th style="border:1px solid #ddd; padding:5px;">Exam Type</th>
-                <th style="border:1px solid #ddd; padding:5px;">Exam Number</th>
-                <th style="border:1px solid #ddd; padding:5px;">Subject</th>
-                <th style="border:1px solid #ddd; padding:5px;">Grade</th>
+                <th>Exam Year</th>
+                <th>Exam Type</th>
+                <th>Exam Number</th>
+                <th>Subject</th>
+                <th>Grade</th>
               </tr>
             </thead>
             <tbody>
               ${doc.oLevelInputs.map(r => `
                 <tr>
-                  <td style="border:1px solid #ddd; padding:5px;">${r.examYear || ''}</td>
-                  <td style="border:1px solid #ddd; padding:5px;">${r.examType || ''}</td>
-                  <td style="border:1px solid #ddd; padding:5px;">${r.examNumber || ''}</td>
-                  <td style="border:1px solid #ddd; padding:5px;">${r.subject || ''}</td>
-                  <td style="border:1px solid #ddd; padding:5px;">${r.grade || ''}</td>
+                  <td>${r.examYear || ''}</td>
+                  <td>${r.examType || ''}</td>
+                  <td>${r.examNumber || ''}</td>
+                  <td>${r.subject || ''}</td>
+                  <td>${r.grade || ''}</td>
                 </tr>
               `).join("")}
             </tbody>
           </table>
         ` : `<div class="no-file">No O'Level record found</div>`}
 
-        <div style="display:flex; flex-wrap:wrap; margin-top:10px;">
-          ${files.oLevelUploads?.map((url, i) => createThumbnail(url, `O'Level Result ${i+1}`)).join("") || `<div class="no-file">No O'Level images uploaded</div>`}
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;">
+          ${files.oLevelUploads?.map((url,i)=>createThumbnail(url, `O'Level Result ${i+1}`)).join("") || `<div class="no-file">No O'Level images uploaded</div>`}
         </div>
       `;
 
@@ -454,14 +446,14 @@ if (!studentData || !studentData._id) {
       `;
 
       const jambDocsContent = `
-        <div style="display:flex; flex-wrap:wrap;">
+        <div style="display:flex; flex-wrap:wrap; gap:10px;">
           ${createThumbnail(files.jambUpload, "JAMB Result Upload")}
           ${createThumbnail(files.jambAdmission, "JAMB Admission Letter")}
         </div>
       `;
 
       const schoolFormsContent = `
-        <div style="display:flex; flex-wrap:wrap;">
+        <div style="display:flex; flex-wrap:wrap; gap:10px;">
           ${createThumbnail(files.applicationForm, "Application Form")}
           ${createThumbnail(files.acceptanceForm, "Acceptance Form")}
           ${createThumbnail(files.guarantorForm, "Guarantor’s Form")}
@@ -470,7 +462,7 @@ if (!studentData || !studentData._id) {
       `;
 
       const courseReceiptsContent = `
-        <div style="display:flex; flex-wrap:wrap;">
+        <div style="display:flex; flex-wrap:wrap; gap:10px;">
           ${createThumbnail(files.nd1First, "ND1 - First Semester Course Form")}
           ${createThumbnail(files.nd1Second, "ND1 - Second Semester Course Form")}
           ${createThumbnail(files.nd2First, "ND2 - First Semester Course Form")}
@@ -487,7 +479,7 @@ if (!studentData || !studentData._id) {
       `;
 
       const otherDocsContent = `
-        <div style="display:flex; flex-wrap:wrap;">
+        <div style="display:flex; flex-wrap:wrap; gap:10px;">
           ${createThumbnail(files.acceptanceFee, "Acceptance Fee")}
           ${createThumbnail(files.stateOfOrigin, "State of Origin")}
           ${createThumbnail(files.nin, "NIN Upload")}
@@ -495,16 +487,13 @@ if (!studentData || !studentData._id) {
         </div>
       `;
 
-      // -------------------- Combine all sections --------------------
       docBody.innerHTML = `
-        ${createCollapsibleSection("Hero", heroContent, true)}
-        ${createCollapsibleSection("Personal Info", personalInfoContent, true)}
-        ${createCollapsibleSection("O'Level Result Input", oLevelContent, false)}
-        ${createCollapsibleSection("JAMB Details", jambContent, false)}
-        ${createCollapsibleSection("JAMB Documents", jambDocsContent, false)}
-        ${createCollapsibleSection("School Forms", schoolFormsContent, false)}
-        ${createCollapsibleSection("Course & Receipts", courseReceiptsContent, false)}
-        ${createCollapsibleSection("Other Documents", otherDocsContent, false)}
+        ${createCollapsibleSection("O'Level Result Input", oLevelContent)}
+        ${createCollapsibleSection("JAMB Details", jambContent)}
+        ${createCollapsibleSection("JAMB Documents", jambDocsContent)}
+        ${createCollapsibleSection("School Forms", schoolFormsContent)}
+        ${createCollapsibleSection("Course & Receipts", courseReceiptsContent)}
+        ${createCollapsibleSection("Other Documents", otherDocsContent)}
       `;
 
       // -------------------- Collapsible Toggle Logic --------------------
@@ -512,9 +501,8 @@ if (!studentData || !studentData._id) {
       allHeaders.forEach(header => {
         header.addEventListener("click", () => {
           const body = header.nextElementSibling;
-          const isOpen = body.style.display === "block";
-          body.style.display = isOpen ? "none" : "block";
-          header.querySelector(".toggle-icon").textContent = isOpen ? "▾" : "▴";
+          body.classList.toggle("open");
+          header.querySelector(".toggle-icon").textContent = body.classList.contains("open") ? "▴" : "▾";
         });
       });
 
