@@ -540,43 +540,29 @@ app.get("/api/profile/:regNo", async (req, res) => {
 app.get("/api/students", async (req, res) => {
   try {
     const { q = "", department = "", level = "", page = 1, limit = 50 } = req.query;
-
-    const search = q.trim();
-    const query = {};
-
-    // 🔍 Search across surname, firstname, middlename, matricNo, email, phone
-    if (search) {
-      const regex = new RegExp(search, "i");
-      query.$or = [
-        { surname: regex },
-        { firstname: regex },
-        { middlename: regex },
-        { matricNo: regex },
-        { email: regex },
-        { phone: regex }
-      ];
-    }
-
-    // 🏫 Department filter
-    if (department) query.department = department;
-
-    // 🎓 Level filter
-    if (level) query.level = level;
-
     const perPage = Math.max(1, parseInt(limit, 10));
     const skip = (Math.max(1, parseInt(page, 10)) - 1) * perPage;
 
-    // Fetch students from Student collection
-    const students = await Student.find(query).sort({ createdAt: -1 }).skip(skip).limit(perPage).lean();
+    // Step 1: fetch all students (optionally rough search by email/matricNo)
+    const search = q.trim();
+    const query = {};
+    if (search) {
+      const regex = new RegExp(search, "i");
+      query.$or = [
+        { email: regex },
+        { matricNo: regex }
+      ];
+    }
 
-    // Merge profile info for each student
+    const students = await Student.find(query).sort({ createdAt: -1 }).lean();
+
+    // Step 2: merge with profile
     const mergedStudents = await Promise.all(
       students.map(async s => {
         const profile = await StudentProfile.findOne({ email: s.email }).lean();
-
         return {
-          ...profile,       // profile fields first
-          ...s,             // then student fields overwrite if conflict
+          ...profile,
+          ...s,
           fullname: [s.surname, s.firstname, s.middlename].filter(Boolean).join(" "),
           matricNo: s.matricNo || profile?.matricNo || "N/A",
           department: s.department || profile?.department || "N/A",
@@ -586,16 +572,41 @@ app.get("/api/students", async (req, res) => {
       })
     );
 
-    const total = await Student.countDocuments(query);
+    // Step 3: apply search & filters AFTER merging
+    let filteredStudents = mergedStudents;
+
+    if (q) {
+      const regex = new RegExp(q, "i");
+      filteredStudents = filteredStudents.filter(
+        s =>
+          regex.test(s.surname || "") ||
+          regex.test(s.firstname || "") ||
+          regex.test(s.middlename || "") ||
+          regex.test(s.fullname || "") ||
+          regex.test(s.matricNo || "") ||
+          regex.test(s.email || "") ||
+          regex.test(s.phone || "")
+      );
+    }
+
+    if (department) {
+      filteredStudents = filteredStudents.filter(s => s.department === department);
+    }
+
+    if (level) {
+      filteredStudents = filteredStudents.filter(s => s.level === level);
+    }
+
+    const total = filteredStudents.length;
+    const paginatedStudents = filteredStudents.slice(skip, skip + perPage);
 
     res.json({
       success: true,
-      data: mergedStudents,
+      data: paginatedStudents,
       total,
       currentPage: parseInt(page, 10),
-      totalPages: Math.ceil(total / perPage),
+      totalPages: Math.ceil(total / perPage)
     });
-
   } catch (err) {
     console.error("❌ Error listing students:", err);
     res.status(500).json({ success: false, message: err.message });
