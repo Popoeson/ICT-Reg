@@ -536,7 +536,7 @@ app.get("/api/profile/:regNo", async (req, res) => {
   }
 });
 
-// ✅ UPDATED: List students with filters, search & pagination
+// ✅ UPDATED: List students with correct field names, search & pagination
 app.get("/api/students", async (req, res) => {
   try {
     const { q = "", department = "", level = "", page = 1, limit = 50 } = req.query;
@@ -544,12 +544,14 @@ app.get("/api/students", async (req, res) => {
     const search = q.trim();
     const query = {};
 
-    // 🔍 Search (by name, matric, email, or phone)
+    // 🔍 Search (by surname, firstname, middlename, matricNo, or email)
     if (search) {
       const regex = new RegExp(search, "i");
       query.$or = [
-        { fullname: regex },
-        { matricNumber: regex },
+        { surname: regex },
+        { firstname: regex },
+        { middlename: regex },
+        { matricNo: regex },
         { email: regex },
         { phone: regex }
       ];
@@ -568,20 +570,32 @@ app.get("/api/students", async (req, res) => {
     const perPage = Math.max(1, parseInt(limit, 10));
     const skip = (Math.max(1, parseInt(page, 10)) - 1) * perPage;
 
-    const docs = await Student.find(query)
-      .sort({ dateRegistered: -1 })
+    const students = await Student.find(query)
+      .sort({ createdAt: -1 }) // using createdAt instead of dateRegistered
       .skip(skip)
-      .limit(perPage);
+      .limit(perPage)
+      .lean();
 
     const total = await Student.countDocuments(query);
 
+    // 🧩 Add computed fullname for convenience
+    const formattedStudents = students.map(s => ({
+      ...s,
+      fullname: [s.surname, s.firstname, s.middlename].filter(Boolean).join(" "),
+      matricNo: s.matricNo || "N/A",
+      department: s.department || "N/A",
+      level: s.level || "N/A",
+      passport: s.passport || null
+    }));
+
     res.json({
       success: true,
-      data: docs,
+      data: formattedStudents,
       total,
       currentPage: parseInt(page, 10),
       totalPages: Math.ceil(total / perPage),
     });
+
   } catch (err) {
     console.error("❌ Error listing students:", err);
     res.status(500).json({ success: false, message: err.message });
