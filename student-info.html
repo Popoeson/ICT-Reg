@@ -354,16 +354,23 @@ th {
 
   <script>
 const backendURL = "https://ict-reg.onrender.com";
-const studentData = JSON.parse(localStorage.getItem("studentData"));
+// Get student ID from URL
+const urlParams = new URLSearchParams(window.location.search);
+const studentId = urlParams.get("id");
 
-// Redirect if not logged in
-if (!studentData || !studentData._id) {
-  window.location.href = "login.html";
+if (!studentId) {
+  alert("No student selected!");
+  window.location.href = "students-list.html"; // redirect back to list
 } else {
   (async () => {
     try {
       // Fetch Student Info
-      const res = await fetch(`${backendURL}/api/students/${studentData._id}`);
+      const res = await fetch(`${backendURL}/api/students/${studentId}`);
+      const data = await res.json();
+      if (!data.success || !data.student) return;
+      const s = data.student;
+
+      // ... 
       const data = await res.json();
       if (!data.success || !data.student) return;
       const s = data.student;
