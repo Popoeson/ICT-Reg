@@ -352,174 +352,178 @@ if (!studentData || !studentData._id) {
 
       const s = data.student;
 
-      // Fullname
-      const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ");
-      document.getElementById("studentName").textContent = fullName || "N/A";
+      // -------------------- Hero Section --------------------
+      const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ") || "N/A";
+      const heroContent = `
+        <div style="display:flex; align-items:center; gap:15px;">
+          <img src="${s.passport || 'https://via.placeholder.com/120'}" style="width:120px; height:120px; border-radius:8px; object-fit:cover;">
+          <div>
+            <p><strong>Name:</strong> ${fullName}</p>
+            <p><strong>Department:</strong> ${s.department || "N/A"}</p>
+            <p><strong>Matric No:</strong> ${s.matricNo || "N/A"}</p>
+            <p><strong>Level:</strong> ${s.level || "N/A"}</p>
+          </div>
+        </div>
+      `;
 
-      // Hero
-      document.getElementById("studentDept").textContent = s.department || "N/A";
-      document.getElementById("studentMatric").textContent = s.matricNo || "N/A";
-      document.getElementById("studentLevel").textContent = s.level || "N/A";
-      document.getElementById("studentPassport").src = s.passport || "https://via.placeholder.com/120";
-
-      // Personal Info
-      document.getElementById("studentEmail").textContent = s.email || "N/A";
-      document.getElementById("studentPhone").textContent = s.phone || "N/A";
-      document.getElementById("regNo").textContent = s.regNo || "N/A";
-
-      // Origin & Address
-      document.getElementById("studentState").textContent = s.stateOrigin || "N/A";
-      document.getElementById("studentLga").textContent = s.lgaOrigin || "N/A";
-      document.getElementById("studentAddress").textContent = s.address || "N/A";
-
-      // Next of Kin
-      const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ");
-      document.getElementById("studentNokName").textContent = nokFullName || "N/A";
-      document.getElementById("studentNokRelation").textContent = s.nokRelation || "N/A";
-      document.getElementById("studentNokPhone").textContent = s.nokPhone || "N/A";
+      // -------------------- Personal Info --------------------
+      const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ") || "N/A";
+      const personalInfoContent = `
+        <p><strong>Email:</strong> ${s.email || 'N/A'}</p>
+        <p><strong>Phone:</strong> ${s.phone || 'N/A'}</p>
+        <p><strong>Reg No:</strong> ${s.regNo || 'N/A'}</p>
+        <p><strong>State of Origin:</strong> ${s.stateOrigin || 'N/A'}</p>
+        <p><strong>LGA:</strong> ${s.lgaOrigin || 'N/A'}</p>
+        <p><strong>Address:</strong> ${s.address || 'N/A'}</p>
+        <p><strong>Next of Kin:</strong> ${nokFullName} (${s.nokRelation || 'N/A'}) - ${s.nokPhone || 'N/A'}</p>
+      `;
 
       // -------------------- Documents Section --------------------
-const docBody = document.getElementById("documentsBody");
-docBody.innerHTML = "Loading documents...";
+      const docBody = document.getElementById("documentsBody");
+      docBody.innerHTML = "Loading documents...";
 
-const docRes = await fetch(`${backendURL}/api/documents/${studentData._id}`);
-const docData = await docRes.json();
+      const docRes = await fetch(`${backendURL}/api/documents/${studentData._id}`);
+      const docData = await docRes.json();
 
-if (!docData.success || !docData.data) {
-  docBody.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
-  return;
-}
+      if (!docData.success || !docData.data) {
+        docBody.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
+        return;
+      }
 
-const doc = docData.data;
-const files = doc.files || {};
+      const doc = docData.data;
+      const files = doc.files || {};
 
-// Helper to create thumbnails
-const createThumbnail = (url, label) => {
-  return url && url !== "N/A"
-    ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
-    : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
-};
+      // Helper to create thumbnails
+      const createThumbnail = (url, label) => {
+        return url && url !== "N/A"
+          ? `<div class="thumbnail" style="margin:5px; text-align:center;">
+               <img src="${url}" style="width:100px; height:100px; object-fit:cover; cursor:pointer;" onclick="openOverlay('${url}')">
+               <p>${label}</p>
+             </div>`
+          : `<div class="no-file" style="margin:5px; text-align:center;">${label}<br>File not yet uploaded</div>`;
+      };
 
-// Function to wrap section in collapsible card
-const createCollapsibleSection = (title, content, defaultOpen = false) => `
-  <div class="collapsible-card">
-    <div class="card-header" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
-      <span>${title}</span>
-      <span class="toggle-icon">${defaultOpen ? "▴" : "▾"}</span>
-    </div>
-    <div class="card-body" style="display:${defaultOpen ? "block" : "none"}; margin-top:10px;">
-      ${content}
-    </div>
-  </div>
-`;
-
-// O'Level Result Table + Thumbnails
-const oLevelContent = `
-  ${doc.oLevelInputs?.length ? `
-    <table>
-      <thead>
-        <tr>
-          <th>Exam Year</th>
-          <th>Exam Type</th>
-          <th>Exam Number</th>
-          <th>Subject</th>
-          <th>Grade</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${doc.oLevelInputs.map(r => `
-          <tr>
-            <td>${r.examYear || ''}</td>
-            <td>${r.examType || ''}</td>
-            <td>${r.examNumber || ''}</td>
-            <td>${r.subject || ''}</td>
-            <td>${r.grade || ''}</td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
-  ` : `<div class="no-file">No O'Level record found</div>`}
-
-  ${files.oLevelUploads?.length ? `
-    <div class="thumbnail-grid" style="margin-top: 15px;">
-      ${files.oLevelUploads.map((url, i) => `
-        <div class="thumbnail">
-          <img src="${url}" onclick="openOverlay('${url}')">
-          <p>O'Level Result ${i + 1}</p>
+      // Function to wrap section in collapsible card
+      const createCollapsibleSection = (title, content, defaultOpen = false) => `
+        <div class="collapsible-card" style="margin-bottom:10px; border:1px solid #ccc; border-radius:6px; overflow:hidden;">
+          <div class="card-header" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:#eee; padding:10px;">
+            <span>${title}</span>
+            <span class="toggle-icon">${defaultOpen ? "▴" : "▾"}</span>
+          </div>
+          <div class="card-body" style="display:${defaultOpen ? "block" : "none"}; padding:10px;">
+            ${content}
+          </div>
         </div>
-      `).join('')}
-    </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}
-`;
+      `;
 
-const jambContent = `
-  <label>JAMB Reg No</label>
-  <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
-  <label>JAMB Score</label>
-  <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
-`;
+      // O'Level Result Table + Thumbnails
+      const oLevelContent = `
+        ${doc.oLevelInputs?.length ? `
+          <table style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="border:1px solid #ddd; padding:5px;">Exam Year</th>
+                <th style="border:1px solid #ddd; padding:5px;">Exam Type</th>
+                <th style="border:1px solid #ddd; padding:5px;">Exam Number</th>
+                <th style="border:1px solid #ddd; padding:5px;">Subject</th>
+                <th style="border:1px solid #ddd; padding:5px;">Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${doc.oLevelInputs.map(r => `
+                <tr>
+                  <td style="border:1px solid #ddd; padding:5px;">${r.examYear || ''}</td>
+                  <td style="border:1px solid #ddd; padding:5px;">${r.examType || ''}</td>
+                  <td style="border:1px solid #ddd; padding:5px;">${r.examNumber || ''}</td>
+                  <td style="border:1px solid #ddd; padding:5px;">${r.subject || ''}</td>
+                  <td style="border:1px solid #ddd; padding:5px;">${r.grade || ''}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        ` : `<div class="no-file">No O'Level record found</div>`}
 
-const jambDocsContent = `
-  <div class="thumbnail-grid">
-    ${createThumbnail(files.jambUpload, "JAMB Result Upload")}
-    ${createThumbnail(files.jambAdmission, "JAMB Admission Letter")}
-  </div>
-`;
+        <div style="display:flex; flex-wrap:wrap; margin-top:10px;">
+          ${files.oLevelUploads?.map((url, i) => createThumbnail(url, `O'Level Result ${i+1}`)).join("") || `<div class="no-file">No O'Level images uploaded</div>`}
+        </div>
+      `;
 
-const schoolFormsContent = `
-  <div class="thumbnail-grid">
-    ${createThumbnail(files.applicationForm, "Application Form")}
-    ${createThumbnail(files.acceptanceForm, "Acceptance Form")}
-    ${createThumbnail(files.guarantorForm, "Guarantor’s Form")}
-    ${createThumbnail(files.codeOfConduct, "Code of Conduct")}
-  </div>
-`;
+      const jambContent = `
+        <p><strong>JAMB Reg No:</strong> ${doc.jambInput?.regNo || 'N/A'}</p>
+        <p><strong>JAMB Score:</strong> ${doc.jambInput?.score || 'N/A'}</p>
+      `;
 
-const courseReceiptsContent = `
-  <div class="thumbnail-grid">
-    ${createThumbnail(files.nd1First, "ND1 - First Semester Course Form")}
-    ${createThumbnail(files.nd1Second, "ND1 - Second Semester Course Form")}
-    ${createThumbnail(files.nd2First, "ND2 - First Semester Course Form")}
-    ${createThumbnail(files.nd2Second, "ND2 - Second Semester Course Form")}
-    ${createThumbnail(files.ict1, "ICT Receipt 1")}
-    ${createThumbnail(files.ict2, "ICT Receipt 2")}
-    ${createThumbnail(files.ict3, "ICT Receipt 3")}
-    ${createThumbnail(files.ict4, "ICT Receipt 4")}
-    ${createThumbnail(files.fee1, "School Fees Receipt 1")}
-    ${createThumbnail(files.fee2, "School Fees Receipt 2")}
-    ${createThumbnail(files.fee3, "School Fees Receipt 3")}
-    ${createThumbnail(files.fee4, "School Fees Receipt 4")}
-  </div>
-`;
+      const jambDocsContent = `
+        <div style="display:flex; flex-wrap:wrap;">
+          ${createThumbnail(files.jambUpload, "JAMB Result Upload")}
+          ${createThumbnail(files.jambAdmission, "JAMB Admission Letter")}
+        </div>
+      `;
 
-const otherDocsContent = `
-  <div class="thumbnail-grid">
-    ${createThumbnail(files.acceptanceFee, "Acceptance Fee")}
-    ${createThumbnail(files.stateOfOrigin, "State of Origin")}
-    ${createThumbnail(files.nin, "NIN Upload")}
-    ${createThumbnail(files.deptFee, "Departmental Fee Receipt")}
-  </div>
-`;
+      const schoolFormsContent = `
+        <div style="display:flex; flex-wrap:wrap;">
+          ${createThumbnail(files.applicationForm, "Application Form")}
+          ${createThumbnail(files.acceptanceForm, "Acceptance Form")}
+          ${createThumbnail(files.guarantorForm, "Guarantor’s Form")}
+          ${createThumbnail(files.codeOfConduct, "Code of Conduct")}
+        </div>
+      `;
 
-// Combine all sections with collapsible cards
-docBody.innerHTML = `
-  ${createCollapsibleSection("O'Level Result Input", oLevelContent, true)}
-  ${createCollapsibleSection("JAMB Details", jambContent, false)}
-  ${createCollapsibleSection("JAMB Documents", jambDocsContent, false)}
-  ${createCollapsibleSection("School Forms", schoolFormsContent, false)}
-  ${createCollapsibleSection("Course & Receipts", courseReceiptsContent, false)}
-  ${createCollapsibleSection("Other Documents", otherDocsContent, false)}
-`;
+      const courseReceiptsContent = `
+        <div style="display:flex; flex-wrap:wrap;">
+          ${createThumbnail(files.nd1First, "ND1 - First Semester Course Form")}
+          ${createThumbnail(files.nd1Second, "ND1 - Second Semester Course Form")}
+          ${createThumbnail(files.nd2First, "ND2 - First Semester Course Form")}
+          ${createThumbnail(files.nd2Second, "ND2 - Second Semester Course Form")}
+          ${createThumbnail(files.ict1, "ICT Receipt 1")}
+          ${createThumbnail(files.ict2, "ICT Receipt 2")}
+          ${createThumbnail(files.ict3, "ICT Receipt 3")}
+          ${createThumbnail(files.ict4, "ICT Receipt 4")}
+          ${createThumbnail(files.fee1, "School Fees Receipt 1")}
+          ${createThumbnail(files.fee2, "School Fees Receipt 2")}
+          ${createThumbnail(files.fee3, "School Fees Receipt 3")}
+          ${createThumbnail(files.fee4, "School Fees Receipt 4")}
+        </div>
+      `;
 
-// -------------------- Collapsible Toggle Logic --------------------
-const allHeaders = docBody.querySelectorAll(".collapsible-card .card-header");
-allHeaders.forEach(header => {
-  header.addEventListener("click", () => {
-    const body = header.nextElementSibling;
-    const isOpen = body.style.display === "block";
-    body.style.display = isOpen ? "none" : "block";
-    header.querySelector(".toggle-icon").textContent = isOpen ? "▾" : "▴";
-  });
-});
+      const otherDocsContent = `
+        <div style="display:flex; flex-wrap:wrap;">
+          ${createThumbnail(files.acceptanceFee, "Acceptance Fee")}
+          ${createThumbnail(files.stateOfOrigin, "State of Origin")}
+          ${createThumbnail(files.nin, "NIN Upload")}
+          ${createThumbnail(files.deptFee, "Departmental Fee Receipt")}
+        </div>
+      `;
+
+      // -------------------- Combine all sections --------------------
+      docBody.innerHTML = `
+        ${createCollapsibleSection("Hero", heroContent, true)}
+        ${createCollapsibleSection("Personal Info", personalInfoContent, true)}
+        ${createCollapsibleSection("O'Level Result Input", oLevelContent, false)}
+        ${createCollapsibleSection("JAMB Details", jambContent, false)}
+        ${createCollapsibleSection("JAMB Documents", jambDocsContent, false)}
+        ${createCollapsibleSection("School Forms", schoolFormsContent, false)}
+        ${createCollapsibleSection("Course & Receipts", courseReceiptsContent, false)}
+        ${createCollapsibleSection("Other Documents", otherDocsContent, false)}
+      `;
+
+      // -------------------- Collapsible Toggle Logic --------------------
+      const allHeaders = docBody.querySelectorAll(".collapsible-card .card-header");
+      allHeaders.forEach(header => {
+        header.addEventListener("click", () => {
+          const body = header.nextElementSibling;
+          const isOpen = body.style.display === "block";
+          body.style.display = isOpen ? "none" : "block";
+          header.querySelector(".toggle-icon").textContent = isOpen ? "▾" : "▴";
+        });
+      });
+
+    } catch (err) {
+      console.error(err);
+      document.getElementById("documentsBody").innerHTML = "<p style='color:red;text-align:center;'>Error loading student data.</p>";
+    }
+  })();
+}
 
 // -------------------- Overlay Functions --------------------
 function openOverlay(src) {
