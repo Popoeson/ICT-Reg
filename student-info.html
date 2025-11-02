@@ -397,7 +397,8 @@ if (!studentId) {
       const docBody = document.getElementById("documentsBody");
       docBody.innerHTML = "Loading documents...";
 
-      const docRes = await fetch(`${backendURL}/api/documents/${studentData._id}`);
+      // Use studentId for fetching documents
+      const docRes = await fetch(`${backendURL}/api/documents/${studentId}`);
       const docData = await docRes.json();
 
       if (!docData.success || !docData.data) {
