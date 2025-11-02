@@ -170,7 +170,7 @@ const courseSchema = new mongoose.Schema({
 
 const CourseCollection = mongoose.model('CourseCollection', courseSchema);
 
-//======= Admin Registration=========
+//======= Admin Schema ========
 
 const adminSchema = new mongoose.Schema({
   surname: { type: String, required: true },
