@@ -301,13 +301,17 @@
 const backendURL = "https://ict-reg.onrender.com";
 const studentData = JSON.parse(localStorage.getItem("studentData"));
 
+// Redirect if not logged in
 if (!studentData || !studentData._id) {
   window.location.href = "login.html";
 } else {
-  fetch(`${backendURL}/api/students/${studentData._id}`)
-    .then(res => res.json())
-    .then(async data => {
+  (async () => {
+    try {
+      // -------------------- Fetch Student Info --------------------
+      const res = await fetch(`${backendURL}/api/students/${studentData._id}`);
+      const data = await res.json();
       if (!data.success || !data.student) return;
+
       const s = data.student;
 
       // Fullname
@@ -337,170 +341,170 @@ if (!studentData || !studentData._id) {
       document.getElementById("studentNokPhone").textContent = s.nokPhone || "N/A";
 
       // -------------------- Documents Section --------------------
-const docBody = document.getElementById("documentsBody");
-docBody.innerHTML = "Loading documents...";
+      const docBody = document.getElementById("documentsBody");
+      docBody.innerHTML = "Loading documents...";
 
-try {
-  const docRes = await fetch(`${backendURL}/api/documents/${studentData._id}`);
-  const docData = await docRes.json();
+      const docRes = await fetch(`${backendURL}/api/documents/${studentData._id}`);
+      const docData = await docRes.json();
 
-  if (!docData.success || !docData.data) {
-    docBody.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
-    return;
-  }
+      if (!docData.success || !docData.data) {
+        docBody.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
+        return;
+      }
 
-  const doc = docData.data;
-  const files = doc.files || {};
+      const doc = docData.data;
+      const files = doc.files || {};
 
-  // Helper to create thumbnails
-  const createThumbnail = (url, label) => {
-    return url && url !== "N/A"
-      ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
-      : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
-  };
+      // Helper to create thumbnails
+      const createThumbnail = (url, label) => {
+        return url && url !== "N/A"
+          ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
+          : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
+      };
 
-  // O'Level Result Table
-  const oLevelTable = `
-    <section>
-      <h4>O'Level Result Input</h4>
-      ${doc.oLevelInputs?.length ? `
-        <table>
-          <thead>
-            <tr>
-              <th>Exam Year</th>
-              <th>Exam Type</th>
-              <th>Exam Number</th>
-              <th>Subject</th>
-              <th>Grade</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${doc.oLevelInputs.map(r => `
-              <tr>
-                <td>${r.examYear}</td>
-                <td>${r.examType}</td>
-                <td>${r.examNumber}</td>
-                <td>${r.subject}</td>
-                <td>${r.grade}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      ` : `<div class="no-file">No O'Level record found</div>`}
+      // O'Level Result Table + Thumbnails
+      const oLevelTable = `
+        <section>
+          <h4>O'Level Result Input</h4>
+          ${doc.oLevelInputs?.length ? `
+            <table>
+              <thead>
+                <tr>
+                  <th>Exam Year</th>
+                  <th>Exam Type</th>
+                  <th>Exam Number</th>
+                  <th>Subject</th>
+                  <th>Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${doc.oLevelInputs.map(r => `
+                  <tr>
+                    <td>${r.examYear || ''}</td>
+                    <td>${r.examType || ''}</td>
+                    <td>${r.examNumber || ''}</td>
+                    <td>${r.subject || ''}</td>
+                    <td>${r.grade || ''}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          ` : `<div class="no-file">No O'Level record found</div>`}
 
-      <!-- O'Level thumbnails -->
-      ${files.oLevelUploads?.length ? `
-        <div class="thumbnail-grid" style="margin-top: 15px;">
-          ${files.oLevelUploads.map((url, i) => `
-            <div class="thumbnail">
-              <img src="${url}" onclick="openOverlay('${url}')">
-              <p>O'Level Result ${i + 1}</p>
-            </div>
-          `).join('')}
-        </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}
-    </section>
-  `;
+          ${files.oLevelUploads?.length ? `
+            <div class="thumbnail-grid" style="margin-top: 15px;">
+              ${files.oLevelUploads.map((url, i) => `
+                <div class="thumbnail">
+                  <img src="${url}" onclick="openOverlay('${url}')">
+                  <p>O'Level Result ${i + 1}</p>
+                </div>
+              `).join('')}
+            </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}
+        </section>
+      `;
 
-  // JAMB Info Section
-  const jambInfo = `
-    <section style="margin-top: 20px;">
-      <h4>JAMB Details</h4>
-      <label>JAMB Reg No</label>
-      <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
-      <label>JAMB Score</label>
-      <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
-    </section>
-  `;
+      // JAMB Info
+      const jambInfo = `
+        <section style="margin-top: 20px;">
+          <h4>JAMB Details</h4>
+          <label>JAMB Reg No</label>
+          <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
+          <label>JAMB Score</label>
+          <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
+        </section>
+      `;
 
-  // JAMB Documents
-  const jambDocs = `
-    <section>
-      <h4>JAMB Documents</h4>
-      <div class="thumbnail-grid">
-        ${createThumbnail(files.jambUpload, "JAMB Result Upload")}
-        ${createThumbnail(files.jambAdmission, "JAMB Admission Letter")}
-      </div>
-    </section>
-  `;
+      // JAMB Documents
+      const jambDocs = `
+        <section>
+          <h4>JAMB Documents</h4>
+          <div class="thumbnail-grid">
+            ${createThumbnail(files.jambUpload, "JAMB Result Upload")}
+            ${createThumbnail(files.jambAdmission, "JAMB Admission Letter")}
+          </div>
+        </section>
+      `;
 
-  // School Forms
-  const schoolForms = `
-    <section>
-      <h4>School Forms</h4>
-      <div class="thumbnail-grid">
-        ${createThumbnail(files.applicationForm, "Application Form")}
-        ${createThumbnail(files.acceptanceForm, "Acceptance Form")}
-        ${createThumbnail(files.guarantorForm, "Guarantor’s Form")}
-        ${createThumbnail(files.codeOfConduct, "Code of Conduct")}
-      </div>
-    </section>
-  `;
+      // School Forms
+      const schoolForms = `
+        <section>
+          <h4>School Forms</h4>
+          <div class="thumbnail-grid">
+            ${createThumbnail(files.applicationForm, "Application Form")}
+            ${createThumbnail(files.acceptanceForm, "Acceptance Form")}
+            ${createThumbnail(files.guarantorForm, "Guarantor’s Form")}
+            ${createThumbnail(files.codeOfConduct, "Code of Conduct")}
+          </div>
+        </section>
+      `;
 
-  // Course & Receipts
-  const courseReceipts = `
-    <section>
-      <h4>Course & Receipts</h4>
-      <div class="thumbnail-grid">
-        ${createThumbnail(files.nd1First, "ND1 - First Semester Course Form")}
-        ${createThumbnail(files.nd1Second, "ND1 - Second Semester Course Form")}
-        ${createThumbnail(files.nd2First, "ND2 - First Semester Course Form")}
-        ${createThumbnail(files.nd2Second, "ND2 - Second Semester Course Form")}
-        ${createThumbnail(files.ict1, "ICT Receipt 1")}
-        ${createThumbnail(files.ict2, "ICT Receipt 2")}
-        ${createThumbnail(files.ict3, "ICT Receipt 3")}
-        ${createThumbnail(files.ict4, "ICT Receipt 4")}
-        ${createThumbnail(files.fee1, "School Fees Receipt 1")}
-        ${createThumbnail(files.fee2, "School Fees Receipt 2")}
-        ${createThumbnail(files.fee3, "School Fees Receipt 3")}
-        ${createThumbnail(files.fee4, "School Fees Receipt 4")}
-      </div>
-    </section>
-  `;
+      // Course & Receipts
+      const courseReceipts = `
+        <section>
+          <h4>Course & Receipts</h4>
+          <div class="thumbnail-grid">
+            ${createThumbnail(files.nd1First, "ND1 - First Semester Course Form")}
+            ${createThumbnail(files.nd1Second, "ND1 - Second Semester Course Form")}
+            ${createThumbnail(files.nd2First, "ND2 - First Semester Course Form")}
+            ${createThumbnail(files.nd2Second, "ND2 - Second Semester Course Form")}
+            ${createThumbnail(files.ict1, "ICT Receipt 1")}
+            ${createThumbnail(files.ict2, "ICT Receipt 2")}
+            ${createThumbnail(files.ict3, "ICT Receipt 3")}
+            ${createThumbnail(files.ict4, "ICT Receipt 4")}
+            ${createThumbnail(files.fee1, "School Fees Receipt 1")}
+            ${createThumbnail(files.fee2, "School Fees Receipt 2")}
+            ${createThumbnail(files.fee3, "School Fees Receipt 3")}
+            ${createThumbnail(files.fee4, "School Fees Receipt 4")}
+          </div>
+        </section>
+      `;
 
-  // Other Documents
-  const otherDocs = `
-    <section>
-      <h4>Other Documents</h4>
-      <div class="thumbnail-grid">
-        ${createThumbnail(files.acceptanceFee, "Acceptance Fee")}
-        ${createThumbnail(files.stateOfOrigin, "State of Origin")}
-        ${createThumbnail(files.nin, "NIN Upload")}
-        ${createThumbnail(files.deptFee, "Departmental Fee Receipt")}
-      </div>
-    </section>
-  `;
+      // Other Documents
+      const otherDocs = `
+        <section>
+          <h4>Other Documents</h4>
+          <div class="thumbnail-grid">
+            ${createThumbnail(files.acceptanceFee, "Acceptance Fee")}
+            ${createThumbnail(files.stateOfOrigin, "State of Origin")}
+            ${createThumbnail(files.nin, "NIN Upload")}
+            ${createThumbnail(files.deptFee, "Departmental Fee Receipt")}
+          </div>
+        </section>
+      `;
 
-  // Combine all sections
-  docBody.innerHTML = `
-    ${oLevelTable}
-    ${jambInfo}
-    ${jambDocs}
-    ${schoolForms}
-    ${courseReceipts}
-    ${otherDocs}
-  `;
+      // Combine all sections
+      docBody.innerHTML = `
+        ${oLevelTable}
+        ${jambInfo}
+        ${jambDocs}
+        ${schoolForms}
+        ${courseReceipts}
+        ${otherDocs}
+      `;
 
-} catch (err) {
-  console.error(err);
-  docBody.innerHTML = "<p style='color:red;text-align:center;'>Error loading documents.</p>";
+      // -------------------- Collapsible Sections --------------------
+      document.querySelectorAll(".card-header").forEach(header => {
+        header.addEventListener("click", () => {
+          const targetId = header.getAttribute("data-target");
+          const body = document.getElementById(targetId);
+          body.classList.toggle("open");
+          header.querySelector(".toggle-icon").textContent = body.classList.contains("open") ? "▴" : "▾";
+        });
+      });
+
+      // Edit Button Placeholder
+      document.getElementById("editStudentBtn").addEventListener("click", () => {
+        alert("Edit functionality to be implemented...");
+      });
+
+    } catch (err) {
+      console.error(err);
+      document.getElementById("documentsBody").innerHTML = "<p style='color:red;text-align:center;'>Error loading documents.</p>";
+    }
+  })();
 }
 
-// Collapsible sections
-document.querySelectorAll(".card-header").forEach(header => {
-  header.addEventListener("click", () => {
-    const targetId = header.getAttribute("data-target");
-    const body = document.getElementById(targetId);
-    body.classList.toggle("open");
-    header.querySelector(".toggle-icon").textContent = body.classList.contains("open") ? "▴" : "▾";
-  });
-});
-
-// Edit button placeholder
-document.getElementById("editStudentBtn").addEventListener("click", () => {
-  alert("Edit functionality to be implemented...");
-});
-
-// Overlay functions
+// -------------------- Overlay Functions --------------------
 function openOverlay(src) {
   const overlay = document.getElementById("imageOverlay");
   const overlayImg = document.getElementById("overlayImg");
