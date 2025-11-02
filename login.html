@@ -149,6 +149,8 @@ form.addEventListener("submit", async (e) => {
 
     const result = await res.json();
 
+    console.log("Login response:", result);
+
     if (!res.ok) {
       errorBox.style.display = "block";
       errorBox.textContent = result.message || "Login failed";
