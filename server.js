@@ -311,23 +311,43 @@ app.post("/api/students/register", upload.single("passport"), async (req, res) =
   }
 });
 
-// ======== Student Login =========
-app.post("/api/students/login", async (req, res) => {
+// ======== Universal Login (Student + Admin + Super Admin) ========
+app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // 🔹 Check Students first
     const student = await Student.findOne({ email });
-    if (!student) {
-      return res.status(404).json({ message: "No account found with this email" });
+    if (student) {
+      if (student.password !== password) {
+        return res.status(401).json({ message: "Incorrect password" });
+      }
+      return res.json({
+        message: "Student login successful",
+        role: "student",
+        user: student,
+      });
     }
 
-    if (student.password !== password) {
-      return res.status(401).json({ message: "Incorrect password" });
+    // 🔹 Check Admins next
+    const admin = await Admin.findOne({ email });
+    if (admin) {
+      if (admin.password !== password) {
+        return res.status(401).json({ message: "Incorrect password" });
+      }
+
+      return res.json({
+        message: "Admin login successful",
+        role: admin.role === "Super Admin" ? "superadmin" : "admin",
+        user: admin,
+      });
     }
 
-    res.json({ message: "Login successful", student });
+    // 🔹 No account found
+    return res.status(404).json({ message: "No account found with this email" });
+
   } catch (error) {
-    console.error("❌ Login error:", error);
+    console.error("❌ Universal login error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
