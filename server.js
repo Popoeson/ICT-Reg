@@ -536,28 +536,57 @@ app.get("/api/profile/:regNo", async (req, res) => {
   }
 });
 
-// List students (supports search ?q= & pagination ?page=&limit=)
+// ✅ UPDATED: List students with filters, search & pagination
 app.get("/api/students", async (req, res) => {
   try {
-    const { q = "", page = 1, limit = 50 } = req.query;
+    const { q = "", department = "", level = "", page = 1, limit = 50 } = req.query;
+
     const search = q.trim();
     const query = {};
 
+    // 🔍 Search (by name, matric, email, or phone)
     if (search) {
       const regex = new RegExp(search, "i");
-      query.$or = [{ surname: regex }, { firstname: regex }, { email: regex }, { phone: regex }];
+      query.$or = [
+        { fullname: regex },
+        { matricNumber: regex },
+        { email: regex },
+        { phone: regex }
+      ];
     }
 
-    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.max(1, parseInt(limit, 10));
-    const docs = await Student.find(query).sort({ dateRegistered: -1 }).skip(skip).limit(parseInt(limit, 10));
+    // 🏫 Department filter
+    if (department) {
+      query.department = department;
+    }
+
+    // 🎓 Level filter
+    if (level) {
+      query.level = level;
+    }
+
+    const perPage = Math.max(1, parseInt(limit, 10));
+    const skip = (Math.max(1, parseInt(page, 10)) - 1) * perPage;
+
+    const docs = await Student.find(query)
+      .sort({ dateRegistered: -1 })
+      .skip(skip)
+      .limit(perPage);
+
     const total = await Student.countDocuments(query);
-    res.json({ success: true, data: docs, total });
+
+    res.json({
+      success: true,
+      data: docs,
+      total,
+      currentPage: parseInt(page, 10),
+      totalPages: Math.ceil(total / perPage),
+    });
   } catch (err) {
-    console.error("❌ list students error:", err);
+    console.error("❌ Error listing students:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
 
 // Get combined student + profile (merge all fields)
 app.get("/api/students/:id", async (req, res) => {
