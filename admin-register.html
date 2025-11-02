@@ -205,107 +205,86 @@
   </div>
 
   <script>
-    const form = document.getElementById("adminRegisterForm");
-    const roleSelect = document.getElementById("role");
-    const deptGroup = document.getElementById("deptGroup");
-    const passportInput = document.getElementById("passport");
-    const previewDiv = document.getElementById("preview");
-    const spinnerOverlay = document.getElementById("spinnerOverlay");
+const form = document.getElementById("adminRegisterForm");
+const roleSelect = document.getElementById("role");
+const deptGroup = document.getElementById("deptGroup");
+const passportInput = document.getElementById("passport");
+const previewDiv = document.getElementById("preview");
+const spinnerOverlay = document.getElementById("spinnerOverlay");
 
-    // Toggle department field visibility
-    roleSelect.addEventListener("change", () => {
-      deptGroup.style.display = roleSelect.value === "Admin" ? "block" : "none";
+// Show department field for Admin role
+roleSelect.addEventListener("change", () => {
+  deptGroup.style.display = roleSelect.value === "Admin" ? "block" : "none";
+});
+
+// Preview passport
+passportInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      previewDiv.innerHTML = `<img src="${reader.result}" alt="Preview" />`;
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+// Toggle password visibility
+document.querySelectorAll(".password-wrapper i").forEach(icon => {
+  icon.addEventListener("click", () => {
+    const input = icon.previousElementSibling;
+    const type = input.type === "password" ? "text" : "password";
+    input.type = type;
+    icon.className = type === "password" ? "ri-eye-off-line" : "ri-eye-line";
+  });
+});
+
+// Submit admin registration
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const password = document.getElementById("password").value.trim();
+  const confirmPassword = document.getElementById("confirmPassword").value.trim();
+
+  if (password !== confirmPassword) {
+    alert("Passwords do not match!");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("role", roleSelect.value);
+  formData.append("fullname", document.getElementById("fullname").value.trim());
+  formData.append("phone", document.getElementById("phone").value.trim());
+  formData.append("email", document.getElementById("email").value.trim());
+  formData.append("department", document.getElementById("department").value || "");
+  formData.append("password", password);
+  formData.append("passport", passportInput.files[0]);
+
+  try {
+    spinnerOverlay.classList.add("active");
+
+    const res = await fetch("https://ict-reg.onrender.com/api/admins/register", {
+      method: "POST",
+      body: formData
     });
 
-    // Preview passport
-    passportInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          previewDiv.innerHTML = `<img src="${reader.result}" alt="Preview" />`;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+    const result = await res.json();
+    spinnerOverlay.classList.remove("active");
 
-    // Password toggles
-    document.querySelectorAll(".password-wrapper i").forEach(icon => {
-      icon.addEventListener("click", () => {
-        const input = icon.previousElementSibling;
-        const type = input.type === "password" ? "text" : "password";
-        input.type = type;
-        icon.className = type === "password" ? "ri-eye-off-line" : "ri-eye-line";
-      });
-    });
-
-    // Submit form
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const password = document.getElementById("password").value.trim();
-      const confirmPassword = document.getElementById("confirmPassword").value.trim();
-
-      if (password !== confirmPassword) {
-        alert("Passwords do not match!");
-        return;
-      }
-
-      const file = passportInput.files[0];
-      if (!file) {
-        alert("Please upload a passport photo.");
-        return;
-      }
-
-      try {
-        spinnerOverlay.classList.add("active");
-
-        // 1️⃣ Upload to Cloudinary
-        const cloudData = new FormData();
-        cloudData.append("file", file);
-        cloudData.append("upload_preset", "school_uploads"); // use same preset
-        const cloudRes = await fetch("https://api.cloudinary.com/v1_1/dngeoosdg/image/upload", {
-          method: "POST",
-          body: cloudData,
-        });
-        const cloudResult = await cloudRes.json();
-        const passportUrl = cloudResult.secure_url;
-
-        // 2️⃣ Prepare admin data
-        const adminData = {
-          role: roleSelect.value,
-          fullname: document.getElementById("fullname").value.trim(),
-          phone: document.getElementById("phone").value.trim(),
-          email: document.getElementById("email").value.trim(),
-          department: document.getElementById("department").value || "",
-          password,
-          passport: passportUrl,
-        };
-
-        // 3️⃣ Send to backend
-        const res = await fetch("https://ict-reg.onrender.com/api/admins/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(adminData),
-        });
-
-        const result = await res.json();
-        spinnerOverlay.classList.remove("active");
-
-        if (res.ok) {
-          alert("Admin registration successful!");
-          form.reset();
-          previewDiv.innerHTML = "";
-          window.location.href = "admin-dashboard.html";
-        } else {
-          alert(result.message || "Registration failed.");
-        }
-      } catch (err) {
-        spinnerOverlay.classList.remove("active");
-        console.error(err);
-        alert("Error submitting form.");
-      }
-    });
-  </script>
+    if (res.ok) {
+      alert("Admin registration successful!");
+      form.reset();
+      previewDiv.innerHTML = "";
+      window.location.href = "admin-dashboard.html";
+    } else {
+      alert(result.message || "Registration failed.");
+    }
+  } catch (err) {
+    spinnerOverlay.classList.remove("active");
+    console.error(err);
+    alert("Error submitting registration form.");
+  }
+});
+</script>
 </body>
 </html>
