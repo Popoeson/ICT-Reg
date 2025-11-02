@@ -133,7 +133,7 @@
       flex-shrink: 0;
     }
 
-       h4 {
+    h4 {
       color: #1e73be;
       border-bottom: 2px solid #1e73be;
       padding-bottom: 5px;
@@ -142,8 +142,6 @@
       font-weight: 600;
     }
 
-
-    /* Collapsible icon */
     .toggle-icon {
       font-weight: bold;
       font-size: 1.1rem;
@@ -170,7 +168,6 @@
   <header>Admin Dashboard | Student Info</header>
 
   <main>
-    <!-- Hero Card -->
     <div class="hero-card">
       <img id="studentPassport" src="https://via.placeholder.com/120" alt="Student Passport" />
       <div class="hero-details">
@@ -182,7 +179,6 @@
       <button class="edit-btn" id="editStudentBtn">Edit Student</button>
     </div>
 
-    <!-- Personal Information Section -->
     <div class="card-section">
       <div class="card-header" data-target="personalInfoBody">
         Personal Information
@@ -191,9 +187,8 @@
       <div class="card-body" id="personalInfoBody">
         <div class="info-item"><strong>Email:</strong> <span id="studentEmail">N/A</span></div>
         <div class="info-item"><strong>Phone:</strong> <span id="studentPhone">N/A</span></div>
-     
         <div class="info-item"><strong>Reg No:</strong> <span id="regNo">N/A</span></div>
-        
+
         <h4>Origin & Address</h4>
         <div class="info-item"><strong>State of Origin:</strong> <span id="studentState">N/A</span></div>
         <div class="info-item"><strong>LGA of Origin:</strong> <span id="studentLga">N/A</span></div>
@@ -206,7 +201,6 @@
       </div>
     </div>
 
-    <!-- Documents Section -->
     <div class="card-section">
       <div class="card-header" data-target="documentsBody">
         Documents
@@ -217,7 +211,6 @@
       </div>
     </div>
 
-    <!-- Results Section -->
     <div class="card-section">
       <div class="card-header" data-target="resultsBody">
         Results
@@ -231,38 +224,40 @@
 
   <script>
     const backendURL = "https://ict-reg.onrender.com";
-    const studentData = JSON.parse(localStorage.getItem("studentData"));
 
-    if (!studentData || !studentData._id) {
-      window.location.href = "login.html";
+    // Get student ID from URL query
+    const urlParams = new URLSearchParams(window.location.search);
+    const studentId = urlParams.get("id");
+
+    if (!studentId) {
+      alert("No student ID provided");
+      window.location.href = "student-list.html";
     } else {
-      fetch(`${backendURL}/api/students/${studentData._id}`)
+      // Fetch student data dynamically based on ID
+      fetch(`${backendURL}/api/students/${studentId}`)
         .then(res => res.json())
         .then(data => {
-          if (!data.success || !data.student) return;
+          if (!data.success || !data.student) {
+            alert("Student not found");
+            return;
+          }
 
           const s = data.student;
-          // Fullname
           const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ");
           document.getElementById("studentName").textContent = fullName || "N/A";
-
-          // Hero
           document.getElementById("studentDept").textContent = s.department || "N/A";
           document.getElementById("studentMatric").textContent = s.matricNo || "N/A";
           document.getElementById("studentLevel").textContent = s.level || "N/A";
           document.getElementById("studentPassport").src = s.passport || "https://via.placeholder.com/120";
 
-          // Personal Info
           document.getElementById("studentEmail").textContent = s.email || "N/A";
           document.getElementById("studentPhone").textContent = s.phone || "N/A";
           document.getElementById("regNo").textContent = s.regNo || "N/A";
 
-          // Origin & Address
           document.getElementById("studentState").textContent = s.stateOrigin || "N/A";
           document.getElementById("studentLga").textContent = s.lgaOrigin || "N/A";
           document.getElementById("studentAddress").textContent = s.address || "N/A";
 
-          // Next of Kin
           const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ");
           document.getElementById("studentNokName").textContent = nokFullName || "N/A";
           document.getElementById("studentNokRelation").textContent = s.nokRelation || "N/A";
