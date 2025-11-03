@@ -215,91 +215,101 @@
   </div>
 
   <script>
-    const backendURL = "https://ict-reg.onrender.com";
+  const backendURL = "https://ict-reg.onrender.com";
 
-    function switchTab(tab) {
-      document.getElementById('tabIndividual').classList.toggle('active', tab === 'individual');
-      document.getElementById('tabBulk').classList.toggle('active', tab === 'bulk');
-      document.getElementById('individualForm').classList.toggle('active', tab === 'individual');
-      document.getElementById('bulkUpload').classList.toggle('active', tab === 'bulk');
-    }
+  // ✅ TAB SWITCH FUNCTION
+  function switchTab(tab) {
+    document.getElementById('tabIndividual').classList.toggle('active', tab === 'individual');
+    document.getElementById('tabBulk').classList.toggle('active', tab === 'bulk');
+    document.getElementById('individualForm').classList.toggle('active', tab === 'individual');
+    document.getElementById('bulkUpload').classList.toggle('active', tab === 'bulk');
+  }
 
-    function showLoading(show = true) {
-      document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
-    }
+  // ✅ LOADING OVERLAY TOGGLE
+  function showLoading(show = true) {
+    const overlay = document.getElementById("loadingOverlay");
+    if (overlay) overlay.style.display = show ? "flex" : "none";
+  }
 
-    // ✅ INDIVIDUAL RESULT UPLOAD (JSON format)
-    document.getElementById('individualForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      showLoading(true);
+  // ✅ INDIVIDUAL RESULT UPLOAD (JSON)
+  document.getElementById('individualForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showLoading(true);
 
-      const formData = Object.fromEntries(new FormData(e.target).entries());
+    const formData = Object.fromEntries(new FormData(e.target).entries());
 
-      try {
-        const res = await fetch(`${backendURL}/api/upload-results`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
+    try {
+      const res = await fetch(`${backendURL}/api/upload-results`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-        const data = await res.json();
-        showLoading(false);
+      const data = await res.json();
+      showLoading(false);
 
-        if (res.ok) {
-          alert("✅ Result uploaded successfully!");
-          e.target.reset();
-        } else {
-          alert("❌ " + (data.message || "Failed to upload result."));
-        }
-      } catch (err) {
-        showLoading(false);
-        alert("⚠️ Error uploading result. Please try again.");
-        console.error(err);
+      if (res.ok) {
+        alert("✅ Result uploaded successfully!");
+        e.target.reset();
+      } else {
+        alert("❌ " + (data.message || "Failed to upload result."));
       }
-    });
+    } catch (err) {
+      showLoading(false);
+      alert("⚠️ Network or server error. Please try again later.");
+      console.error("Upload error:", err);
+    }
+  });
 
-    // ✅ BULK RESULT UPLOAD (Excel file)
-    async function uploadBulk() {
-      const fileInput = document.getElementById("bulkFile");
-      if (fileInput.files.length === 0) {
-        alert("Please select an Excel file first.");
-        return;
-      }
+  // ✅ BULK RESULT UPLOAD (Excel / CSV)
+  async function uploadBulk() {
+    const fileInput = document.getElementById("bulkFile");
+    const status = document.getElementById("bulkStatus");
 
-      const formData = new FormData();
-      formData.append("file", fileInput.files[0]);
-
-      showLoading(true);
-
-      try {
-        const res = await fetch(`${backendURL}/api/upload-results`, {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        showLoading(false);
-
-        if (res.ok) {
-          document.getElementById("bulkStatus").innerText = "✅ Bulk results uploaded successfully!";
-          fileInput.value = "";
-        } else {
-          document.getElementById("bulkStatus").innerText = "❌ " + (data.message || "Upload failed.");
-        }
-      } catch (err) {
-        showLoading(false);
-        alert("⚠️ Error uploading Excel file.");
-        console.error(err);
-      }
+    if (!fileInput.files.length) {
+      alert("Please select an Excel or CSV file first.");
+      return;
     }
 
-    function downloadTemplate() {
-      const csv = "Fullname,MatricNo,Department,Level,CourseCode,CourseTitle,Score,Grade\nJohn Doe,CS/2023/001,Computer Science,ND2,CSC 301,Programming,85,A";
-      const blob = new Blob([csv], { type: "text/csv" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "results_template.csv";
-      a.click();
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    showLoading(true);
+    status.innerText = "⏳ Uploading... please wait.";
+
+    try {
+      const res = await fetch(`${backendURL}/api/upload-results`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      showLoading(false);
+
+      if (res.ok) {
+        status.innerText = "✅ Bulk results uploaded successfully!";
+        fileInput.value = "";
+      } else {
+        status.innerText = "❌ " + (data.message || "Upload failed.");
+      }
+    } catch (err) {
+      showLoading(false);
+      status.innerText = "⚠️ Error uploading Excel file.";
+      console.error("Bulk upload error:", err);
     }
-  </script>
+  }
+
+  // ✅ DOWNLOAD CSV TEMPLATE
+  function downloadTemplate() {
+    const csvContent =
+      "Fullname,MatricNo,Department,Level,CourseCode,CourseTitle,Score,Grade\n" +
+      "John Doe,CS/2023/001,Computer Science,ND2,CSC 301,Programming,85,A";
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "results_template.csv";
+    link.click();
+  }
+</script>
 </body>
 </html>
