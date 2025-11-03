@@ -12,7 +12,7 @@ import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Readable } from 'stream'; // for ES Modules
-import * as xlsx from "xlsx";
+import xlsx from "xlsx";
 
 dotenv.config();
 
