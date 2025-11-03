@@ -11,7 +11,7 @@ import axios from "axios";
 import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
-import { Readable } from 'stream'; // for ES Modules
+import { Readable } from "stream";
 import xlsx from "xlsx";
 
 dotenv.config();
@@ -25,7 +25,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
 
-// CORS — restrict to your frontend domain or allow all during dev
+// ====== CORS ======
 app.use(
   cors({
     origin: process.env.FRONTEND_ORIGIN || "https://ict-reg.vercel.app",
@@ -58,14 +58,11 @@ const storage = new CloudinaryStorage({
     transformation: [{ width: 600, height: 600, crop: "limit" }],
   },
 });
-const upload = multer({ storage });
+export const upload = multer({ storage });
 
-// ====== Multer Storage for Excel Uploads ======
-const multer = require("multer");
-const xlsx = require("xlsx");
-
-const excelStorage = multer.memoryStorage(); // stores file in memory buffer
-const uploadExcel = multer({ storage: excelStorage });
+// ====== Multer Storage for Excel Uploads (in memory) ======
+const excelStorage = multer.memoryStorage();
+export const uploadExcel = multer({ storage: excelStorage });
 
 // ====== Schemas & Models ======
 const studentSchema = new mongoose.Schema({
