@@ -190,6 +190,23 @@ const adminSchema = new mongoose.Schema({
 
 const Admin = mongoose.model("Admin", adminSchema);
 
+//==== Result Schema=========
+const mongoose = require("mongoose");
+
+const resultSchema = new mongoose.Schema({
+  fullname: String,
+  matricNo: String,
+  department: String,
+  level: String,
+  courseCode: String,
+  courseTitle: String,
+  score: Number,
+  grade: String,
+  uploadedAt: { type: Date, default: Date.now },
+});
+
+const Result = mongoose.model("Result", resultSchema);
+
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
   return String(email || "").trim().toLowerCase();
@@ -850,6 +867,71 @@ app.post("/api/admins/register", upload.single("passport"), async (req, res) => 
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
+//========= Upload Result Route =========
+app.post("/api/upload-results", upload.single("file"), async (req, res) => {
+  try {
+    // If file is uploaded → handle Excel bulk upload
+    if (req.file) {
+      const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const data = xlsx.utils.sheet_to_json(sheet);
+
+      if (data.length === 0) {
+        return res.status(400).json({ message: "Excel file is empty" });
+      }
+
+      const formattedResults = data.map((row) => ({
+        fullname: row.Fullname || row.fullname || "",
+        matricNo: row.MatricNo || row.matricNo || "",
+        department: row.Department || row.department || "",
+        level: row.Level || row.level || "",
+        courseCode: row.CourseCode || row.courseCode || "",
+        courseTitle: row.CourseTitle || row.courseTitle || "",
+        score: Number(row.Score || row.score || 0),
+        grade: row.Grade || row.grade || "",
+      }));
+
+      await Result.insertMany(formattedResults);
+      return res.json({ message: "Results uploaded successfully (Excel)!" });
+    }
+
+    // Else, handle single result upload via JSON
+    const {
+      fullname,
+      matricNo,
+      department,
+      level,
+      courseCode,
+      courseTitle,
+      score,
+      grade,
+    } = req.body;
+
+    if (!fullname || !matricNo || !courseCode || !score) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const newResult = new Result({
+      fullname,
+      matricNo,
+      department,
+      level,
+      courseCode,
+      courseTitle,
+      score,
+      grade,
+    });
+
+    await newResult.save();
+    res.json({ message: "Single result uploaded successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error uploading results", error: err.message });
+  }
+});
+
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
