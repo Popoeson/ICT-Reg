@@ -500,8 +500,8 @@ app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
           firstname: body.firstname || student.firstname,
           middlename: body.middlename || student.middlename,
           phone: body.phone || student.phone,
-          email: student.email, // keep same
-          dob: student.dob,
+          email: student.email, 
+          dob: body.dob,
           department: body.department || "",
           matricNo: matricNo,
           regNo: regNo,
