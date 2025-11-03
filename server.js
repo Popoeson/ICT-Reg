@@ -979,6 +979,16 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
   }
 });
 
+//====== fetch Result Route =======
+app.get("/api/results", async (req, res) => {
+  try {
+    const results = await Result.find().sort({ uploadedAt: -1 });
+    res.json({ results });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching results", error: err.message });
+  }
+});
+
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
