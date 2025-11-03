@@ -872,36 +872,65 @@ app.post("/api/admins/register", upload.single("passport"), async (req, res) => 
   }
 });
 
-//========= Upload Result Route =========
+// ========= Upload Result Route =========
 app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => {
   try {
-    // If file is uploaded → handle Excel bulk upload
+    // ✅ CASE 1: BULK UPLOAD (Excel file)
     if (req.file) {
       const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
-      const data = xlsx.utils.sheet_to_json(sheet);
+      const rows = xlsx.utils.sheet_to_json(sheet);
 
-      if (data.length === 0) {
+      if (rows.length === 0) {
         return res.status(400).json({ message: "Excel file is empty" });
       }
 
-      const formattedResults = data.map((row) => ({
-        fullname: row.Fullname || row.fullname || "",
-        matricNo: row.MatricNo || row.matricNo || "",
-        department: row.Department || row.department || "",
-        level: row.Level || row.level || "",
-        courseCode: row.CourseCode || row.courseCode || "",
-        courseTitle: row.CourseTitle || row.courseTitle || "",
-        score: Number(row.Score || row.score || 0),
-        grade: row.Grade || row.grade || "",
-      }));
+      // Map Excel headers properly to database fields
+      const formattedResults = rows.map((row) => {
+        // Extract level & department (can normalize spacing)
+        const rawLevel = (row["Level"] || row["level"] || "").toString().trim().toUpperCase();
+        const rawDept = (row["Department"] || row["department"] || "").trim();
+
+        // Handle both "ND2" and "ND 2" style
+        const level = rawLevel.replace(/\s+/g, " "); // normalize spacing
+
+        // Clean up score field
+        const score = Number(row["Score"] || row["score"] || 0);
+
+        // Determine grade automatically if missing
+        let grade = row["Grade"] || row["grade"] || "";
+        if (!grade) {
+          if (score >= 70) grade = "A";
+          else if (score >= 60) grade = "B";
+          else if (score >= 50) grade = "C";
+          else if (score >= 45) grade = "D";
+          else if (score >= 40) grade = "E";
+          else grade = "F";
+        }
+
+        return {
+          fullname: row["Name"] || row["Fullname"] || row["fullname"] || "",
+          matricNo: row["Matric Number"] || row["MatricNo"] || row["matricNo"] || "",
+          department: rawDept,
+          level,
+          semester: row["Semester"] || row["semester"] || "",
+          courseCode: row["Course Code"] || row["CourseCode"] || row["courseCode"] || "",
+          courseTitle: row["Course Title"] || row["CourseTitle"] || row["courseTitle"] || "",
+          score,
+          grade,
+          uploadedAt: new Date(),
+        };
+      });
 
       await Result.insertMany(formattedResults);
-      return res.json({ message: "Results uploaded successfully (Excel)!" });
+      return res.json({
+        message: "✅ Bulk results uploaded successfully!",
+        count: formattedResults.length,
+      });
     }
 
-    // Else, handle single result upload via JSON
+    // ✅ CASE 2: SINGLE UPLOAD (Manual JSON)
     const {
       fullname,
       matricNo,
@@ -926,13 +955,18 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
       courseTitle,
       score,
       grade,
+      uploadedAt: new Date(),
     });
 
     await newResult.save();
-    res.json({ message: "Single result uploaded successfully!" });
+    res.json({ message: "✅ Single result uploaded successfully!" });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error uploading results", error: err.message });
+    console.error("❌ Upload error:", err);
+    res.status(500).json({
+      message: "Error uploading results",
+      error: err.message,
+    });
   }
 });
 
