@@ -60,6 +60,13 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage });
 
+// ====== Multer Storage for Excel Uploads ======
+const multer = require("multer");
+const xlsx = require("xlsx");
+
+const excelStorage = multer.memoryStorage(); // stores file in memory buffer
+const uploadExcel = multer({ storage: excelStorage });
+
 // ====== Schemas & Models ======
 const studentSchema = new mongoose.Schema({
   surname: { type: String, required: true, trim: true },
@@ -869,7 +876,7 @@ app.post("/api/admins/register", upload.single("passport"), async (req, res) => 
 });
 
 //========= Upload Result Route =========
-app.post("/api/upload-results", upload.single("file"), async (req, res) => {
+app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => {
   try {
     // If file is uploaded → handle Excel bulk upload
     if (req.file) {
