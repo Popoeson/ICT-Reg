@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Results Dashboard | ICT Registration Portal</title>
+
+  <!-- Google Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f7fb;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #007bff;
+      color: white;
+      padding: 16px 25px;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .container h1 {
+      font-size: 1.8rem;
+      color: #1e293b;
+      margin-bottom: 40px;
+    }
+
+    .cards {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      padding: 40px 25px;
+      width: 280px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+    }
+
+    .icon {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .upload-icon {
+      background: #e0edff;
+      color: #007bff;
+    }
+
+    .view-icon {
+      background: #dff7e0;
+      color: #22c55e;
+    }
+
+    .material-icons-outlined {
+      font-size: 36px;
+    }
+
+    .card h2 {
+      margin: 0;
+      color: #1e293b;
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 768px) {
+      .container h1 {
+        font-size: 1.4rem;
+        margin-bottom: 25px;
+      }
+
+      .cards {
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 350px;
+        margin: 0 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>📊 Admin Dashboard</header>
+
+  <div class="main">
+    <div class="container">
+      <h1>Student Results Portal</h1>
+      <div class="cards">
+        <div class="card" onclick="navigateTo('upload-result.html')">
+          <div class="icon upload-icon">
+            <span class="material-icons-outlined">cloud_upload</span>
+          </div>
+          <h2>Upload Results</h2>
+          <p>Upload student results individually or in bulk</p>
+        </div>
+
+        <div class="card" onclick="navigateTo('view-result.html')">
+          <div class="icon view-icon">
+            <span class="material-icons-outlined">list_alt</span>
+          </div>
+          <h2>View Results</h2>
+          <p>Search and filter all student results</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function navigateTo(page) {
+      window.location.href = page;
+    }
+  </script>
+</body>
+</html>
