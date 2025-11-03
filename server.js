@@ -192,7 +192,6 @@ const adminSchema = new mongoose.Schema({
 const Admin = mongoose.model("Admin", adminSchema);
 
 //==== Result Schema=========
-const mongoose = require("mongoose");
 
 const resultSchema = new mongoose.Schema({
   fullname: String,
