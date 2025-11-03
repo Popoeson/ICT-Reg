@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>View Uploaded Results | ICT Registration Portal</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      background: #f5f7fb;
+      color: #333;
+    }
+
+    header {
+      background: #007bff;
+      color: white;
+      text-align: center;
+      padding: 16px;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 30px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .back-btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"],
+    select {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #007bff;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    #noResults {
+      text-align: center;
+      color: #777;
+      margin-top: 20px;
+      font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+      .filters { flex-direction: column; }
+      table { font-size: 0.85rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>📋 Uploaded Student Results</header>
+
+  <div class="container">
+    <button class="back-btn" onclick="window.location.href='index.html'">← Back</button>
+
+    <div class="filters">
+      <input type="text" id="searchInput" placeholder="🔍 Search by name or matric no..." />
+      <select id="filterDept">
+        <option value="">All Departments</option>
+        <option>Accountancy</option>
+        <option>Business Admin</option>
+        <option>Computer Science</option>
+        <option>Computer Engineering</option>
+        <option>Elect/Elect</option>
+        <option>Mass Communication</option>
+        <option>Estate Management</option>
+        <option>OTM</option>
+      </select>
+      <select id="filterLevel">
+        <option value="">All Levels</option>
+        <option>ND1</option>
+        <option>ND2</option>
+        <option>HND1</option>
+        <option>HND2</option>
+      </select>
+      <select id="filterSemester">
+        <option value="">All Semesters</option>
+        <option>First</option>
+        <option>Second</option>
+      </select>
+    </div>
+
+    <div style="overflow-x:auto;">
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>Full Name</th>
+            <th>Matric No</th>
+            <th>Department</th>
+            <th>Level</th>
+            <th>Semester</th>
+            <th>Course Code</th>
+            <th>Score</th>
+            <th>Grade</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <p id="noResults" style="display:none;">No results found...</p>
+  </div>
+
+  <script>
+    const backendURL = "https://ict-reg.onrender.com";
+    const tableBody = document.querySelector("#resultsTable tbody");
+    const noResults = document.getElementById("noResults");
+    let allResults = [];
+
+    // ✅ Fetch all results
+    async function fetchResults() {
+      try {
+        const res = await fetch(`${backendURL}/api/results`);
+        const data = await res.json();
+        allResults = data.results || data; // support different response formats
+        renderTable(allResults);
+      } catch (err) {
+        console.error("Error fetching results:", err);
+        noResults.style.display = "block";
+        noResults.innerText = "⚠️ Error loading results.";
+      }
+    }
+
+    // ✅ Render table data
+    function renderTable(results) {
+      tableBody.innerHTML = "";
+
+      if (results.length === 0) {
+        noResults.style.display = "block";
+        return;
+      }
+
+      noResults.style.display = "none";
+
+      results.forEach(r => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${r.fullname || ""}</td>
+          <td>${r.matricNo || ""}</td>
+          <td>${r.department || ""}</td>
+          <td>${r.level || ""}</td>
+          <td>${r.semester || ""}</td>
+          <td>${r.courseCode || ""}</td>
+          <td>${r.score ?? ""}</td>
+          <td>${r.grade ?? ""}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // ✅ Filter logic
+    function applyFilters() {
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const dept = document.getElementById("filterDept").value;
+      const level = document.getElementById("filterLevel").value;
+      const semester = document.getElementById("filterSemester").value;
+
+      const filtered = allResults.filter(r => {
+        const matchesSearch =
+          r.fullname?.toLowerCase().includes(search) ||
+          r.matricNo?.toLowerCase().includes(search);
+        const matchesDept = !dept || r.department === dept;
+        const matchesLevel = !level || r.level === level;
+        const matchesSemester = !semester || r.semester === semester;
+        return matchesSearch && matchesDept && matchesLevel && matchesSemester;
+      });
+
+      renderTable(filtered);
+    }
+
+    // ✅ Event listeners
+    document.getElementById("searchInput").addEventListener("input", applyFilters);
+    document.getElementById("filterDept").addEventListener("change", applyFilters);
+    document.getElementById("filterLevel").addEventListener("change", applyFilters);
+    document.getElementById("filterSemester").addEventListener("change", applyFilters);
+
+    // Load data on page load
+    fetchResults();
+  </script>
+</body>
+</html>
