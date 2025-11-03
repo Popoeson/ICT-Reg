@@ -79,6 +79,7 @@ const studentProfileSchema = new mongoose.Schema({
   firstname: String,
   middlename: String,
   phone: String,
+  dob: String,
   email: String,
   department: String,
   regNo: { type: String, unique: true },
@@ -500,6 +501,7 @@ app.post("/api/profile/update", upload.single("passport"), async (req, res) => {
           middlename: body.middlename || student.middlename,
           phone: body.phone || student.phone,
           email: student.email, // keep same
+          dob: student.dob,
           department: body.department || "",
           matricNo: matricNo,
           regNo: regNo,
