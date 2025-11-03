@@ -150,13 +150,8 @@
     }
 
     @media (max-width: 768px) {
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .container {
-        margin: 15px;
-      }
+      .form-grid { grid-template-columns: 1fr; }
+      .container { margin: 15px; }
     }
   </style>
 </head>
@@ -175,12 +170,12 @@
     <form id="individualForm" class="upload-form active">
       <div class="form-grid">
         <input type="text" name="fullname" placeholder="Student Full Name" required>
-        <input type="text" name="matricNumber" placeholder="Matric Number" required>
+        <input type="text" name="matricNo" placeholder="Matric Number" required>
         <select name="department" required>
           <option value="">Select Department</option>
           <option>Accountancy</option>
           <option>Business Admin</option>
-          <option>Computer Science </option>
+          <option>Computer Science</option>
           <option>Computer Engineering</option>
           <option>Elect/Elect</option>
           <option>Mass Communication</option>
@@ -207,7 +202,7 @@
 
     <!-- Bulk Upload -->
     <div id="bulkUpload">
-      <button onclick="downloadTemplate()">Download CSV Template</button>
+      <button onclick="downloadTemplate()">Download Excel Template</button>
       <input type="file" id="bulkFile" accept=".csv,.xls,.xlsx">
       <button onclick="uploadBulk()">Upload File</button>
       <p id="bulkStatus"></p>
@@ -229,12 +224,11 @@
       document.getElementById('bulkUpload').classList.toggle('active', tab === 'bulk');
     }
 
-    // Show / Hide Loading Spinner
     function showLoading(show = true) {
       document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
     }
 
-    // Submit Individual Upload
+    // ✅ INDIVIDUAL RESULT UPLOAD (JSON format)
     document.getElementById('individualForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       showLoading(true);
@@ -242,7 +236,7 @@
       const formData = Object.fromEntries(new FormData(e.target).entries());
 
       try {
-        const res = await fetch(`${backendURL}/api/results/upload`, {
+        const res = await fetch(`${backendURL}/api/upload-results`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
@@ -251,7 +245,7 @@
         const data = await res.json();
         showLoading(false);
 
-        if (data.success) {
+        if (res.ok) {
           alert("✅ Result uploaded successfully!");
           e.target.reset();
         } else {
@@ -264,21 +258,11 @@
       }
     });
 
-    // Download Bulk Template
-    function downloadTemplate() {
-      const csv = "Fullname,Matric Number,Department,Level,Semester,Course Code,Score\nJohn Doe,CS/2023/001,Computer Science,ND2,First,CSC 301,85";
-      const blob = new Blob([csv], { type: "text/csv" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "result_template.csv";
-      a.click();
-    }
-
-    // Bulk Upload
+    // ✅ BULK RESULT UPLOAD (Excel file)
     async function uploadBulk() {
       const fileInput = document.getElementById("bulkFile");
       if (fileInput.files.length === 0) {
-        alert("Please select a file first.");
+        alert("Please select an Excel file first.");
         return;
       }
 
@@ -288,24 +272,33 @@
       showLoading(true);
 
       try {
-        const res = await fetch(`${backendURL}/api/results/bulk-upload`, {
+        const res = await fetch(`${backendURL}/api/upload-results`, {
           method: "POST",
           body: formData,
         });
         const data = await res.json();
         showLoading(false);
 
-        if (data.success) {
-          document.getElementById("bulkStatus").innerText = "✅ Bulk upload successful!";
+        if (res.ok) {
+          document.getElementById("bulkStatus").innerText = "✅ Bulk results uploaded successfully!";
           fileInput.value = "";
         } else {
           document.getElementById("bulkStatus").innerText = "❌ " + (data.message || "Upload failed.");
         }
       } catch (err) {
         showLoading(false);
-        alert("⚠️ Error uploading file.");
+        alert("⚠️ Error uploading Excel file.");
         console.error(err);
       }
+    }
+
+    function downloadTemplate() {
+      const csv = "Fullname,MatricNo,Department,Level,CourseCode,CourseTitle,Score,Grade\nJohn Doe,CS/2023/001,Computer Science,ND2,CSC 301,Programming,85,A";
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "results_template.csv";
+      a.click();
     }
   </script>
 </body>
