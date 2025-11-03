@@ -310,6 +310,7 @@ th {
       <div class="card-body" id="personalInfoBody">
         <div class="info-item"><strong>Email:</strong> <span id="studentEmail">N/A</span></div>
         <div class="info-item"><strong>Phone:</strong> <span id="studentPhone">N/A</span></div>
+         <div class="info-item"><strong>D.O.B.:</strong> <span id="dob">N/A</span></div>
         <div class="info-item"><strong>Reg No:</strong> <span id="regNo">N/A</span></div>
 
         <h4>Origin & Address</h4>
@@ -385,6 +386,7 @@ if (!studentId) {
       const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ") || "N/A";
       document.getElementById("studentEmail").textContent = s.email || "N/A";
       document.getElementById("studentPhone").textContent = s.phone || "N/A";
+      document.getElementById("dob").textContent = s.dob || "N/A";
       document.getElementById("regNo").textContent = s.regNo || "N/A";
       document.getElementById("studentState").textContent = s.stateOrigin || "N/A";
       document.getElementById("studentLga").textContent = s.lgaOrigin || "N/A";
