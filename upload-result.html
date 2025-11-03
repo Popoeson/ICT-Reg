@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Results | ICT Registration Portal</title>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      background: #f5f7fb;
+      color: #333;
+    }
+
+    header {
+      background: #007bff;
+      color: white;
+      text-align: center;
+      padding: 16px;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .back-btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .tabs button {
+      flex: 1;
+      padding: 12px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #555;
+      transition: 0.3s;
+    }
+
+    .tabs button.active {
+      color: #007bff;
+      border-bottom: 3px solid #007bff;
+    }
+
+    .upload-form {
+      display: none;
+    }
+
+    .upload-form.active {
+      display: block;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    input, select {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button[type="submit"], #bulkUpload button {
+      width: 100%;
+      padding: 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+      font-size: 1rem;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    button[type="submit"]:hover, #bulkUpload button:hover {
+      background: #0056b3;
+    }
+
+    #bulkUpload {
+      text-align: center;
+      display: none;
+    }
+
+    #bulkUpload.active {
+      display: block;
+    }
+
+    #bulkStatus {
+      color: green;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    /* Spinner Overlay */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255,255,255,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      display: none;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #ccc;
+      border-top-color: #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .container {
+        margin: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>📤 Upload Student Results</header>
+
+  <div class="container">
+    <button class="back-btn" onclick="window.location.href='index.html'">← Back</button>
+
+    <div class="tabs">
+      <button id="tabIndividual" class="active" onclick="switchTab('individual')">Individual Upload</button>
+      <button id="tabBulk" onclick="switchTab('bulk')">Bulk Upload</button>
+    </div>
+
+    <!-- Individual Upload -->
+    <form id="individualForm" class="upload-form active">
+      <div class="form-grid">
+        <input type="text" name="fullname" placeholder="Student Full Name" required>
+        <input type="text" name="matricNumber" placeholder="Matric Number" required>
+        <select name="department" required>
+          <option value="">Select Department</option>
+          <option>Accountancy</option>
+          <option>Business Admin</option>
+          <option>Computer Science </option>
+          <option>Computer Engineering</option>
+          <option>Elect/Elect</option>
+          <option>Mass Communication</option>
+          <option>Estate Management</option>
+          <option>OTM</option>
+        </select>
+        <select name="level" required>
+          <option value="">Select Level</option>
+          <option>ND1</option>
+          <option>ND2</option>
+          <option>HND1</option>
+          <option>HND2</option>
+        </select>
+        <select name="semester" required>
+          <option value="">Select Semester</option>
+          <option>First</option>
+          <option>Second</option>
+        </select>
+        <input type="text" name="courseCode" placeholder="Course Code e.g., CSC 301" required>
+        <input type="number" name="score" placeholder="Score" min="0" max="100" required>
+      </div>
+      <button type="submit">Upload Result</button>
+    </form>
+
+    <!-- Bulk Upload -->
+    <div id="bulkUpload">
+      <button onclick="downloadTemplate()">Download CSV Template</button>
+      <input type="file" id="bulkFile" accept=".csv,.xls,.xlsx">
+      <button onclick="uploadBulk()">Upload File</button>
+      <p id="bulkStatus"></p>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+
+  <script>
+    const backendURL = "https://ict-reg.onrender.com";
+
+    function switchTab(tab) {
+      document.getElementById('tabIndividual').classList.toggle('active', tab === 'individual');
+      document.getElementById('tabBulk').classList.toggle('active', tab === 'bulk');
+      document.getElementById('individualForm').classList.toggle('active', tab === 'individual');
+      document.getElementById('bulkUpload').classList.toggle('active', tab === 'bulk');
+    }
+
+    // Show / Hide Loading Spinner
+    function showLoading(show = true) {
+      document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
+    }
+
+    // Submit Individual Upload
+    document.getElementById('individualForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      showLoading(true);
+
+      const formData = Object.fromEntries(new FormData(e.target).entries());
+
+      try {
+        const res = await fetch(`${backendURL}/api/results/upload`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+
+        const data = await res.json();
+        showLoading(false);
+
+        if (data.success) {
+          alert("✅ Result uploaded successfully!");
+          e.target.reset();
+        } else {
+          alert("❌ " + (data.message || "Failed to upload result."));
+        }
+      } catch (err) {
+        showLoading(false);
+        alert("⚠️ Error uploading result. Please try again.");
+        console.error(err);
+      }
+    });
+
+    // Download Bulk Template
+    function downloadTemplate() {
+      const csv = "Fullname,Matric Number,Department,Level,Semester,Course Code,Score\nJohn Doe,CS/2023/001,Computer Science,ND2,First,CSC 301,85";
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "result_template.csv";
+      a.click();
+    }
+
+    // Bulk Upload
+    async function uploadBulk() {
+      const fileInput = document.getElementById("bulkFile");
+      if (fileInput.files.length === 0) {
+        alert("Please select a file first.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      showLoading(true);
+
+      try {
+        const res = await fetch(`${backendURL}/api/results/bulk-upload`, {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        showLoading(false);
+
+        if (data.success) {
+          document.getElementById("bulkStatus").innerText = "✅ Bulk upload successful!";
+          fileInput.value = "";
+        } else {
+          document.getElementById("bulkStatus").innerText = "❌ " + (data.message || "Upload failed.");
+        }
+      } catch (err) {
+        showLoading(false);
+        alert("⚠️ Error uploading file.");
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>
