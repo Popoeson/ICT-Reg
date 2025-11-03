@@ -888,17 +888,12 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
 
       // Map Excel headers properly to database fields
       const formattedResults = rows.map((row) => {
-        // Extract level & department (can normalize spacing)
         const rawLevel = (row["Level"] || row["level"] || "").toString().trim().toUpperCase();
         const rawDept = (row["Department"] || row["department"] || "").trim();
-
-        // Handle both "ND2" and "ND 2" style
-        const level = rawLevel.replace(/\s+/g, " "); // normalize spacing
-
-        // Clean up score field
+        const level = rawLevel.replace(/\s+/g, " ");
         const score = Number(row["Score"] || row["score"] || 0);
 
-        // Determine grade automatically if missing
+        // Auto-grade if not provided
         let grade = row["Grade"] || row["grade"] || "";
         if (!grade) {
           if (score >= 70) grade = "A";
@@ -946,6 +941,20 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
       return res.status(400).json({ message: "Missing required fields" });
     }
 
+    // Convert score to number just to be safe
+    const numericScore = Number(score);
+
+    // ✅ Auto-determine grade if not provided
+    let finalGrade = grade;
+    if (!finalGrade || finalGrade.trim() === "") {
+      if (numericScore >= 70) finalGrade = "A";
+      else if (numericScore >= 60) finalGrade = "B";
+      else if (numericScore >= 50) finalGrade = "C";
+      else if (numericScore >= 45) finalGrade = "D";
+      else if (numericScore >= 40) finalGrade = "E";
+      else finalGrade = "F";
+    }
+
     const newResult = new Result({
       fullname,
       matricNo,
@@ -953,8 +962,8 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
       level,
       courseCode,
       courseTitle,
-      score,
-      grade,
+      score: numericScore,
+      grade: finalGrade,
       uploadedAt: new Date(),
     });
 
