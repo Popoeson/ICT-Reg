@@ -82,6 +82,42 @@
       background-color: #f1f1f1;
     }
 
+    .expand-btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .expand-btn:hover {
+      background: #0056b3;
+    }
+
+    .course-details {
+      background: #f9fbff;
+      display: none;
+    }
+
+    .course-table {
+      width: 95%;
+      margin: 10px auto;
+      border-collapse: collapse;
+    }
+
+    .course-table th, .course-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      font-size: 0.9rem;
+    }
+
+    .course-table th {
+      background: #e9f2ff;
+      color: #333;
+    }
+
     #noResults {
       text-align: center;
       color: #777;
@@ -137,9 +173,7 @@
             <th>Department</th>
             <th>Level</th>
             <th>Semester</th>
-            <th>Course Code</th>
-            <th>Score</th>
-            <th>Grade</th>
+            <th>Courses</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -160,8 +194,8 @@
       try {
         const res = await fetch(`${backendURL}/api/results`);
         const data = await res.json();
-        allResults = data.results || data; // support different response formats
-        renderTable(allResults);
+        allResults = data.results || data;
+        renderGroupedTable(allResults);
       } catch (err) {
         console.error("Error fetching results:", err);
         noResults.style.display = "block";
@@ -169,30 +203,72 @@
       }
     }
 
-    // ✅ Render table data
-    function renderTable(results) {
-      tableBody.innerHTML = "";
+    // ✅ Group results by student
+    function groupResults(results) {
+      const grouped = {};
+      results.forEach(r => {
+        const key = r.matricNo;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(r);
+      });
+      return grouped;
+    }
 
-      if (results.length === 0) {
+    // ✅ Render grouped table
+    function renderGroupedTable(results) {
+      tableBody.innerHTML = "";
+      const grouped = groupResults(results);
+      const students = Object.values(grouped);
+
+      if (students.length === 0) {
         noResults.style.display = "block";
         return;
       }
 
       noResults.style.display = "none";
 
-      results.forEach(r => {
+      students.forEach(studentResults => {
+        const s = studentResults[0];
         const row = document.createElement("tr");
         row.innerHTML = `
-          <td>${r.fullname || ""}</td>
-          <td>${r.matricNo || ""}</td>
-          <td>${r.department || ""}</td>
-          <td>${r.level || ""}</td>
-          <td>${r.semester || ""}</td>
-          <td>${r.courseCode || ""}</td>
-          <td>${r.score ?? ""}</td>
-          <td>${r.grade ?? ""}</td>
+          <td>${s.fullname || ""}</td>
+          <td>${s.matricNo || ""}</td>
+          <td>${s.department || ""}</td>
+          <td>${s.level || ""}</td>
+          <td>${s.semester || ""}</td>
+          <td><button class="expand-btn">View Courses</button></td>
         `;
         tableBody.appendChild(row);
+
+        const detailsRow = document.createElement("tr");
+        detailsRow.classList.add("course-details");
+        detailsRow.innerHTML = `
+          <td colspan="6">
+            <table class="course-table">
+              <thead>
+                <tr><th>Course Code</th><th>Course Title</th><th>Score</th><th>Grade</th></tr>
+              </thead>
+              <tbody>
+                ${studentResults.map(c => `
+                  <tr>
+                    <td>${c.courseCode || ""}</td>
+                    <td>${c.courseTitle || ""}</td>
+                    <td>${c.score ?? ""}</td>
+                    <td>${c.grade ?? ""}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </td>
+        `;
+        tableBody.appendChild(detailsRow);
+
+        // Expand/collapse logic
+        const btn = row.querySelector(".expand-btn");
+        btn.addEventListener("click", () => {
+          const visible = detailsRow.style.display === "table-row";
+          detailsRow.style.display = visible ? "none" : "table-row";
+          btn.textContent = visible ? "View Courses" : "Hide Courses";
+        });
       });
     }
 
@@ -213,7 +289,7 @@
         return matchesSearch && matchesDept && matchesLevel && matchesSemester;
       });
 
-      renderTable(filtered);
+      renderGroupedTable(filtered);
     }
 
     // ✅ Event listeners
