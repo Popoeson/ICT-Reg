@@ -1014,13 +1014,25 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
   }
 });
 
-//====== fetch Result Route =======
+// ====== Fetch Result Route (robust version) =======
 app.get("/api/results", async (req, res) => {
   try {
-    const results = await Result.find().sort({ uploadedAt: -1 });
+    const { matricNo, department, level, semester } = req.query;
+    const query = {};
+
+    // Optional filters
+    if (matricNo) query.matricNo = matricNo.trim();
+    if (department) query.department = department.trim();
+    if (level) query.level = level.trim();
+    if (semester) query.semester = semester.trim();
+
+    const results = await Result.find(query).sort({ uploadedAt: -1 });
     res.json({ results });
   } catch (err) {
-    res.status(500).json({ message: "Error fetching results", error: err.message });
+    res.status(500).json({
+      message: "Error fetching results",
+      error: err.message,
+    });
   }
 });
 
