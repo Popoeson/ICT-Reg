@@ -374,7 +374,6 @@ th {
     <img id="overlayImg" src="" alt="Preview">  
   </div>    
 
-
 <script>
 const backendURL = "https://ict-reg.onrender.com";
 const urlParams = new URLSearchParams(window.location.search);
@@ -425,6 +424,7 @@ if (!studentId) {
         const doc = docData.data;
         const files = doc.files || {};
 
+        // Helper: create image preview blocks
         const createThumbnail = (url, label) =>
           url && url !== "N/A"
             ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
@@ -442,52 +442,65 @@ if (!studentId) {
           </section>
         `;
 
-        // 🧾 O'Level result info (new simplified version)
-        const oLevelRecord = doc.oLevelInputs?.[0] || {};
+        // 🧾 O'Level result info — match "View Uploads" structure
         const oLevelContent = `
-          ${Object.keys(oLevelRecord).length ? `
-            <div class="readonly-block">
-              <label>Exam Type:</label>
-              <input class="readonly-input" value="${oLevelRecord.examType || 'N/A'}" readonly>
-              <label>Exam Year:</label>
-              <input class="readonly-input" value="${oLevelRecord.examYear || 'N/A'}" readonly>
-              <label>Serial Number:</label>
-              <input class="readonly-input" value="${oLevelRecord.serialNo || 'N/A'}" readonly>
-              <label>Token / Pin:</label>
-              <input class="readonly-input" value="${oLevelRecord.token || 'N/A'}" readonly>
-            </div>
-          ` : `<div class="no-file">No O'Level result details available</div>`}
+          ${doc.oLevelInputs?.length
+            ? doc.oLevelInputs.map(
+                (r, i) => `
+                  <div class="readonly-block">
+                    <label>Exam Type</label>
+                    <input class="readonly-input" value="${r.examType || 'N/A'}" readonly>
+                    <label>Exam Year</label>
+                    <input class="readonly-input" value="${r.examYear || 'N/A'}" readonly>
+                    <label>Exam Number</label>
+                    <input class="readonly-input" value="${r.examNumber || 'N/A'}" readonly>
+                    <label>Subject</label>
+                    <input class="readonly-input" value="${r.subject || 'N/A'}" readonly>
+                    <label>Grade</label>
+                    <input class="readonly-input" value="${r.grade || 'N/A'}" readonly>
+                  </div>
+                  ${i < doc.oLevelInputs.length - 1 ? '<hr style="margin:15px 0;">' : ''}
+                `
+              ).join("")
+            : `<div class="no-file">No O'Level record found</div>`
+          }
 
-          ${files.oLevelUploads?.length ? `
-            <div class="thumbnail-grid" style="margin-top: 15px;">
-              ${files.oLevelUploads.map((url,i) => `
-                <div class="thumbnail">
-                  <img src="${url}" onclick="openOverlay('${url}')">
-                  <p>O'Level Result ${i+1}</p>
-                </div>`).join('')}
-            </div>` : `<div class="no-file">No O'Level result image uploaded</div>`}
+          ${files.oLevelUploads?.length
+            ? `<div class="thumbnail-grid" style="margin-top: 15px;">
+                ${files.oLevelUploads.map(
+                  (url, i) => `
+                  <div class="thumbnail">
+                    <img src="${url}" onclick="openOverlay('${url}')">
+                    <p>O'Level Result ${i + 1}</p>
+                  </div>`
+                ).join("")}
+              </div>`
+            : `<div class="no-file">No O'Level result image uploaded</div>`
+          }
         `;
 
+        // 🎓 JAMB info
         const jambContent = `
           <label>JAMB Reg No</label>
-          <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
+          <input class="readonly-input" value="${doc.jambInput?.jambRegNo || 'N/A'}" readonly>
           <label>JAMB Score</label>
-          <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
+          <input class="readonly-input" value="${doc.jambInput?.jambScore || 'N/A'}" readonly>
         `;
 
-        const jambDocsContent = `<div class="thumbnail-grid">
+        // 📜 Other document groups
+        const jambDocs = `<div class="thumbnail-grid">
           ${createThumbnail(files.jambUpload,"JAMB Result Upload")}
           ${createThumbnail(files.jambAdmission,"JAMB Admission Letter")}
         </div>`;
 
-        const schoolFormsContent = `<div class="thumbnail-grid">
+        const schoolForms = `<div class="thumbnail-grid">
           ${createThumbnail(files.applicationForm,"Application Form")}
           ${createThumbnail(files.acceptanceForm,"Acceptance Form")}
           ${createThumbnail(files.guarantorForm,"Guarantor’s Form")}
           ${createThumbnail(files.codeOfConduct,"Code of Conduct")}
         </div>`;
 
-        const receiptsContent = `<div class="thumbnail-grid">
+        const receipts = `<div class="thumbnail-grid">
           ${createThumbnail(files.nd1First,"ND1 - 1st Semester Course Form")}
           ${createThumbnail(files.nd1Second,"ND1 - 2nd Semester Course Form")}
           ${createThumbnail(files.nd2First,"ND2 - 1st Semester Course Form")}
@@ -502,7 +515,7 @@ if (!studentId) {
           ${createThumbnail(files.fee4,"School Fees Receipt 4")}
         </div>`;
 
-        const otherDocs = `<div class="thumbnail-grid">
+        const others = `<div class="thumbnail-grid">
           ${createThumbnail(files.acceptanceFee,"Acceptance Fee")}
           ${createThumbnail(files.stateOfOrigin,"State of Origin")}
           ${createThumbnail(files.nin,"NIN Upload")}
@@ -512,10 +525,10 @@ if (!studentId) {
         docBody.innerHTML = `
           ${createSection("O'Level Result Details", oLevelContent,"sectionOLevel")}
           ${createSection("JAMB Details", jambContent,"sectionJambInfo")}
-          ${createSection("JAMB Documents", jambDocsContent,"sectionJambDocs")}
-          ${createSection("School Forms", schoolFormsContent,"sectionSchoolForms")}
-          ${createSection("Course & Receipts", receiptsContent,"sectionReceipts")}
-          ${createSection("Other Documents", otherDocs,"sectionOthers")}
+          ${createSection("JAMB Documents", jambDocs,"sectionJambDocs")}
+          ${createSection("School Forms", schoolForms,"sectionSchoolForms")}
+          ${createSection("Course & Receipts", receipts,"sectionReceipts")}
+          ${createSection("Other Documents", others,"sectionOthers")}
         `;
       }
 
