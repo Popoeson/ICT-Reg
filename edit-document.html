@@ -18,30 +18,10 @@ input[type="file"],select,input[type="text"],input[type="number"]{width:100%;pad
 input:focus,select:focus{border-color:#1e73be;box-shadow:0 0 0 2px rgba(30,115,190,0.15);}
 button[type="submit"]{background:#1e73be;color:white;padding:.8rem 1.8rem;border-radius:6px;border:none;font-weight:500;cursor:pointer;display:block;margin-left:auto;}
 button[type="submit"]:hover{background:#125a99;}
-
-/* LOADING SPINNER */
-#spinnerOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 300;
-}
-#spinnerOverlay div {
-  width: 50px;
-  height: 50px;
-  border: 6px solid #f3f3f3;
-  border-top: 6px solid #1e73be;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-@media(max-width:500px){
-  main{padding:1.5rem;}
-}
+#spinnerOverlay {position: fixed;inset: 0;background: rgba(0,0,0,0.4);display: none;align-items: center;justify-content: center;z-index: 300;}
+#spinnerOverlay div {width: 50px;height: 50px;border: 6px solid #f3f3f3;border-top: 6px solid #1e73be;border-radius: 50%;animation: spin 1s linear infinite;}
+@keyframes spin {0% {transform: rotate(0deg);}100% {transform: rotate(360deg);}}
+@media(max-width:500px){main{padding:1.5rem;}}
 </style>
 </head>
 <body>
@@ -53,6 +33,13 @@ button[type="submit"]:hover{background:#125a99;}
 
 <main>
   <form id="uploadForm">
+    <!-- MATRIC NUMBER -->
+    <section class="form-section">
+      <h2 class="section-title">Student Information</h2>
+      <label for="matricNumber">Matric Number</label>
+      <input type="text" id="matricNumber" placeholder="e.g. ND/CS/22/1234">
+    </section>
+
     <!-- O'LEVEL DETAILS -->
     <section class="form-section">
       <h2 class="section-title">O'Level Result Information</h2>
@@ -151,13 +138,17 @@ const spinner = document.getElementById("spinnerOverlay");
 document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   spinner.style.display = "flex";
-  
+
   try {
     const formData = new FormData();
     const studentId = localStorage.getItem("studentId");
     formData.append("studentId", studentId || "demo");
 
-    // Gather O'Level data
+    // Matric number
+    const matricNumber = document.getElementById("matricNumber").value.trim();
+    formData.append("matricNumber", matricNumber);
+
+    // O'Level data
     const olevelData = [];
     const count = parseInt(olevelCount.value);
     for (let i = 1; i <= count; i++) {
@@ -176,19 +167,18 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
     formData.append("jambRegNo", jambRegNo);
     formData.append("jambScore", jambScore);
 
-    // Collect files
+    // Files
     const fileInputs = document.querySelectorAll("input[type=file]");
     fileInputs.forEach(input => {
       if (input.files[0]) formData.append(input.id, input.files[0]);
     });
 
-    // Send to backend
+    // Send
     const res = await fetch("https://ict-reg.onrender.com/upload-documents", {
       method: "POST",
       body: formData
     });
     const data = await res.json();
-
     alert(data.success ? "Documents updated successfully!" : "Upload failed: " + data.message);
   } catch (err) {
     console.error(err);
@@ -198,6 +188,5 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   }
 });
 </script>
-
 </body>
 </html>
