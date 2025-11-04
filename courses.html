@@ -226,7 +226,7 @@ if (localStorage.getItem("studentData")) {
 }
 // For Admins or Superadmins
 else if (localStorage.getItem("adminRole")) {
-  userRole = (localStorage.getItem("adminRole") || "").toLowerCase();
+  userRole = (localStorage.getItem("adminRole") || "").trim();
   userDept = (localStorage.getItem("adminDepartment") || "").toLowerCase().trim();
 }
 // Default (if nothing found)
@@ -235,14 +235,16 @@ else {
   userRole = "guest";
 }
 
+// 🔹 Normalize role for comparisons
+const normalizedRole = userRole.replace(/\s+/g, '').toLowerCase();
+
 // Show Manage Courses button for superadmin only
-const normalizedRole = userRole.replace(/\s+/g, '');
 if (normalizedRole === "superadmin") {
   document.getElementById("manageBtn").style.display = "inline-block";
 }
 
 // Hide department & level filters for students
-if (userRole === "student") {
+if (normalizedRole === "student") {
   document.getElementById("filterDepartment").style.display = "none";
   document.getElementById("filterLevel").style.display = "none";
 }
@@ -291,9 +293,9 @@ function renderFilteredDashboard() {
   });
 
   // 🔹 Role-based filtering
-  if (userRole === "admin") {
+  if (normalizedRole === "admin") {
     filtered = filtered.filter(c => c.department === userDept);
-  } else if (userRole === "student") {
+  } else if (normalizedRole === "student") {
     filtered = filtered.filter(c => c.department === userDept && c.level === userLevel);
   }
 
@@ -329,7 +331,7 @@ function renderDashboard(courses) {
           <th>Title</th>
           <th>Unit</th>
           <th>Lecturer</th>
-          ${userRole === "superadmin" ? "<th>Actions</th>" : ""}
+          ${normalizedRole === "superadmin" ? "<th>Actions</th>" : ""}
         </tr>
       </thead>
       <tbody>
@@ -343,7 +345,7 @@ function renderDashboard(courses) {
               <td data-label="Unit">${c.unit}</td>
               <td data-label="Lecturer">${c.lecturer}</td>
               ${
-                userRole === "superadmin"
+                normalizedRole === "superadmin"
                   ? `<td data-label="Actions"><button class="delete-btn" onclick="deleteCourse('${c.docId}','${c.courseId}')">Delete</button></td>`
                   : ""
               }
