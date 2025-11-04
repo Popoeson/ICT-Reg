@@ -1,343 +1,262 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>View Uploaded Results | ICT Registration Portal</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      background: #f5f7fb;
-      color: #333;
-    }
-
-    header {
-      background: #007bff;
-      color: white;
-      text-align: center;
-      padding: 16px;
-      font-size: 1.4rem;
-      font-weight: 600;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 30px auto;
-      padding: 20px;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-    }
-
-    .back-btn, .download-btn {
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      cursor: pointer;
-      margin-bottom: 20px;
-    }
-
-    .download-btn {
-      float: right;
-      background: #007bff;
-    }
-
-    .filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    input[type="text"],
-    select {
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      flex: 1;
-      min-width: 150px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-      font-size: 0.95rem;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      text-align: center;
-    }
-
-    th {
-      background: #007bff;
-      color: white;
-    }
-
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-
-    tr:hover {
-      background-color: #f1f1f1;
-    }
-
-    .expand-btn {
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 5px 10px;
-      cursor: pointer;
-      font-size: 0.85rem;
-    }
-
-    .expand-btn:hover {
-      background: #0056b3;
-    }
-
-    .course-details {
-      background: #f9fbff;
-      display: none;
-    }
-
-    .course-table {
-      width: 95%;
-      margin: 10px auto;
-      border-collapse: collapse;
-    }
-
-    .course-table th, .course-table td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      font-size: 0.9rem;
-    }
-
-    .course-table th {
-      background: #e9f2ff;
-      color: #333;
-    }
-
-    #noResults {
-      text-align: center;
-      color: #777;
-      margin-top: 20px;
-      font-style: italic;
-    }
-
-    @media (max-width: 768px) {
-      .filters { flex-direction: column; }
-      table { font-size: 0.85rem; }
-      .download-btn { float: none; width: 100%; margin-bottom: 10px; }
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>View Uploaded Results | ICT Registration Portal</title>
+<style>
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin:0; background:#f5f7fb; color:#333; }
+  header { background:#007bff; color:white; text-align:center; padding:16px; font-size:1.4rem; font-weight:600; }
+  .container { max-width:1100px; margin:30px auto; padding:20px; background:white; border-radius:16px; box-shadow:0 4px 10px rgba(0,0,0,0.08); }
+  .back-btn, .download-btn { background:#007bff; color:white; border:none; border-radius:8px; padding:8px 16px; cursor:pointer; margin-bottom:20px; }
+  .download-btn { float:right; }
+  .filters { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+  input[type="text"], select { padding:10px; border-radius:8px; border:1px solid #ccc; flex:1; min-width:150px; }
+  table { width:100%; border-collapse:collapse; margin-top:15px; font-size:0.95rem; }
+  th, td { border:1px solid #ddd; padding:10px; text-align:center; }
+  th { background:#007bff; color:white; }
+  tr:nth-child(even){ background-color:#f9f9f9; }
+  tr:hover{ background-color:#f1f1f1; }
+  .expand-btn, .edit-btn, .save-btn { background:#007bff; color:white; border:none; border-radius:6px; padding:5px 10px; cursor:pointer; font-size:0.85rem; }
+  .expand-btn:hover, .edit-btn:hover, .save-btn:hover { background:#0056b3; }
+  .course-details { background:#f9fbff; display:none; }
+  .course-table { width:95%; margin:10px auto; border-collapse:collapse; }
+  .course-table th, .course-table td { border:1px solid #ddd; padding:8px; font-size:0.9rem; }
+  .course-table th { background:#e9f2ff; color:#333; }
+  #noResults { text-align:center; color:#777; margin-top:20px; font-style:italic; }
+  @media (max-width:768px){ .filters{flex-direction:column;} table{font-size:0.85rem;} .download-btn{float:none;width:100%;margin-bottom:10px;} }
+</style>
 </head>
 <body>
-  <header>📋 Uploaded Student Results</header>
+<header>📋 Uploaded Student Results</header>
+<div class="container">
+  <button class="back-btn" onclick="window.location.href='index.html'">← Back</button>
+  <button class="download-btn" id="downloadBtn">⬇️ Download Results (XLSX)</button>
 
-  <div class="container">
-    <button class="back-btn" onclick="window.location.href='index.html'">← Back</button>
-    <button class="download-btn" id="downloadBtn">⬇️ Download Results (XLSX)</button>
-
-    <div class="filters">
-      <input type="text" id="searchInput" placeholder="🔍 Search by name or matric no..." />
-      <select id="filterDept">
-        <option value="">All Departments</option>
-        <option>Accountancy</option>
-        <option>Business Admin</option>
-        <option>Computer Science</option>
-        <option>Computer Engineering</option>
-        <option>Elect/Elect</option>
-        <option>Mass Communication</option>
-        <option>Estate Management</option>
-        <option>OTM</option>
-      </select>
-      <select id="filterLevel">
-        <option value="">All Levels</option>
-        <option>ND1</option>
-        <option>ND2</option>
-        <option>HND1</option>
-        <option>HND2</option>
-      </select>
-      <select id="filterSemester">
-        <option value="">All Semesters</option>
-        <option>First</option>
-        <option>Second</option>
-      </select>
-    </div>
-
-    <div style="overflow-x:auto;">
-      <table id="resultsTable">
-        <thead>
-          <tr>
-            <th>Full Name</th>
-            <th>Matric No</th>
-            <th>Department</th>
-            <th>Level</th>
-            <th>Semester</th>
-            <th>Courses</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <p id="noResults" style="display:none;">No results found...</p>
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="🔍 Search by name or matric no..." />
+    <select id="filterDept">
+      <option value="">All Departments</option>
+      <option>Accountancy</option>
+      <option>Business Admin</option>
+      <option>Computer Science</option>
+      <option>Computer Engineering</option>
+      <option>Elect/Elect</option>
+      <option>Mass Communication</option>
+      <option>Estate Management</option>
+      <option>OTM</option>
+    </select>
+    <select id="filterLevel">
+      <option value="">All Levels</option>
+      <option>ND1</option>
+      <option>ND2</option>
+      <option>HND1</option>
+      <option>HND2</option>
+    </select>
+    <select id="filterSemester">
+      <option value="">All Semesters</option>
+      <option>First</option>
+      <option>Second</option>
+    </select>
   </div>
 
-  <!-- ✅ Include SheetJS Library -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <div style="overflow-x:auto;">
+    <table id="resultsTable">
+      <thead>
+        <tr>
+          <th>Full Name</th>
+          <th>Matric No</th>
+          <th>Department</th>
+          <th>Level</th>
+          <th>Semester</th>
+          <th>Courses</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p id="noResults" style="display:none;">No results found...</p>
+</div>
 
-  <script>
-    const backendURL = "https://ict-reg.onrender.com";
-    const tableBody = document.querySelector("#resultsTable tbody");
-    const noResults = document.getElementById("noResults");
-    let allResults = [];
-    let filteredResults = [];
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const backendURL = "https://ict-reg.onrender.com";
+const tableBody = document.querySelector("#resultsTable tbody");
+const noResults = document.getElementById("noResults");
+let allResults = [];
+let filteredResults = [];
 
-    // ✅ Fetch all results
-    async function fetchResults() {
-      try {
-        const res = await fetch(`${backendURL}/api/results`);
-        const data = await res.json();
-        allResults = data.results || data;
-        filteredResults = allResults;
-        renderGroupedTable(allResults);
-      } catch (err) {
-        console.error("Error fetching results:", err);
-        noResults.style.display = "block";
-        noResults.innerText = "⚠️ Error loading results.";
-      }
-    }
+// 🔹 Detect user role
+let userRole = "";
+let userDept = "";
+let userMatric = "";
+if(localStorage.getItem("studentData")){
+  const student = JSON.parse(localStorage.getItem("studentData"));
+  userRole="student"; userDept=student.department; userMatric=student.matricNo;
+} else if(localStorage.getItem("adminRole")){
+  userRole=(localStorage.getItem("adminRole")||"").toLowerCase();
+  userDept=(localStorage.getItem("adminDepartment")||"").trim();
+} else userRole="guest";
 
-    // ✅ Group results by student
-    function groupResults(results) {
-      const grouped = {};
-      results.forEach(r => {
-        const key = r.matricNo;
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(r);
-      });
-      return grouped;
-    }
+// Fetch results
+async function fetchResults(){
+  try{
+    const res = await fetch(`${backendURL}/api/results`);
+    const data = await res.json();
+    allResults = data.results || data;
+    // Role-based filtering
+    if(userRole==="student") allResults = allResults.filter(r=>r.matricNo===userMatric);
+    else if(userRole==="admin") allResults = allResults.filter(r=>r.department===userDept);
+    filteredResults = allResults;
+    renderGroupedTable(allResults);
+  } catch(err){
+    console.error(err);
+    noResults.style.display="block";
+    noResults.innerText="⚠️ Error loading results.";
+  }
+}
 
-    // ✅ Render grouped table
-    function renderGroupedTable(results) {
-      tableBody.innerHTML = "";
-      const grouped = groupResults(results);
-      const students = Object.values(grouped);
+// Group results by student
+function groupResults(results){
+  const grouped={};
+  results.forEach(r=>{ const key=r.matricNo; if(!grouped[key]) grouped[key]=[]; grouped[key].push(r); });
+  return grouped;
+}
 
-      if (students.length === 0) {
-        noResults.style.display = "block";
-        return;
-      }
+// Render table
+function renderGroupedTable(results){
+  tableBody.innerHTML="";
+  const grouped = groupResults(results);
+  const students = Object.values(grouped);
+  if(students.length===0){ noResults.style.display="block"; return; }
+  noResults.style.display="none";
 
-      noResults.style.display = "none";
+  students.forEach(studentResults=>{
+    const s = studentResults[0];
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${s.fullname||""}</td>
+      <td>${s.matricNo||""}</td>
+      <td>${s.department||""}</td>
+      <td>${s.level||""}</td>
+      <td>${s.semester||""}</td>
+      <td><button class="expand-btn">View Courses</button></td>
+    `;
+    tableBody.appendChild(row);
 
-      students.forEach(studentResults => {
-        const s = studentResults[0];
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${s.fullname || ""}</td>
-          <td>${s.matricNo || ""}</td>
-          <td>${s.department || ""}</td>
-          <td>${s.level || ""}</td>
-          <td>${s.semester || ""}</td>
-          <td><button class="expand-btn">View Courses</button></td>
-        `;
-        tableBody.appendChild(row);
+    const detailsRow = document.createElement("tr");
+    detailsRow.classList.add("course-details");
+    detailsRow.innerHTML = `
+      <td colspan="6">
+        <table class="course-table">
+          <thead>
+            <tr><th>Course Code</th><th>Course Title</th><th>Score</th><th>Grade</th>${userRole==="superadmin"?"<th>Action</th>":""}</tr>
+          </thead>
+          <tbody>
+            ${studentResults.map(c=>`
+              <tr data-result-id="${c._id}">
+                <td>${c.courseCode||""}</td>
+                <td>${c.courseTitle||""}</td>
+                <td>${userRole==="superadmin"?`<input type="number" value="${c.score??''}" style="width:60px;"/>`:`${c.score??''}`}</td>
+                <td class="grade-cell">${c.grade??''}</td>
+                ${userRole==="superadmin"?`<td><button class="save-btn">Save</button></td>`:""}
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </td>
+    `;
+    tableBody.appendChild(detailsRow);
 
-        const detailsRow = document.createElement("tr");
-        detailsRow.classList.add("course-details");
-        detailsRow.innerHTML = `
-          <td colspan="6">
-            <table class="course-table">
-              <thead>
-                <tr><th>Course Code</th><th>Course Title</th><th>Score</th><th>Grade</th></tr>
-              </thead>
-              <tbody>
-                ${studentResults.map(c => `
-                  <tr>
-                    <td>${c.courseCode || ""}</td>
-                    <td>${c.courseTitle || ""}</td>
-                    <td>${c.score ?? ""}</td>
-                    <td>${c.grade ?? ""}</td>
-                  </tr>`).join('')}
-              </tbody>
-            </table>
-          </td>
-        `;
-        tableBody.appendChild(detailsRow);
-
-        const btn = row.querySelector(".expand-btn");
-        btn.addEventListener("click", () => {
-          const visible = detailsRow.style.display === "table-row";
-          detailsRow.style.display = visible ? "none" : "table-row";
-          btn.textContent = visible ? "View Courses" : "Hide Courses";
+    row.querySelector(".expand-btn").addEventListener("click", ()=>{
+      const visible = detailsRow.style.display==="table-row";
+      detailsRow.style.display = visible ? "none":"table-row";
+      row.querySelector(".expand-btn").textContent = visible?"View Courses":"Hide Courses";
+      // Attach save logic for superadmin
+      if(userRole==="superadmin"){
+        detailsRow.querySelectorAll(".save-btn").forEach(btn=>{
+          btn.onclick = async ()=>{
+            const tr = btn.closest("tr");
+            const input = tr.querySelector("input");
+            const newScore = Number(input.value);
+            const gradeCell = tr.querySelector(".grade-cell");
+            let newGrade="";
+            if(newScore>=70)newGrade="A";
+            else if(newScore>=60)newGrade="B";
+            else if(newScore>=50)newGrade="C";
+            else if(newScore>=45)newGrade="D";
+            else newGrade="F";
+            try{
+              const res = await fetch(`${backendURL}/api/results/${tr.dataset.resultId}`, {
+                method:"PUT",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({score:newScore, grade:newGrade})
+              });
+              const data = await res.json();
+              if(!data.success) throw new Error(data.message||"Update failed");
+              gradeCell.textContent=newGrade;
+              alert("Score and grade updated!");
+            } catch(err){
+              alert("Error: "+err.message);
+              console.error(err);
+            }
+          };
         });
-      });
-    }
-
-    // ✅ Filter logic
-    function applyFilters() {
-      const search = document.getElementById("searchInput").value.toLowerCase();
-      const dept = document.getElementById("filterDept").value;
-      const level = document.getElementById("filterLevel").value;
-      const semester = document.getElementById("filterSemester").value;
-
-      filteredResults = allResults.filter(r => {
-        const matchesSearch =
-          r.fullname?.toLowerCase().includes(search) ||
-          r.matricNo?.toLowerCase().includes(search);
-        const matchesDept = !dept || r.department === dept;
-        const matchesLevel = !level || r.level === level;
-        const matchesSemester = !semester || r.semester === semester;
-        return matchesSearch && matchesDept && matchesLevel && matchesSemester;
-      });
-
-      renderGroupedTable(filteredResults);
-    }
-
-    document.getElementById("searchInput").addEventListener("input", applyFilters);
-    document.getElementById("filterDept").addEventListener("change", applyFilters);
-    document.getElementById("filterLevel").addEventListener("change", applyFilters);
-    document.getElementById("filterSemester").addEventListener("change", applyFilters);
-
-    // ✅ Download Excel Logic
-    document.getElementById("downloadBtn").addEventListener("click", () => {
-      const resultsToDownload = filteredResults.length ? filteredResults : allResults;
-
-      if (!resultsToDownload.length) {
-        alert("No results available to download!");
-        return;
       }
-
-      // Flatten data
-      const flattened = resultsToDownload.map(r => ({
-        "Full Name": r.fullname,
-        "Matric No": r.matricNo,
-        "Department": r.department,
-        "Level": r.level,
-        "Semester": r.semester,
-        "Course Code": r.courseCode,
-        "Course Title": r.courseTitle,
-        "Score": r.score,
-        "Grade": r.grade
-      }));
-
-      const ws = XLSX.utils.json_to_sheet(flattened);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Results");
-
-      XLSX.writeFile(wb, "student_results.xlsx");
     });
+  });
+}
 
-    fetchResults();
-  </script>
+// Filters
+function applyFilters(){
+  const search=document.getElementById("searchInput").value.toLowerCase();
+  const dept=document.getElementById("filterDept").value;
+  const level=document.getElementById("filterLevel").value;
+  const semester=document.getElementById("filterSemester").value;
+
+  filteredResults = allResults.filter(r=>{
+    const matchesSearch = r.fullname?.toLowerCase().includes(search)||r.matricNo?.toLowerCase().includes(search);
+    const matchesDept = !dept||r.department===dept;
+    const matchesLevel = !level||r.level===level;
+    const matchesSemester = !semester||r.semester===semester;
+    return matchesSearch && matchesDept && matchesLevel && matchesSemester;
+  });
+  renderGroupedTable(filteredResults);
+}
+document.getElementById("searchInput").addEventListener("input", applyFilters);
+document.getElementById("filterDept").addEventListener("change", applyFilters);
+document.getElementById("filterLevel").addEventListener("change", applyFilters);
+document.getElementById("filterSemester").addEventListener("change", applyFilters);
+
+// ✅ Download Excel Logic
+document.getElementById("downloadBtn").addEventListener("click", () => {
+  const resultsToDownload = filteredResults.length ? filteredResults : allResults;
+
+  if (!resultsToDownload.length) {
+    alert("No results available to download!");
+    return;
+  }
+
+  // Flatten data
+  const flattened = resultsToDownload.map(r => ({
+    "Full Name": r.fullname,
+    "Matric No": r.matricNo,
+    "Department": r.department,
+    "Level": r.level,
+    "Semester": r.semester,
+    "Course Code": r.courseCode,
+    "Course Title": r.courseTitle,
+    "Score": r.score,
+    "Grade": r.grade
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(flattened);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Results");
+  XLSX.writeFile(wb, "student_results.xlsx");
+});
+
+// Initial fetch to load results
+fetchResults();
+</script>
 </body>
 </html>
