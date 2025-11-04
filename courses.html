@@ -212,34 +212,32 @@
 const backendURL = "https://ict-reg.onrender.com";
 let allCourses = [];
 
-// 🔹 Detect user type and role from localStorage
+// ===== Detect User Info =====
 let userRole = "";
 let userDept = "";
 let userLevel = "";
 
-// For Students
+// Student
 if (localStorage.getItem("studentData")) {
   const student = JSON.parse(localStorage.getItem("studentData"));
   userRole = "student";
   userDept = (student.department || "").toLowerCase().trim();
   userLevel = (student.level || "").toUpperCase().replace(/\s+/g, '');
 }
-// For Admins or Superadmins
+// Admin / Superadmin
 else if (localStorage.getItem("adminRole")) {
   userRole = (localStorage.getItem("adminRole") || "").trim();
   userDept = (localStorage.getItem("adminDepartment") || "").toLowerCase().trim();
-}
-// Default (if nothing found)
-else {
+} else {
   console.warn("No user info found in localStorage!");
   userRole = "guest";
 }
 
-// 🔹 Normalize role for comparisons
+// Normalize role name
 const normalizedRole = userRole.replace(/\s+/g, '').toLowerCase();
 
-// Show Manage Courses button for superadmin only
-if (normalizedRole === "superadmin") {
+// ===== Manage Button Visibility =====
+if (["admin", "superadmin"].includes(normalizedRole)) {
   document.getElementById("manageBtn").style.display = "inline-block";
 }
 
@@ -249,6 +247,7 @@ if (normalizedRole === "student") {
   document.getElementById("filterLevel").style.display = "none";
 }
 
+// ===== Fetch Courses =====
 async function fetchCourses() {
   try {
     const res = await fetch(`${backendURL}/api/courses`);
@@ -281,6 +280,7 @@ async function fetchCourses() {
   }
 }
 
+// ===== Apply Filters =====
 function renderFilteredDashboard() {
   const semesterFilter = document.getElementById("filterSemester").value;
   const departmentFilter = (document.getElementById("filterDepartment").value || "").toLowerCase().trim();
@@ -292,7 +292,7 @@ function renderFilteredDashboard() {
            (!levelFilter || c.level === levelFilter);
   });
 
-  // 🔹 Role-based filtering
+  // Role-based filters
   if (normalizedRole === "admin") {
     filtered = filtered.filter(c => c.department === userDept);
   } else if (normalizedRole === "student") {
@@ -302,6 +302,7 @@ function renderFilteredDashboard() {
   renderDashboard(filtered);
 }
 
+// ===== Render Dashboard =====
 function renderDashboard(courses) {
   const container = document.getElementById("dashboardContainer");
   container.innerHTML = "";
@@ -331,7 +332,7 @@ function renderDashboard(courses) {
           <th>Title</th>
           <th>Unit</th>
           <th>Lecturer</th>
-          ${normalizedRole === "superadmin" ? "<th>Actions</th>" : ""}
+          ${["admin", "superadmin"].includes(normalizedRole) ? "<th>Actions</th>" : ""}
         </tr>
       </thead>
       <tbody>
@@ -345,8 +346,10 @@ function renderDashboard(courses) {
               <td data-label="Unit">${c.unit}</td>
               <td data-label="Lecturer">${c.lecturer}</td>
               ${
-                normalizedRole === "superadmin"
-                  ? `<td data-label="Actions"><button class="delete-btn" onclick="deleteCourse('${c.docId}','${c.courseId}')">Delete</button></td>`
+                ["admin", "superadmin"].includes(normalizedRole)
+                  ? `<td data-label="Actions">
+                      <button class="delete-btn" onclick="deleteCourse('${c.docId}','${c.courseId}','${c.department}')">Delete</button>
+                    </td>`
                   : ""
               }
             </tr>`
@@ -363,7 +366,14 @@ function renderDashboard(courses) {
   }
 }
 
-async function deleteCourse(docId, courseId) {
+// ===== Delete Course =====
+async function deleteCourse(docId, courseId, courseDept) {
+  // Restrict Admins to their own department
+  if (normalizedRole === "admin" && courseDept !== userDept) {
+    alert("You can only delete courses in your department!");
+    return;
+  }
+
   if (!confirm("Are you sure you want to delete this course?")) return;
 
   try {
@@ -374,14 +384,14 @@ async function deleteCourse(docId, courseId) {
     if (!data.success) throw new Error(data.message);
 
     alert("Course deleted successfully!");
-    fetchCourses(); // Refresh the dashboard
+    fetchCourses(); // Refresh dashboard
   } catch (err) {
     alert("Error deleting course: " + err.message);
     console.error(err);
   }
 }
 
-// Initial fetch to load courses
+// ===== Initial Load =====
 fetchCourses();
 </script>
 </body>
