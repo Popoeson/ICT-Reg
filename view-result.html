@@ -87,16 +87,16 @@ let allResults = [];
 let filteredResults = [];
 
 // 🔹 Detect user role
-let userRole = "";
-let userDept = "";
-let userMatric = "";
-if(localStorage.getItem("studentData")){
+// let userRole = "";
+// let userDept = "";
+// let userMatric = "";
+// if(localStorage.getItem("studentData")){
   const student = JSON.parse(localStorage.getItem("studentData"));
   userRole="student"; userDept=student.department; userMatric=student.matricNo;
-} else if(localStorage.getItem("adminRole")){
-  userRole=(localStorage.getItem("adminRole")||"").toLowerCase();
-  userDept=(localStorage.getItem("adminDepartment")||"").trim();
-} else userRole="guest";
+// } else if(localStorage.getItem("adminRole")){
+  // userRole=(localStorage.getItem("adminRole")||"").toLowerCase();
+  //userDept=(localStorage.getItem("adminDepartment")||"").trim();
+// } else userRole="guest";
 
 // Fetch results
 async function fetchResults(){
