@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Course Dashboard</title>
   <style>
     body {
@@ -11,6 +11,7 @@
       margin: 0;
       padding: 0;
     }
+
     header {
       background-color: #007bff;
       color: white;
@@ -19,14 +20,33 @@
       font-size: 1.6em;
       font-weight: bold;
       letter-spacing: 1px;
+      position: relative;
     }
+
+    .manage-btn {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      background-color: white;
+      color: #007bff;
+      border: none;
+      padding: 8px 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .manage-btn:hover {
+      background-color: #e3f0ff;
+    }
+
     .container {
       max-width: 1200px;
       margin: 20px auto;
       padding: 20px;
     }
 
-    /* Filter controls */
     .filters {
       display: flex;
       gap: 15px;
@@ -34,6 +54,7 @@
       margin-bottom: 20px;
       justify-content: center;
     }
+
     .filters select {
       padding: 8px 12px;
       border-radius: 6px;
@@ -46,25 +67,29 @@
       margin-bottom: 25px;
       padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
+
     .section-title {
       font-size: 1.3em;
       font-weight: 600;
       margin-bottom: 15px;
       color: #333;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
       border-radius: 8px;
       overflow: hidden;
     }
+
     th, td {
       padding: 12px;
       border: 1px solid #ddd;
       text-align: left;
     }
+
     th {
       background-color: #007bff;
       color: white;
@@ -72,6 +97,7 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+
     button.delete-btn {
       background-color: #dc3545;
       color: white;
@@ -80,37 +106,65 @@
       border-radius: 6px;
       cursor: pointer;
     }
+
     button.delete-btn:hover {
       background-color: #c82333;
     }
+
     @media (max-width: 600px) {
-      table, thead, tbody, th, td, tr { display: block; }
-      thead { display: none; }
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+
+      thead {
+        display: none;
+      }
+
       tr {
         margin-bottom: 15px;
         border: 1px solid #ddd;
         border-radius: 12px;
         padding: 12px;
         background-color: #fafafa;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
       }
+
       td {
         padding: 6px 0;
         display: flex;
         justify-content: space-between;
       }
+
       td::before {
         content: attr(data-label);
         font-weight: 600;
         color: #555;
       }
-      .filters { flex-direction: column; align-items: stretch; }
-      .filters select { width: 100%; }
+
+      .filters {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .filters select {
+        width: 100%;
+      }
+
+      .manage-btn {
+        position: static;
+        margin-top: 10px;
+      }
     }
   </style>
 </head>
 <body>
-  <header>Course Dashboard</header>
+  <header>
+    Course Dashboard
+    <button id="manageBtn" class="manage-btn" style="display:none;" onclick="location.href='courseMgt.html'">
+      Manage Courses
+    </button>
+  </header>
+
   <div class="container">
     <div class="filters">
       <select id="filterSemester" onchange="renderFilteredDashboard()">
@@ -118,6 +172,7 @@
         <option value="1">Semester 1</option>
         <option value="2">Semester 2</option>
       </select>
+
       <select id="filterDepartment" onchange="renderFilteredDashboard()">
         <option value="">All Departments</option>
         <option value="Accountancy">Accountancy</option>
@@ -129,28 +184,44 @@
         <option value="Science Lab Tech">Science Lab Tech</option>
         <option value="OTM">OTM</option>
       </select>
+
       <select id="filterLevel" onchange="renderFilteredDashboard()">
         <option value="">All Levels</option>
         <option value="ND1">ND 1</option>
         <option value="ND2">ND 2</option>
+        <option value="HND1">HND 1</option>
+        <option value="HND2">HND 2</option>
       </select>
     </div>
 
     <div id="dashboardContainer">
-      <!-- Sections will be dynamically added here -->
+      <!-- Dynamic course content -->
     </div>
   </div>
 
   <script>
+    const backendURL = "https://ict-reg.onrender.com";
     let allCourses = [];
+
+    // Fetch user role, dept, level from localStorage
+    const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+    const userRole = loggedInUser.role || "student"; // fallback
+    const userDept = loggedInUser.department || "";
+    const userLevel = loggedInUser.level || "";
+
+    // Show manage button only for super admin
+    if (userRole.toLowerCase() === "superadmin") {
+      document.getElementById("manageBtn").style.display = "inline-block";
+    }
 
     async function fetchCourses() {
       try {
-        const res = await fetch('https://ict-reg.onrender.com/api/courses');
+        const res = await fetch(`${backendURL}/api/courses`);
         const data = await res.json();
-        if (!data.success) throw new Error(data.message || 'Failed to fetch courses');
 
-        // Flatten nested courses array
+        if (!data.success) throw new Error(data.message || "Failed to fetch courses");
+
+        // Flatten nested courses
         allCourses = [];
         (data.data || []).forEach(doc => {
           const { level, department, semester, _id: docId, courses } = doc;
@@ -169,30 +240,38 @@
           });
         });
 
+        // Apply role-based filtering immediately
         renderFilteredDashboard();
-      } catch(err) {
+      } catch (err) {
         console.error(err);
-        document.getElementById('dashboardContainer').innerHTML = `<p style="color:red;">${err.message}</p>`;
+        document.getElementById("dashboardContainer").innerHTML = `<p style="color:red;">${err.message}</p>`;
       }
     }
 
     function renderFilteredDashboard() {
-      const semesterFilter = document.getElementById('filterSemester').value;
-      const departmentFilter = document.getElementById('filterDepartment').value;
-      const levelFilter = document.getElementById('filterLevel').value;
+      const semesterFilter = document.getElementById("filterSemester").value;
+      const departmentFilter = document.getElementById("filterDepartment").value;
+      const levelFilter = document.getElementById("filterLevel").value;
 
-      const filtered = allCourses.filter(c => {
+      let filtered = allCourses.filter(c => {
         return (!semesterFilter || c.semester == semesterFilter) &&
                (!departmentFilter || c.department === departmentFilter) &&
                (!levelFilter || c.level === levelFilter);
       });
 
+      // 🔹 Role-based filtering logic
+      if (userRole.toLowerCase() === "admin") {
+        filtered = filtered.filter(c => c.department === userDept);
+      } else if (userRole.toLowerCase() === "student") {
+        filtered = filtered.filter(c => c.department === userDept && c.level === userLevel);
+      }
+
       renderDashboard(filtered);
     }
 
     function renderDashboard(courses) {
-      const container = document.getElementById('dashboardContainer');
-      container.innerHTML = '';
+      const container = document.getElementById("dashboardContainer");
+      container.innerHTML = "";
 
       const grouped = {};
       courses.forEach(c => {
@@ -202,66 +281,65 @@
       });
 
       Object.keys(grouped).forEach(group => {
-        const section = document.createElement('div');
-        section.className = 'section';
+        const section = document.createElement("div");
+        section.className = "section";
 
-        const title = document.createElement('div');
-        title.className = 'section-title';
+        const title = document.createElement("div");
+        title.className = "section-title";
         title.innerText = group;
         section.appendChild(title);
 
-        const table = document.createElement('table');
-        const thead = document.createElement('thead');
-        thead.innerHTML = `<tr>
-          <th>Serial Number</th>
-          <th>Course Code</th>
-          <th>Course Title</th>
-          <th>Course Unit</th>
-          <th>Lecturer</th>
-          <th>Actions</th>
-        </tr>`;
-        table.appendChild(thead);
-
-        const tbody = document.createElement('tbody');
-        grouped[group].forEach((course, index) => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td data-label="Serial Number">${index + 1}</td>
-            <td data-label="Course Code">${course.code}</td>
-            <td data-label="Course Title">${course.title}</td>
-            <td data-label="Course Unit">${course.unit}</td>
-            <td data-label="Lecturer">${course.lecturer}</td>
-            <td data-label="Actions">
-              <button class="delete-btn" onclick="deleteCourse('${course.docId}', '${course.courseId}')">Delete</button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-        table.appendChild(tbody);
+        const table = document.createElement("table");
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Course Code</th>
+              <th>Title</th>
+              <th>Unit</th>
+              <th>Lecturer</th>
+              ${userRole.toLowerCase() === "superadmin" ? "<th>Actions</th>" : ""}
+            </tr>
+          </thead>
+          <tbody>
+            ${grouped[group]
+              .map(
+                (c, i) => `
+                <tr>
+                  <td data-label="#">${i + 1}</td>
+                  <td data-label="Code">${c.code}</td>
+                  <td data-label="Title">${c.title}</td>
+                  <td data-label="Unit">${c.unit}</td>
+                  <td data-label="Lecturer">${c.lecturer}</td>
+                  ${
+                    userRole.toLowerCase() === "superadmin"
+                      ? `<td data-label="Actions"><button class="delete-btn" onclick="deleteCourse('${c.docId}','${c.courseId}')">Delete</button></td>`
+                      : ""
+                  }
+                </tr>`
+              )
+              .join("")}
+          </tbody>
+        `;
         section.appendChild(table);
         container.appendChild(section);
       });
 
       if (courses.length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#555;">No courses found for selected filters.</p>';
+        container.innerHTML = `<p style="text-align:center;color:#555;">No courses found for your filters or role.</p>`;
       }
     }
 
     async function deleteCourse(docId, courseId) {
-      if (!confirm('Are you sure you want to delete this course?')) return;
-
+      if (!confirm("Are you sure you want to delete this course?")) return;
       try {
-        const res = await fetch(`https://ict-reg.onrender.com/api/courses/${docId}/${courseId}`, {
-          method: 'DELETE'
-        });
+        const res = await fetch(`${backendURL}/api/courses/${docId}/${courseId}`, { method: "DELETE" });
         const data = await res.json();
-        if (!data.success) throw new Error(data.message || 'Failed to delete course');
-
-        alert('Course deleted successfully!');
-        fetchCourses(); // refresh dashboard
-      } catch(err) {
-        alert('Error deleting course: ' + err.message);
+        if (!data.success) throw new Error(data.message);
+        alert("Course deleted successfully!");
+        fetchCourses();
+      } catch (err) {
+        alert("Error deleting course: " + err.message);
       }
     }
 
