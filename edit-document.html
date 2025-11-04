@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Upload Documents</title>
-
+<title>Edit Documents</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:"Poppins",sans-serif;}
 body{background:#f9fbfd;color:#333;}
@@ -17,82 +16,8 @@ h2.section-title{color:#1e73be;font-size:1.2rem;margin-bottom:.8rem;border-left:
 label{display:block;font-weight:500;margin-bottom:.3rem;font-size:.9rem;}
 input[type="file"],select,input[type="text"],input[type="number"]{width:100%;padding:.6rem .7rem;border:1px solid #c8d3e1;border-radius:6px;margin-bottom:1rem;outline:none;transition: all 0.2s ease;}
 input:focus,select:focus{border-color:#1e73be;box-shadow:0 0 0 2px rgba(30,115,190,0.15);}
-table{width:100%;border-collapse: collapse;margin-bottom:1rem;}
-th,td{border:1px solid #c8d3e1;padding:.6rem;text-align:center;font-size:.9rem;}
-th{background:#f2f7ff;color:#1e73be;}
-.btn-group{display:flex;justify-content:flex-end;gap:.8rem;margin-bottom:1rem;}
-.btn{background:#1e73be;color:white;border:none;padding:.6rem 1rem;border-radius:5px;cursor:pointer;transition:background .2s ease;font-size:.9rem;}
-.btn:hover{background:#125a99;}
 button[type="submit"]{background:#1e73be;color:white;padding:.8rem 1.8rem;border-radius:6px;border:none;font-weight:500;cursor:pointer;display:block;margin-left:auto;}
 button[type="submit"]:hover{background:#125a99;}
-
-/* RESPONSIVE */
-@media(max-width:700px){
-  main{padding:1.5rem;}
-  th,td{font-size:.8rem;}
-  table, thead, tbody, th, td, tr { display:block; }
-  th{display:none;}
-  tr{margin-bottom:1rem; border:1px solid #c8d3e1; border-radius:6px; padding:.5rem;}
-  td{border:none; display:flex; justify-content:space-between; padding:.3rem 0;}
-  td:before{content:attr(data-label); font-weight:500; color:#1e73be;}
-}
-
-/* PREVIEW MODAL */
-.preview-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity .3s ease, visibility .3s ease;
-}
-.preview-modal.active {
-  visibility: visible;
-  opacity: 1;
-}
-.preview-box {
-  background: #fff;
-  padding: 1rem 1.5rem;
-  border-radius: 10px;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-  text-align:center;
-}
-.preview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill,minmax(120px,1fr));
-  gap: 10px;
-  margin-top: 1rem;
-}
-.preview-grid img {
-  width: 100%;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: transform .2s ease;
-}
-.preview-grid img:hover {transform: scale(1.05);}
-.preview-large {
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.8);
-  justify-content:center;
-  align-items:center;
-  z-index:200;
-}
-.preview-large img {
-  max-width:90%;
-  max-height:90%;
-  border-radius:10px;
-}
 
 /* LOADING SPINNER */
 #spinnerOverlay {
@@ -114,62 +39,30 @@ button[type="submit"]:hover{background:#125a99;}
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* RESPONSIVE PREVIEW & SPINNER */
 @media(max-width:500px){
-  .preview-box { max-width: 95%; padding:0.8rem; }
-  .preview-grid img { height: 60px; }
-  #spinnerOverlay div { width: 35px; height: 35px; border-width: 5px; }
+  main{padding:1.5rem;}
 }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Upload Your Documents</h1>
-  <p>Submit your academic and administrative documents. Fields are optional.</p>
+  <h1>Edit Your Documents</h1>
+  <p>Update your academic and administrative records below.</p>
 </header>
 
 <main>
   <form id="uploadForm">
-    <!-- O'LEVEL TABLE INPUT -->
+    <!-- O'LEVEL DETAILS -->
     <section class="form-section">
-      <h2 class="section-title">O'Level Result Input</h2>
-      <table id="olevelTable">
-        <thead>
-          <tr>
-            <th>Exam Year</th>
-            <th>Exam Type</th>
-            <th>Exam Number</th>
-            <th>Subject</th>
-            <th>Grade</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td data-label="Exam Year"><input type="number" placeholder="e.g. 2020"></td>
-            <td data-label="Exam Type"><input type="text" placeholder="e.g. WAEC"></td>
-            <td data-label="Exam Number"><input type="text" placeholder="e.g. 12345678AB"></td>
-            <td data-label="Subject"><input type="text" placeholder="e.g. Mathematics"></td>
-            <td data-label="Grade"><input type="text" placeholder="e.g. B3"></td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="btn-group">
-        <button type="button" class="btn" id="addRow">Add Row</button>
-        <button type="button" class="btn" id="deleteRow">Delete Row</button>
-      </div>
-    </section>
-
-    <!-- O'LEVEL UPLOAD -->
-    <section class="form-section">
-      <h2 class="section-title">O'Level Result Upload</h2>
-      <label>Number of O'Level results to upload</label>
+      <h2 class="section-title">O'Level Result Information</h2>
+      <label>How many O'Level results do you have?</label>
       <select id="olevelCount">
-        <option value="0">Select Option</option>
-        <option value="1">One</option>
-        <option value="2">Two</option>
+        <option value="">Select Option</option>
+        <option value="1">One Result</option>
+        <option value="2">Two Results</option>
       </select>
-      <div id="olevelUploads"></div>
+      <div id="olevelDetails"></div>
     </section>
 
     <!-- JAMB -->
@@ -216,156 +109,95 @@ button[type="submit"]:hover{background:#125a99;}
       <label>Departmental Fee Receipt</label><input type="file" id="deptFee" accept="image/*">
     </section>
 
-    <button type="submit">Submit Documents</button>
+    <button type="submit">Submit Updates</button>
   </form>
 </main>
-
-<!-- PREVIEW MODAL -->
-<div class="preview-modal" id="previewModal">
-  <div class="preview-box">
-    <h2>Preview Uploaded Documents</h2>
-    <p>Click any thumbnail to enlarge. Review before submitting.</p>
-    <div class="preview-grid" id="previewGrid"></div>
-    <button class="btn" id="proceedBtn" style="margin-top:1rem;">Proceed to Submit</button>
-  </div>
-</div>
-
-<!-- FULL IMAGE VIEW -->
-<div class="preview-large" id="previewLarge">
-  <img src="" alt="Preview">
-</div>
 
 <!-- LOADING SPINNER -->
 <div id="spinnerOverlay"><div></div></div>
 
 <script>
-// ===== O'LEVEL TABLE DYNAMIC ROWS =====
-const olevelTable = document.querySelector("#olevelTable tbody");
-document.getElementById("addRow").onclick = () => {
-  const row = document.createElement("tr");
-  row.innerHTML = `<td data-label="Exam Year"><input type="number" placeholder="e.g. 2020"></td>
-  <td data-label="Exam Type"><input type="text" placeholder="e.g. WAEC"></td>
-  <td data-label="Exam Number"><input type="text" placeholder="e.g. 12345678AB"></td>
-  <td data-label="Subject"><input type="text" placeholder="e.g. Mathematics"></td>
-  <td data-label="Grade"><input type="text" placeholder="e.g. B3"></td>`;
-  olevelTable.appendChild(row);
-}
-document.getElementById("deleteRow").onclick = () => {
-  const rows = olevelTable.querySelectorAll("tr");
-  if (rows.length > 1) olevelTable.removeChild(rows[rows.length - 1]);
-};
-
-// ===== O'LEVEL UPLOAD DYNAMIC FIELDS =====
+// ===== O'LEVEL DYNAMIC FORM =====
 const olevelCount = document.getElementById("olevelCount");
-const olevelUploads = document.getElementById("olevelUploads");
+const olevelDetails = document.getElementById("olevelDetails");
+
 olevelCount.addEventListener("change", () => {
-  olevelUploads.innerHTML = "";
-  const c = parseInt(olevelCount.value);
-  for (let i = 1; i <= c; i++) {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.id = `oLevelUpload${i}`;
-    input.style.marginBottom = "0.8rem";
-    olevelUploads.appendChild(input);
+  olevelDetails.innerHTML = "";
+  const count = parseInt(olevelCount.value);
+  if (!count) return;
+
+  for (let i = 1; i <= count; i++) {
+    const wrapper = document.createElement("div");
+    wrapper.style.border = "1px solid #c8d3e1";
+    wrapper.style.padding = "1rem";
+    wrapper.style.marginBottom = "1rem";
+    wrapper.style.borderRadius = "8px";
+
+    wrapper.innerHTML = `
+      <h3 style="color:#1e73be;">O'Level Result ${i}</h3>
+      <label>Exam Type</label>
+      <input type="text" id="examType${i}" placeholder="e.g. WAEC, NECO">
+      <label>Serial Number</label>
+      <input type="text" id="serialNumber${i}" placeholder="Enter Serial Number">
+      <label>Pin / Token</label>
+      <input type="text" id="pin${i}" placeholder="Enter Pin or Token">
+    `;
+    olevelDetails.appendChild(wrapper);
   }
 });
-
-// ===== PREVIEW SYSTEM =====
-const modal = document.getElementById("previewModal");
-const grid = document.getElementById("previewGrid");
-const large = document.getElementById("previewLarge");
-const largeImg = large.querySelector("img");
-function showPreview(images) {
-  grid.innerHTML = "";
-  images.forEach(file => {
-    if (!file) return;
-    const img = document.createElement("img");
-    img.src = URL.createObjectURL(file);
-    img.onclick = () => { largeImg.src = img.src; large.style.display = "flex"; }
-    grid.appendChild(img);
-  });
-  modal.classList.add("active");
-}
-large.addEventListener("click", e => { if (e.target === large) large.style.display = "none"; });
-modal.addEventListener("click", e => { if (e.target === modal) modal.classList.remove("active"); });
 
 // ===== FORM SUBMISSION =====
 const spinner = document.getElementById("spinnerOverlay");
 document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const formData = new FormData();
-  const studentId = localStorage.getItem("studentId");
-  formData.append("studentId", studentId || "demo");
+  spinner.style.display = "flex";
+  
+  try {
+    const formData = new FormData();
+    const studentId = localStorage.getItem("studentId");
+    formData.append("studentId", studentId || "demo");
 
-  // ===== Collect all file inputs including dynamic O'Level uploads =====
-  const fileInputs = document.querySelectorAll("input[type=file]");
-  const files = [];
-  fileInputs.forEach(f => {
-    if (f.files[0]) {
-      files.push(f.files[0]);
-      formData.append(f.id, f.files[0]);
-    }
-  });
-
-  if (files.length === 0) {
-    alert("Please select at least one file to preview.");
-    return;
-  }
-  showPreview(files);
-
-  // Proceed submission after preview
-  document.getElementById("proceedBtn").onclick = async () => {
-    modal.classList.remove("active");
-    spinner.style.display = "flex";
-
-    try {
-      // ===== Gather O'Level table input values =====
-      const oLevelData = [];
-      olevelTable.querySelectorAll("tr").forEach(row => {
-        const vals = Array.from(row.querySelectorAll("input")).map(i => i.value.trim());
-        // Only include rows that have at least one filled field
-        if (vals.some(v => v !== "")) {
-          oLevelData.push({
-            examYear: vals[0],
-            examType: vals[1],
-            examNumber: vals[2],
-            subject: vals[3],
-            grade: vals[4]
-          });
-        }
-      });
-      formData.append("oLevelInputs", JSON.stringify(oLevelData));
-
-      // ===== Gather JAMB inputs =====
-      const jambRegNo = document.getElementById("jambRegNo").value.trim();
-      const jambScore = document.getElementById("jambScore").value.trim();
-      const jambInput = {};
-      if (jambRegNo) jambInput.regNo = jambRegNo;
-      if (jambScore) jambInput.score = jambScore;
-      formData.append("jambInput", JSON.stringify(jambInput));
-
-      // ===== Submit to backend =====
-      const res = await fetch("https://ict-reg.onrender.com/upload-documents", {
-        method: "POST",
-        body: formData
-      });
-      const data = await res.json();
-      alert(data.success ? "Documents uploaded successfully!" : "Upload failed: " + data.message);
-
-      // Clear file inputs after successful upload
-      if (data.success) {
-        document.querySelectorAll("input[type=file]").forEach(f => f.value = "");
+    // Gather O'Level data
+    const olevelData = [];
+    const count = parseInt(olevelCount.value);
+    for (let i = 1; i <= count; i++) {
+      const examType = document.getElementById(`examType${i}`)?.value.trim();
+      const serialNumber = document.getElementById(`serialNumber${i}`)?.value.trim();
+      const pin = document.getElementById(`pin${i}`)?.value.trim();
+      if (examType || serialNumber || pin) {
+        olevelData.push({ examType, serialNumber, pin });
       }
-
-    } catch (err) {
-      console.error(err);
-      alert("Server error. Please try again.");
-    } finally {
-      spinner.style.display = "none";
     }
-  };
+    formData.append("olevelData", JSON.stringify(olevelData));
+
+    // JAMB info
+    const jambRegNo = document.getElementById("jambRegNo").value.trim();
+    const jambScore = document.getElementById("jambScore").value.trim();
+    formData.append("jambRegNo", jambRegNo);
+    formData.append("jambScore", jambScore);
+
+    // Collect files
+    const fileInputs = document.querySelectorAll("input[type=file]");
+    fileInputs.forEach(input => {
+      if (input.files[0]) formData.append(input.id, input.files[0]);
+    });
+
+    // Send to backend
+    const res = await fetch("https://ict-reg.onrender.com/upload-documents", {
+      method: "POST",
+      body: formData
+    });
+    const data = await res.json();
+
+    alert(data.success ? "Documents updated successfully!" : "Upload failed: " + data.message);
+  } catch (err) {
+    console.error(err);
+    alert("Server error. Please try again.");
+  } finally {
+    spinner.style.display = "none";
+  }
 });
 </script>
+
 </body>
 </html>
