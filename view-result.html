@@ -98,6 +98,26 @@ let filteredResults = [];
   //userDept=(localStorage.getItem("adminDepartment")||"").trim();
 // } else userRole="guest";
 
+// 🔹 Detect user role
+let userRole = "";
+let userDept = "";
+let userMatric = "";
+if (localStorage.getItem("studentData")) {
+  const student = JSON.parse(localStorage.getItem("studentData"));
+  userRole = "student";
+  userDept = student.department;
+  userMatric = student.matricNo;
+
+  // Hide search bar and department filter for students
+  document.getElementById("searchInput").style.display = "none";
+  document.getElementById("filterDept").style.display = "none";
+} else if (localStorage.getItem("adminRole")) {
+  userRole = (localStorage.getItem("adminRole") || "").toLowerCase();
+  userDept = (localStorage.getItem("adminDepartment") || "").trim();
+} else {
+  userRole = "guest";
+}
+
 // Fetch results
 async function fetchResults(){
   try{
