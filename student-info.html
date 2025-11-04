@@ -345,186 +345,210 @@ width: 120px;
 
   </main>    <!-- Overlay for image preview -->    <div class="overlay" id="imageOverlay" onclick="closeOverlay()">  
     <img id="overlayImg" src="" alt="Preview">  
-  </div>    <script>  
-const backendURL = "https://ict-reg.onrender.com";  
-  
-// Get student ID from URL  
-const urlParams = new URLSearchParams(window.location.search);  
-const studentId = urlParams.get("id");  
-  
-if (!studentId) {  
-  alert("No student selected!");  
-  window.location.href = "students-list.html"; // redirect back to list  
-} else {  
-  (async () => {  
-    try {  
-      // Fetch Student Info  
-      const res = await fetch(`${backendURL}/api/students/${studentId}`);  
-      const data = await res.json();  
-  
-      if (!data.success || !data.student) return;  
-  
-      const s = data.student;  
-  
-      // Populate Hero Card  
-      const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ") || "N/A";  
-      document.getElementById("studentPassport").src = s.passport || "https://via.placeholder.com/120";  
-      document.getElementById("studentName").textContent = fullName;  
-      document.getElementById("studentDept").textContent = s.department || "N/A";  
-      document.getElementById("studentMatric").textContent = s.matricNo || "N/A";  
-      document.getElementById("studentLevel").textContent = s.level || "N/A";  
-  
-      // Populate Personal Info  
-      const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ") || "N/A";  
-      document.getElementById("studentEmail").textContent = s.email || "N/A";  
-      document.getElementById("studentPhone").textContent = s.phone || "N/A";  
-      document.getElementById("dob").textContent = s.dob || "N/A";  
-      document.getElementById("regNo").textContent = s.regNo || "N/A";  
-      document.getElementById("studentState").textContent = s.stateOrigin || "N/A";  
-      document.getElementById("studentLga").textContent = s.lgaOrigin || "N/A";  
-      document.getElementById("studentAddress").textContent = s.address || "N/A";  
-      document.getElementById("studentNokName").textContent = nokFullName;  
-      document.getElementById("studentNokRelation").textContent = s.nokRelation || "N/A";  
-      document.getElementById("studentNokPhone").textContent = s.nokPhone || "N/A";  
-  
-      // Documents Section  
-      const docBody = document.getElementById("documentsBody");  
-      docBody.innerHTML = "Loading documents...";  
-  
-      // Use studentId for fetching documents  
-      const docRes = await fetch(`${backendURL}/api/documents/${studentId}`);  
-      const docData = await docRes.json();  
-  
-      if (!docData.success || !docData.data) {  
-        docBody.innerHTML = "<p style='text-align:center;'>No documents found.</p>";  
-      } else {  
-        const doc = docData.data;  
-        const files = doc.files || {};  
-  
-        const createThumbnail = (url, label) => url && url !== "N/A"  
-          ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`  
-          : `<div class="no-file">${label}<br>File not yet uploaded</div>`;  
-  
-        const createSection = (title, contentHtml, sectionId) => `  
-          <section class="document-section">  
-            <div class="section-header" data-target="${sectionId}">  
-              <h4>${title}</h4>  
-              <span class="toggle-icon">▾</span>  
-            </div>  
-            <div class="section-body" id="${sectionId}">${contentHtml}</div>  
-          </section>  
-        `;  
-  
-        // O'Level Section  
-        const oLevelContent = `  
-          ${doc.oLevelInputs?.length ? `  
-            <table>  
-              <thead>  
-                <tr>  
-                  <th>Exam Year</th><th>Exam Type</th><th>Exam Number</th><th>Subject</th><th>Grade</th>  
-                </tr>  
-              </thead>  
-              <tbody>  
-                ${doc.oLevelInputs.map(r => `  
-                  <tr>  
-                    <td>${r.examYear || ''}</td>  
-                    <td>${r.examType || ''}</td>  
-                    <td>${r.examNumber || ''}</td>  
-                    <td>${r.subject || ''}</td>  
-                    <td>${r.grade || ''}</td>  
-                  </tr>`).join('')}  
-              </tbody>  
-            </table>  
-          ` : `<div class="no-file">No O'Level record found</div>`}  
-  
-          ${files.oLevelUploads?.length ? `  
-            <div class="thumbnail-grid" style="margin-top: 15px;">  
-              ${files.oLevelUploads.map((url,i) => `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>O'Level Result ${i+1}</p></div>`).join('')}  
-            </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}  
-        `;  
-  
-        // JAMB Section  
-        const jambContent = `  
-          <label>JAMB Reg No</label>  
-          <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>  
-          <label>JAMB Score</label>  
-          <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>  
-        `;  
-        const jambDocsContent = `<div class="thumbnail-grid">${createThumbnail(files.jambUpload,"JAMB Result Upload")}${createThumbnail(files.jambAdmission,"JAMB Admission Letter")}</div>`;  
-  
-        // School Forms  
-        const schoolFormsContent = `<div class="thumbnail-grid">${createThumbnail(files.applicationForm,"Application Form")}${createThumbnail(files.acceptanceForm,"Acceptance Form")}${createThumbnail(files.guarantorForm,"Guarantor’s Form")}${createThumbnail(files.codeOfConduct,"Code of Conduct")}</div>`;  
-  
-        // Course & Receipts  
-        const courseReceiptsContent = `<div class="thumbnail-grid">  
-          ${createThumbnail(files.nd1First,"ND1 - First Semester Course Form")}  
-          ${createThumbnail(files.nd1Second,"ND1 - Second Semester Course Form")}  
-          ${createThumbnail(files.nd2First,"ND2 - First Semester Course Form")}  
-          ${createThumbnail(files.nd2Second,"ND2 - Second Semester Course Form")}  
-          ${createThumbnail(files.ict1,"ICT Receipt 1")}  
-          ${createThumbnail(files.ict2,"ICT Receipt 2")}  
-          ${createThumbnail(files.ict3,"ICT Receipt 3")}  
-          ${createThumbnail(files.ict4,"ICT Receipt 4")}  
-          ${createThumbnail(files.fee1,"School Fees Receipt 1")}  
-          ${createThumbnail(files.fee2,"School Fees Receipt 2")}  
-          ${createThumbnail(files.fee3,"School Fees Receipt 3")}  
-          ${createThumbnail(files.fee4,"School Fees Receipt 4")}  
-        </div>`;  
-  
-        // Other Documents  
-        const otherDocsContent = `<div class="thumbnail-grid">  
-          ${createThumbnail(files.acceptanceFee,"Acceptance Fee")}  
-          ${createThumbnail(files.stateOfOrigin,"State of Origin")}  
-          ${createThumbnail(files.nin,"NIN Upload")}  
-          ${createThumbnail(files.deptFee,"Departmental Fee Receipt")}  
-        </div>`;  
-  
-        // Render All Sections  
-        docBody.innerHTML = `  
-          ${createSection("O'Level Result Input", oLevelContent,"sectionOLevel")}  
-          ${createSection("JAMB Details", jambContent,"sectionJambInfo")}  
-          ${createSection("JAMB Documents", jambDocsContent,"sectionJambDocs")}  
-          ${createSection("School Forms", schoolFormsContent,"sectionSchoolForms")}  
-          ${createSection("Course & Receipts", courseReceiptsContent,"sectionCourseReceipts")}  
-          ${createSection("Other Documents", otherDocsContent,"sectionOtherDocs")}  
-        `;  
-      }  
-  
-      // Collapsible Logic  
-      function setupCollapsibles() {  
-        document.querySelectorAll(".card-header,.section-header").forEach(header => {  
-          const targetId = header.getAttribute("data-target");  
-          if (!document.getElementById(targetId)) return;  
-          header.addEventListener("click", () => {  
-            const body = document.getElementById(targetId);  
-            body.classList.toggle("open");  
-            const icon = header.querySelector(".toggle-icon");  
-            if (icon) icon.textContent = body.classList.contains("open") ? "▴" : "▾";  
-          });  
-        });  
-      }  
-      setupCollapsibles();  
-  
-      // Overlay Functions  
-      function openOverlay(src) {  
-        const overlay = document.getElementById("imageOverlay");  
-        const overlayImg = document.getElementById("overlayImg");  
-        overlayImg.src = src;  
-        overlay.style.display = "flex";  
-      }  
-      function closeOverlay() {  
-        const overlay = document.getElementById("imageOverlay");  
-        overlay.style.display = "none";  
-        document.getElementById("overlayImg").src = "";  
-      }  
-      window.openOverlay = openOverlay;  
-      window.closeOverlay = closeOverlay;  
-  
-    } catch (err) {  
-      console.error(err);  
-      document.getElementById("documentsBody").innerHTML = "<p style='color:red;text-align:center;'>Error loading student data.</p>";  
-    }  
-  })();  
-}  
-</script>  </body>  
+  </div>    
+
+
+<script>
+const backendURL = "https://ict-reg.onrender.com";
+const urlParams = new URLSearchParams(window.location.search);
+const studentId = urlParams.get("id");
+
+if (!studentId) {
+  alert("No student selected!");
+  window.location.href = "students-list.html";
+} else {
+  (async () => {
+    try {
+      // === Fetch Student Info ===
+      const res = await fetch(`${backendURL}/api/students/${studentId}`);
+      const data = await res.json();
+
+      if (!data.success || !data.student) return;
+
+      const s = data.student;
+
+      // Populate Hero Card
+      const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ") || "N/A";
+      document.getElementById("studentPassport").src = s.passport || "https://via.placeholder.com/120";
+      document.getElementById("studentName").textContent = fullName;
+      document.getElementById("studentDept").textContent = s.department || "N/A";
+      document.getElementById("studentMatric").textContent = s.matricNo || "N/A";
+      document.getElementById("studentLevel").textContent = s.level || "N/A";
+
+      // Populate Personal Info
+      const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ") || "N/A";
+      document.getElementById("studentEmail").textContent = s.email || "N/A";
+      document.getElementById("studentPhone").textContent = s.phone || "N/A";
+      document.getElementById("dob").textContent = s.dob || "N/A";
+      document.getElementById("regNo").textContent = s.regNo || "N/A";
+      document.getElementById("studentState").textContent = s.stateOrigin || "N/A";
+      document.getElementById("studentLga").textContent = s.lgaOrigin || "N/A";
+      document.getElementById("studentAddress").textContent = s.address || "N/A";
+      document.getElementById("studentNokName").textContent = nokFullName;
+      document.getElementById("studentNokRelation").textContent = s.nokRelation || "N/A";
+      document.getElementById("studentNokPhone").textContent = s.nokPhone || "N/A";
+
+      // === Documents Section ===
+      const docBody = document.getElementById("documentsBody");
+      docBody.innerHTML = "Loading documents...";
+
+      const docRes = await fetch(`${backendURL}/api/documents/${studentId}`);
+      const docData = await docRes.json();
+
+      if (!docData.success || !docData.data) {
+        docBody.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
+      } else {
+        const doc = docData.data;
+        const files = doc.files || {};
+
+        const createThumbnail = (url, label) => url && url !== "N/A"
+          ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
+          : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
+
+        const createSection = (title, contentHtml, sectionId) => `
+          <section class="document-section">
+            <div class="section-header" data-target="${sectionId}">
+              <h4>${title}</h4>
+              <span class="toggle-icon">▾</span>
+            </div>
+            <div class="section-body" id="${sectionId}">${contentHtml}</div>
+          </section>
+        `;
+
+        const oLevelContent = `
+          ${doc.oLevelInputs?.length ? `
+            <table>
+              <thead>
+                <tr>
+                  <th>Exam Year</th><th>Exam Type</th><th>Exam Number</th><th>Subject</th><th>Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${doc.oLevelInputs.map(r => `
+                  <tr>
+                    <td>${r.examYear || ''}</td>
+                    <td>${r.examType || ''}</td>
+                    <td>${r.examNumber || ''}</td>
+                    <td>${r.subject || ''}</td>
+                    <td>${r.grade || ''}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          ` : `<div class="no-file">No O'Level record found</div>`}
+
+          ${files.oLevelUploads?.length ? `
+            <div class="thumbnail-grid" style="margin-top: 15px;">
+              ${files.oLevelUploads.map((url,i) => `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>O'Level Result ${i+1}</p></div>`).join('')}
+            </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}
+        `;
+
+        const jambContent = `
+          <label>JAMB Reg No</label>
+          <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
+          <label>JAMB Score</label>
+          <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
+        `;
+        const jambDocsContent = `<div class="thumbnail-grid">${createThumbnail(files.jambUpload,"JAMB Result Upload")}${createThumbnail(files.jambAdmission,"JAMB Admission Letter")}</div>`;
+        const schoolFormsContent = `<div class="thumbnail-grid">${createThumbnail(files.applicationForm,"Application Form")}${createThumbnail(files.acceptanceForm,"Acceptance Form")}${createThumbnail(files.guarantorForm,"Guarantor’s Form")}${createThumbnail(files.codeOfConduct,"Code of Conduct")}</div>`;
+        const courseReceiptsContent = `<div class="thumbnail-grid">
+          ${createThumbnail(files.nd1First,"ND1 - First Semester Course Form")}
+          ${createThumbnail(files.nd1Second,"ND1 - Second Semester Course Form")}
+          ${createThumbnail(files.nd2First,"ND2 - First Semester Course Form")}
+          ${createThumbnail(files.nd2Second,"ND2 - Second Semester Course Form")}
+          ${createThumbnail(files.ict1,"ICT Receipt 1")}
+          ${createThumbnail(files.ict2,"ICT Receipt 2")}
+          ${createThumbnail(files.ict3,"ICT Receipt 3")}
+          ${createThumbnail(files.ict4,"ICT Receipt 4")}
+          ${createThumbnail(files.fee1,"School Fees Receipt 1")}
+          ${createThumbnail(files.fee2,"School Fees Receipt 2")}
+          ${createThumbnail(files.fee3,"School Fees Receipt 3")}
+          ${createThumbnail(files.fee4,"School Fees Receipt 4")}
+        </div>`;
+        const otherDocsContent = `<div class="thumbnail-grid">
+          ${createThumbnail(files.acceptanceFee,"Acceptance Fee")}
+          ${createThumbnail(files.stateOfOrigin,"State of Origin")}
+          ${createThumbnail(files.nin,"NIN Upload")}
+          ${createThumbnail(files.deptFee,"Departmental Fee Receipt")}
+        </div>`;
+
+        docBody.innerHTML = `
+          ${createSection("O'Level Result Input", oLevelContent,"sectionOLevel")}
+          ${createSection("JAMB Details", jambContent,"sectionJambInfo")}
+          ${createSection("JAMB Documents", jambDocsContent,"sectionJambDocs")}
+          ${createSection("School Forms", schoolFormsContent,"sectionSchoolForms")}
+          ${createSection("Course & Receipts", courseReceiptsContent,"sectionCourseReceipts")}
+          ${createSection("Other Documents", otherDocsContent,"sectionOtherDocs")}
+        `;
+      }
+
+      // === Results Section ===
+      const resultsBody = document.getElementById("resultsBody");
+      resultsBody.innerHTML = "Loading results...";
+
+      const resultsRes = await fetch(`${backendURL}/api/results?matricNo=${encodeURIComponent(s.matricNo)}`);
+      const resultsData = await resultsRes.json();
+      const results = resultsData.results || [];
+
+      if (!results.length) {
+        resultsBody.innerHTML = "<p style='text-align:center;color:#777;'>No results found for this student.</p>";
+      } else {
+        resultsBody.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Course Code</th>
+                <th>Course Title</th>
+                <th>Level</th>
+                <th>Semester</th>
+                <th>Score</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${results.map(r => `
+                <tr>
+                  <td>${r.courseCode || ''}</td>
+                  <td>${r.courseTitle || ''}</td>
+                  <td>${r.level || ''}</td>
+                  <td>${r.semester || ''}</td>
+                  <td>${r.score ?? ''}</td>
+                  <td>${r.grade ?? ''}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      // Collapsibles
+      document.querySelectorAll(".card-header,.section-header").forEach(header => {
+        const targetId = header.getAttribute("data-target");
+        if (!document.getElementById(targetId)) return;
+        header.addEventListener("click", () => {
+          const body = document.getElementById(targetId);
+          body.classList.toggle("open");
+          const icon = header.querySelector(".toggle-icon");
+          if (icon) icon.textContent = body.classList.contains("open") ? "▴" : "▾";
+        });
+      });
+
+      // Overlay functions
+      window.openOverlay = src => {
+        const overlay = document.getElementById("imageOverlay");
+        document.getElementById("overlayImg").src = src;
+        overlay.style.display = "flex";
+      };
+      window.closeOverlay = () => {
+        const overlay = document.getElementById("imageOverlay");
+        overlay.style.display = "none";
+        document.getElementById("overlayImg").src = "";
+      };
+    } catch (err) {
+      console.error(err);
+      document.getElementById("documentsBody").innerHTML = "<p style='color:red;text-align:center;'>Error loading student data.</p>";
+      document.getElementById("resultsBody").innerHTML = "<p style='color:red;text-align:center;'>Error loading results.</p>";
+    }
+  })();
+}
+</script>
+ </body>  
 </html>  
