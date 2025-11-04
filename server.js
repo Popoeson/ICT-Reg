@@ -204,6 +204,7 @@ const resultSchema = new mongoose.Schema({
   level: String,
   courseCode: String,
   courseTitle: String,
+  semester: String,
   score: Number,
   grade: String,
   uploadedAt: { type: Date, default: Date.now },
@@ -933,6 +934,7 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
       level,
       courseCode,
       courseTitle,
+      semester,
       score,
       grade,
     } = req.body;
@@ -962,6 +964,7 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
       level,
       courseCode,
       courseTitle,
+      semester,
       score: numericScore,
       grade: finalGrade,
       uploadedAt: new Date(),
