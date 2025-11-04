@@ -225,7 +225,8 @@ else {
 }
 
 // Show Manage Courses button for superadmin only
-if (userRole === "superadmin") {
+const normalizedRole = userRole.replace(/\s+/g, ''); // remove spaces
+if (normalizedRole === "superadmin") {
   document.getElementById("manageBtn").style.display = "inline-block";
 }
 
