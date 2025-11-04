@@ -17,8 +17,8 @@
   th { background:#007bff; color:white; }
   tr:nth-child(even){ background-color:#f9f9f9; }
   tr:hover{ background-color:#f1f1f1; }
-  .expand-btn, .edit-btn, .save-btn { background:#007bff; color:white; border:none; border-radius:6px; padding:5px 10px; cursor:pointer; font-size:0.85rem; }
-  .expand-btn:hover, .edit-btn:hover, .save-btn:hover { background:#0056b3; }
+  .expand-btn, .save-btn { background:#007bff; color:white; border:none; border-radius:6px; padding:5px 10px; cursor:pointer; font-size:0.85rem; }
+  .expand-btn:hover, .save-btn:hover { background:#0056b3; }
   .course-details { background:#f9fbff; display:none; }
   .course-table { width:95%; margin:10px auto; border-collapse:collapse; }
   .course-table th, .course-table td { border:1px solid #ddd; padding:8px; font-size:0.9rem; }
@@ -87,46 +87,48 @@ let allResults = [];
 let filteredResults = [];
 
 // 🔹 Detect user role
-// let userRole = "";
-// let userDept = "";
-// let userMatric = "";
-// if(localStorage.getItem("studentData")){
-//  const student = JSON.parse(localStorage.getItem("studentData"));
- // userRole="student"; //userDept=student.department; //userMatric=student.matricNo;
-// } else if(localStorage.getItem("adminRole")){
-  // userRole=(localStorage.getItem("adminRole")||"").toLowerCase();
-  //userDept=(localStorage.getItem("adminDepartment")||"").trim();
-// } else userRole="guest";
-
-// 🔹 Detect user role
 let userRole = "";
 let userDept = "";
 let userMatric = "";
+
 if (localStorage.getItem("studentData")) {
   const student = JSON.parse(localStorage.getItem("studentData"));
   userRole = "student";
   userDept = student.department;
   userMatric = student.matricNo;
 
-  // Hide search bar and department filter for students
+  // Students → Only level & semester filters visible
   document.getElementById("searchInput").style.display = "none";
   document.getElementById("filterDept").style.display = "none";
-} else if (localStorage.getItem("adminRole")) {
+} 
+else if (localStorage.getItem("adminRole")) {
   userRole = (localStorage.getItem("adminRole") || "").toLowerCase();
   userDept = (localStorage.getItem("adminDepartment") || "").trim();
-} else {
+
+  if (userRole === "superadmin") {
+    // Superadmin → sees everything
+  } else if (userRole === "admin") {
+    // Admin → hide department filter only
+    document.getElementById("filterDept").style.display = "none";
+  }
+} 
+else {
   userRole = "guest";
+  // Hide all filters for guest
+  document.querySelector(".filters").style.display = "none";
 }
 
-// Fetch results
+// 🔹 Fetch results
 async function fetchResults(){
   try{
     const res = await fetch(`${backendURL}/api/results`);
     const data = await res.json();
     allResults = data.results || data;
+
     // Role-based filtering
     if(userRole==="student") allResults = allResults.filter(r=>r.matricNo===userMatric);
     else if(userRole==="admin") allResults = allResults.filter(r=>r.department===userDept);
+
     filteredResults = allResults;
     renderGroupedTable(allResults);
   } catch(err){
@@ -136,14 +138,18 @@ async function fetchResults(){
   }
 }
 
-// Group results by student
+// 🔹 Group results by student
 function groupResults(results){
   const grouped={};
-  results.forEach(r=>{ const key=r.matricNo; if(!grouped[key]) grouped[key]=[]; grouped[key].push(r); });
+  results.forEach(r=>{
+    const key=r.matricNo;
+    if(!grouped[key]) grouped[key]=[];
+    grouped[key].push(r);
+  });
   return grouped;
 }
 
-// Render table
+// 🔹 Render table
 function renderGroupedTable(results){
   tableBody.innerHTML="";
   const grouped = groupResults(results);
@@ -191,7 +197,8 @@ function renderGroupedTable(results){
       const visible = detailsRow.style.display==="table-row";
       detailsRow.style.display = visible ? "none":"table-row";
       row.querySelector(".expand-btn").textContent = visible?"View Courses":"Hide Courses";
-      // Attach save logic for superadmin
+
+      // Superadmin edit/save logic
       if(userRole==="superadmin"){
         detailsRow.querySelectorAll(".save-btn").forEach(btn=>{
           btn.onclick = async ()=>{
@@ -214,9 +221,9 @@ function renderGroupedTable(results){
               const data = await res.json();
               if(!data.success) throw new Error(data.message||"Update failed");
               gradeCell.textContent=newGrade;
-              alert("Score and grade updated!");
+              alert("✅ Score and grade updated!");
             } catch(err){
-              alert("Error: "+err.message);
+              alert("❌ Error: "+err.message);
               console.error(err);
             }
           };
@@ -226,7 +233,7 @@ function renderGroupedTable(results){
   });
 }
 
-// Filters
+// 🔹 Filters
 function applyFilters(){
   const search=document.getElementById("searchInput").value.toLowerCase();
   const dept=document.getElementById("filterDept").value;
@@ -242,6 +249,7 @@ function applyFilters(){
   });
   renderGroupedTable(filteredResults);
 }
+
 document.getElementById("searchInput").addEventListener("input", applyFilters);
 document.getElementById("filterDept").addEventListener("change", applyFilters);
 document.getElementById("filterLevel").addEventListener("change", applyFilters);
@@ -256,7 +264,6 @@ document.getElementById("downloadBtn").addEventListener("click", () => {
     return;
   }
 
-  // Flatten data
   const flattened = resultsToDownload.map(r => ({
     "Full Name": r.fullname,
     "Matric No": r.matricNo,
@@ -275,7 +282,7 @@ document.getElementById("downloadBtn").addEventListener("click", () => {
   XLSX.writeFile(wb, "student_results.xlsx");
 });
 
-// Initial fetch to load results
+// Initial load
 fetchResults();
 </script>
 </body>
