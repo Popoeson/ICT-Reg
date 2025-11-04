@@ -571,6 +571,17 @@ if (!studentId) {
     }
   })();
 }
+
+// === Toggle for main card sections (Personal Info, Documents, Results) ===
+document.querySelectorAll(".card-header").forEach(header => {
+  const targetId = header.getAttribute("data-target");
+  const target = document.getElementById(targetId);
+  header.addEventListener("click", () => {
+    target.classList.toggle("open");
+    const icon = header.querySelector(".toggle-icon");
+    icon.textContent = target.classList.contains("open") ? "▴" : "▾";
+  });
+});
 </script>
  </body>  
 </html>  
