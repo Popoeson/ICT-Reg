@@ -873,7 +873,7 @@ app.post("/api/admins/register", upload.single("passport"), async (req, res) => 
   }
 });
 
-// ========= Upload Result Route =========
+// ========= Upload Result Route (Updated with Course Lookup) =========
 app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => {
   try {
     // ✅ CASE 1: BULK UPLOAD (Excel file)
@@ -887,8 +887,9 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
         return res.status(400).json({ message: "Excel file is empty" });
       }
 
-      // Map Excel headers properly to database fields
-      const formattedResults = rows.map((row) => {
+      const formattedResults = [];
+
+      for (const row of rows) {
         const rawLevel = (row["Level"] || row["level"] || "").toString().trim().toUpperCase();
         const rawDept = (row["Department"] || row["department"] || "").trim();
         const level = rawLevel.replace(/\s+/g, " ");
@@ -905,19 +906,33 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
           else grade = "F";
         }
 
-        return {
+        const courseCode =
+          (row["Course Code"] || row["CourseCode"] || row["courseCode"] || "").trim();
+
+        // ✅ Find course title from DB using courseCode
+        const foundCourse = await CourseCollection.findOne({
+          courseCode: { $regex: `^${courseCode}$`, $options: "i" },
+        });
+
+        if (!foundCourse) {
+          return res
+            .status(400)
+            .json({ message: `❌ Invalid course code found: ${courseCode}` });
+        }
+
+        formattedResults.push({
           fullname: row["Name"] || row["Fullname"] || row["fullname"] || "",
           matricNo: row["Matric Number"] || row["MatricNo"] || row["matricNo"] || "",
           department: rawDept,
           level,
           semester: row["Semester"] || row["semester"] || "",
-          courseCode: row["Course Code"] || row["CourseCode"] || row["courseCode"] || "",
-          courseTitle: row["Course Title"] || row["CourseTitle"] || row["courseTitle"] || "",
+          courseCode,
+          courseTitle: foundCourse.courseTitle,
           score,
           grade,
           uploadedAt: new Date(),
-        };
-      });
+        });
+      }
 
       await Result.insertMany(formattedResults);
       return res.json({
@@ -933,7 +948,6 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
       department,
       level,
       courseCode,
-      courseTitle,
       semester,
       score,
       grade,
@@ -943,10 +957,18 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Convert score to number just to be safe
     const numericScore = Number(score);
 
-    // ✅ Auto-determine grade if not provided
+    // ✅ Find course title from DB
+    const foundCourse = await CourseCollection.findOne({
+      courseCode: { $regex: `^${courseCode}$`, $options: "i" },
+    });
+
+    if (!foundCourse) {
+      return res.status(400).json({ message: `❌ Invalid course code: ${courseCode}` });
+    }
+
+    // Auto-determine grade if missing
     let finalGrade = grade;
     if (!finalGrade || finalGrade.trim() === "") {
       if (numericScore >= 70) finalGrade = "A";
@@ -963,7 +985,7 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
       department,
       level,
       courseCode,
-      courseTitle,
+      courseTitle: foundCourse.courseTitle,
       semester,
       score: numericScore,
       grade: finalGrade,
