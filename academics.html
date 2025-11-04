@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academics Dashboard | ICT Registration Portal</title>
+
+  <!-- Google Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fb;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    header {
+      background: #007bff;
+      color: white;
+      padding: 16px 20px;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+      text-align: center;
+      padding: 0 10px;
+    }
+
+    .container h1 {
+      font-size: 1.8rem;
+      color: #1e293b;
+      margin-bottom: 40px;
+      word-wrap: break-word;
+    }
+
+    .cards {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 25px;
+      width: 100%;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      padding: 40px 25px;
+      width: 280px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      max-width: 90vw;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+    }
+
+    .icon {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    /* Specific icon colors */
+    .course-icon {
+      background: #fff7e6;
+      color: #f59e0b;
+    }
+
+    .result-icon {
+      background: #e0edff;
+      color: #007bff;
+    }
+
+    .material-icons-outlined {
+      font-size: 36px;
+    }
+
+    .card h2 {
+      color: #1e293b;
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 768px) {
+      .container h1 {
+        font-size: 1.4rem;
+        margin-bottom: 25px;
+      }
+
+      .cards {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 350px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>🎓 Academics Dashboard</header>
+
+  <div class="main">
+    <div class="container">
+      <h1>Academic Management Portal</h1>
+      <div class="cards">
+        <div class="card" onclick="navigateTo('courses.html')">
+          <div class="icon course-icon">
+            <span class="material-icons-outlined">menu_book</span>
+          </div>
+          <h2>Courses</h2>
+          <p>Manage and view all registered courses</p>
+        </div>
+
+        <div class="card" onclick="navigateTo('student-result.html')">
+          <div class="icon result-icon">
+            <span class="material-icons-outlined">bar_chart</span>
+          </div>
+          <h2>Results</h2>
+          <p>View and analyze student performance</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function navigateTo(page) {
+      window.location.href = page;
+    }
+  </script>
+</body>
+</html>
