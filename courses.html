@@ -166,7 +166,7 @@
   </header>
 
   <div class="container">
-    <div class="filters">
+    <div class="filters" id="filters">
       <select id="filterSemester" onchange="renderFilteredDashboard()">
         <option value="">All Semesters</option>
         <option value="1">Semester 1</option>
@@ -194,41 +194,42 @@
       </select>
     </div>
 
-    <div id="dashboardContainer">
-      <!-- Dynamic course content -->
-    </div>
+    <div id="dashboardContainer"></div>
   </div>
 
   <script>
     const backendURL = "https://ict-reg.onrender.com";
     let allCourses = [];
 
-    // Fetch user role, dept, level from localStorage
     const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
-    const userRole = loggedInUser.role || "student"; // fallback
-    const userDept = loggedInUser.department || "";
-    const userLevel = loggedInUser.level || "";
+    const userRole = (loggedInUser.role || "").toLowerCase();
+    const userDept = (loggedInUser.department || "").toLowerCase().trim();
+    const userLevel = (loggedInUser.level || "").toUpperCase().replace(/\s+/g, '');
 
-    // Show manage button only for super admin
-    if (userRole.toLowerCase() === "superadmin") {
+    // Show manage button for super admin only
+    if (userRole === "superadmin") {
       document.getElementById("manageBtn").style.display = "inline-block";
+    }
+
+    // Hide Department and Level filters for students
+    if (userRole === "student") {
+      document.getElementById("filterDepartment").style.display = "none";
+      document.getElementById("filterLevel").style.display = "none";
     }
 
     async function fetchCourses() {
       try {
         const res = await fetch(`${backendURL}/api/courses`);
         const data = await res.json();
-
         if (!data.success) throw new Error(data.message || "Failed to fetch courses");
 
-        // Flatten nested courses
         allCourses = [];
         (data.data || []).forEach(doc => {
           const { level, department, semester, _id: docId, courses } = doc;
           (courses || []).forEach(course => {
             allCourses.push({
-              level,
-              department,
+              level: level.toUpperCase().replace(/\s+/g, ''),
+              department: department.toLowerCase().trim(),
               semester,
               docId,
               courseId: course._id,
@@ -240,7 +241,6 @@
           });
         });
 
-        // Apply role-based filtering immediately
         renderFilteredDashboard();
       } catch (err) {
         console.error(err);
@@ -250,8 +250,8 @@
 
     function renderFilteredDashboard() {
       const semesterFilter = document.getElementById("filterSemester").value;
-      const departmentFilter = document.getElementById("filterDepartment").value;
-      const levelFilter = document.getElementById("filterLevel").value;
+      const departmentFilter = (document.getElementById("filterDepartment").value || "").toLowerCase().trim();
+      const levelFilter = (document.getElementById("filterLevel").value || "").toUpperCase().replace(/\s+/g, '');
 
       let filtered = allCourses.filter(c => {
         return (!semesterFilter || c.semester == semesterFilter) &&
@@ -259,10 +259,10 @@
                (!levelFilter || c.level === levelFilter);
       });
 
-      // 🔹 Role-based filtering logic
-      if (userRole.toLowerCase() === "admin") {
+      // Role-based filtering
+      if (userRole === "admin") {
         filtered = filtered.filter(c => c.department === userDept);
-      } else if (userRole.toLowerCase() === "student") {
+      } else if (userRole === "student") {
         filtered = filtered.filter(c => c.department === userDept && c.level === userLevel);
       }
 
@@ -275,7 +275,7 @@
 
       const grouped = {};
       courses.forEach(c => {
-        const key = `${c.semester} - ${c.department} - ${c.level}`;
+        const key = `${c.semester} - ${c.department.toUpperCase()} - ${c.level}`;
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(c);
       });
@@ -298,7 +298,7 @@
               <th>Title</th>
               <th>Unit</th>
               <th>Lecturer</th>
-              ${userRole.toLowerCase() === "superadmin" ? "<th>Actions</th>" : ""}
+              ${userRole === "superadmin" ? "<th>Actions</th>" : ""}
             </tr>
           </thead>
           <tbody>
@@ -312,7 +312,7 @@
                   <td data-label="Unit">${c.unit}</td>
                   <td data-label="Lecturer">${c.lecturer}</td>
                   ${
-                    userRole.toLowerCase() === "superadmin"
+                    userRole === "superadmin"
                       ? `<td data-label="Actions"><button class="delete-btn" onclick="deleteCourse('${c.docId}','${c.courseId}')">Delete</button></td>`
                       : ""
                   }
