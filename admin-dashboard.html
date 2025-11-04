@@ -173,21 +173,18 @@
 
   <main>
     <div class="stats-container">
-      <!-- Clickable Total Students Card -->
       <div class="card" id="total-students-card">
         <div class="icon">👥</div>
         <h3>Total Students</h3>
         <p id="students-count">0</p>
       </div>
 
-      <!-- Clickable Total Courses Card -->
       <div class="card" id="total-courses-card">
         <div class="icon">📘</div>
         <h3>Total Courses</h3>
         <p id="courses-count">0</p>
       </div>
 
-      <!-- Clickable Total Results Card -->
       <div class="card" id="total-results-card">
         <div class="icon">📊</div>
         <h3>Total Results</h3>
@@ -205,69 +202,72 @@
     const adminName = localStorage.getItem("adminName");
     const adminRole = localStorage.getItem("adminRole");
     const adminPassport = localStorage.getItem("adminPassport");
+    const adminDepartment = localStorage.getItem("adminDepartment");
 
     // Redirect if not logged in
     if (!adminName || !adminRole) {
       window.location.href = "login.html";
     } else {
       document.querySelector(".welcome").textContent = `Welcome, ${adminName}`;
-      document.getElementById("adminRole").textContent = adminRole;
+
+      // Display role with department (for ordinary admins)
+      if (adminRole.toLowerCase() === "admin" && adminDepartment) {
+        document.getElementById("adminRole").textContent = `${adminRole} – ${adminDepartment}`;
+      } else {
+        document.getElementById("adminRole").textContent = adminRole;
+      }
+
       document.getElementById("adminPassport").src = adminPassport || "https://via.placeholder.com/40";
     }
 
-    // Logout
+    // Logout logic
     document.querySelector(".logout-btn").addEventListener("click", () => {
       localStorage.removeItem("adminName");
       localStorage.removeItem("adminRole");
       localStorage.removeItem("adminPassport");
+      localStorage.removeItem("adminDepartment");
       window.location.href = "login.html";
     });
 
-    // Make cards clickable
+    // Navigation
     document.getElementById("total-students-card").addEventListener("click", () => {
       window.location.href = "students-list.html";
     });
-
     document.getElementById("total-courses-card").addEventListener("click", () => {
       window.location.href = "courses.html";
     });
-
     document.getElementById("total-results-card").addEventListener("click", () => {
       window.location.href = "result-index.html";
     });
 
-    // Fetch and display stats
+    // Fetch statistics
     async function fetchStats() {
-  try {
-    // Fetch all students (we only need the total count)
-    const studentsRes = await fetch(`${backendBaseUrl}/api/students?limit=10000`);
-    const studentsData = await studentsRes.json();
-    const totalStudents = studentsData.success ? studentsData.total : 0;
+      try {
+        const studentsRes = await fetch(`${backendBaseUrl}/api/students?limit=10000`);
+        const studentsData = await studentsRes.json();
+        const totalStudents = studentsData.success ? studentsData.total : 0;
 
-    // Fetch courses
-    const coursesRes = await fetch(`${backendBaseUrl}/api/courses`);
-    const coursesData = await coursesRes.json();
-    const totalCourses = coursesData.success ? coursesData.data.length : 0;
+        const coursesRes = await fetch(`${backendBaseUrl}/api/courses`);
+        const coursesData = await coursesRes.json();
+        const totalCourses = coursesData.success ? coursesData.data.length : 0;
 
-    // Fetch results if endpoint exists
-    let totalResults = 0;
-    try {
-      const resultsRes = await fetch(`${backendBaseUrl}/api/results`);
-      const resultsData = await resultsRes.json();
-      totalResults = resultsData.success ? resultsData.data.length : 0;
-    } catch {
-      totalResults = 0;
+        let totalResults = 0;
+        try {
+          const resultsRes = await fetch(`${backendBaseUrl}/api/results`);
+          const resultsData = await resultsRes.json();
+          totalResults = resultsData.success ? resultsData.data.length : 0;
+        } catch {
+          totalResults = 0;
+        }
+
+        document.getElementById("students-count").textContent = totalStudents;
+        document.getElementById("courses-count").textContent = totalCourses;
+        document.getElementById("results-count").textContent = totalResults;
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      }
     }
 
-    // Update counts in DOM
-    document.getElementById("students-count").textContent = totalStudents;
-    document.getElementById("courses-count").textContent = totalCourses;
-    document.getElementById("results-count").textContent = totalResults;
-
-  } catch (err) {
-    console.error("Error fetching stats:", err);
-  }
-}
     fetchStats();
   </script>
 </body>
