@@ -265,6 +265,36 @@ th {
   padding: 15px 16px;
 }
 
+.table-scroll {
+  max-height: 300px; /* adjust as needed */
+  overflow-x: auto;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+/* Keep table readable within scroll area */
+.table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-scroll th,
+.table-scroll td {
+  padding: 8px;
+  text-align: left;
+  border: 1px solid #ddd;
+  white-space: nowrap;
+}
+
+.table-scroll thead {
+  background: #f1f1f1;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .hero-card {
