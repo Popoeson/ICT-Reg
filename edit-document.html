@@ -161,11 +161,14 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
     }
     formData.append("olevelData", JSON.stringify(olevelData));
 
-    // JAMB info
-    const jambRegNo = document.getElementById("jambRegNo").value.trim();
-    const jambScore = document.getElementById("jambScore").value.trim();
-    formData.append("jambRegNo", jambRegNo);
-    formData.append("jambScore", jambScore);
+    // JAMB info (only append if user filled or already exists)
+const jambRegNo = document.getElementById("jambRegNo").value.trim();
+const jambScore = document.getElementById("jambScore").value.trim();
+
+if (jambRegNo !== "" || jambScore !== "") {
+  formData.append("jambRegNo", jambRegNo);
+  formData.append("jambScore", jambScore);
+}
 
     // Files
     const fileInputs = document.querySelectorAll("input[type=file]");
