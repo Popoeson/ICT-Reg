@@ -391,7 +391,7 @@ if (!studentId) {
       if (!data.success || !data.student) return;
       const s = data.student;
 
-      // Populate hero
+      // ===== Populate top info =====
       const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ") || "N/A";
       document.getElementById("studentPassport").src = s.passport || "https://via.placeholder.com/120";
       document.getElementById("studentName").textContent = fullName;
@@ -399,7 +399,7 @@ if (!studentId) {
       document.getElementById("studentMatric").textContent = s.matricNo || "N/A";
       document.getElementById("studentLevel").textContent = s.level || "N/A";
 
-      // Personal Info
+      // Personal info
       const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ") || "N/A";
       document.getElementById("studentEmail").textContent = s.email || "N/A";
       document.getElementById("studentPhone").textContent = s.phone || "N/A";
@@ -412,7 +412,7 @@ if (!studentId) {
       document.getElementById("studentNokRelation").textContent = s.nokRelation || "N/A";
       document.getElementById("studentNokPhone").textContent = s.nokPhone || "N/A";
 
-      // === Fetch and Populate Documents ===
+      // === Fetch and display uploaded documents ===
       const docBody = document.getElementById("documentsBody");
       docBody.innerHTML = "Loading documents...";
 
@@ -442,28 +442,21 @@ if (!studentId) {
           </section>
         `;
 
+        // 🧾 O'Level result info (new simplified version)
+        const oLevelRecord = doc.oLevelInputs?.[0] || {};
         const oLevelContent = `
-          ${doc.oLevelInputs?.length ? `
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Exam Year</th><th>Exam Type</th><th>Exam Number</th><th>Subject</th><th>Grade</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${doc.oLevelInputs.map(r => `
-                    <tr>
-                      <td>${r.examYear || ''}</td>
-                      <td>${r.examType || ''}</td>
-                      <td>${r.examNumber || ''}</td>
-                      <td>${r.subject || ''}</td>
-                      <td>${r.grade || ''}</td>
-                    </tr>`).join('')}
-                </tbody>
-              </table>
+          ${Object.keys(oLevelRecord).length ? `
+            <div class="readonly-block">
+              <label>Exam Type:</label>
+              <input class="readonly-input" value="${oLevelRecord.examType || 'N/A'}" readonly>
+              <label>Exam Year:</label>
+              <input class="readonly-input" value="${oLevelRecord.examYear || 'N/A'}" readonly>
+              <label>Serial Number:</label>
+              <input class="readonly-input" value="${oLevelRecord.serialNo || 'N/A'}" readonly>
+              <label>Token / Pin:</label>
+              <input class="readonly-input" value="${oLevelRecord.token || 'N/A'}" readonly>
             </div>
-          ` : `<div class="no-file">No O'Level record found</div>`}
+          ` : `<div class="no-file">No O'Level result details available</div>`}
 
           ${files.oLevelUploads?.length ? `
             <div class="thumbnail-grid" style="margin-top: 15px;">
@@ -472,7 +465,7 @@ if (!studentId) {
                   <img src="${url}" onclick="openOverlay('${url}')">
                   <p>O'Level Result ${i+1}</p>
                 </div>`).join('')}
-            </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}
+            </div>` : `<div class="no-file">No O'Level result image uploaded</div>`}
         `;
 
         const jambContent = `
@@ -494,11 +487,11 @@ if (!studentId) {
           ${createThumbnail(files.codeOfConduct,"Code of Conduct")}
         </div>`;
 
-        const courseReceiptsContent = `<div class="thumbnail-grid">
-          ${createThumbnail(files.nd1First,"ND1 - First Semester Course Form")}
-          ${createThumbnail(files.nd1Second,"ND1 - Second Semester Course Form")}
-          ${createThumbnail(files.nd2First,"ND2 - First Semester Course Form")}
-          ${createThumbnail(files.nd2Second,"ND2 - Second Semester Course Form")}
+        const receiptsContent = `<div class="thumbnail-grid">
+          ${createThumbnail(files.nd1First,"ND1 - 1st Semester Course Form")}
+          ${createThumbnail(files.nd1Second,"ND1 - 2nd Semester Course Form")}
+          ${createThumbnail(files.nd2First,"ND2 - 1st Semester Course Form")}
+          ${createThumbnail(files.nd2Second,"ND2 - 2nd Semester Course Form")}
           ${createThumbnail(files.ict1,"ICT Receipt 1")}
           ${createThumbnail(files.ict2,"ICT Receipt 2")}
           ${createThumbnail(files.ict3,"ICT Receipt 3")}
@@ -509,7 +502,7 @@ if (!studentId) {
           ${createThumbnail(files.fee4,"School Fees Receipt 4")}
         </div>`;
 
-        const otherDocsContent = `<div class="thumbnail-grid">
+        const otherDocs = `<div class="thumbnail-grid">
           ${createThumbnail(files.acceptanceFee,"Acceptance Fee")}
           ${createThumbnail(files.stateOfOrigin,"State of Origin")}
           ${createThumbnail(files.nin,"NIN Upload")}
@@ -517,20 +510,20 @@ if (!studentId) {
         </div>`;
 
         docBody.innerHTML = `
-          ${createSection("O'Level Result Input", oLevelContent,"sectionOLevel")}
+          ${createSection("O'Level Result Details", oLevelContent,"sectionOLevel")}
           ${createSection("JAMB Details", jambContent,"sectionJambInfo")}
           ${createSection("JAMB Documents", jambDocsContent,"sectionJambDocs")}
           ${createSection("School Forms", schoolFormsContent,"sectionSchoolForms")}
-          ${createSection("Course & Receipts", courseReceiptsContent,"sectionCourseReceipts")}
-          ${createSection("Other Documents", otherDocsContent,"sectionOtherDocs")}
+          ${createSection("Course & Receipts", receiptsContent,"sectionReceipts")}
+          ${createSection("Other Documents", otherDocs,"sectionOthers")}
         `;
       }
 
-      // === Results Section ===
+      // ====== Results Section ======
       const resultsBody = document.getElementById("resultsBody");
       resultsBody.innerHTML = "Loading results...";
 
-      async function loadResults(semesterFilter = "") {
+      async function loadResults() {
         const url = `${backendURL}/api/results?matricNo=${encodeURIComponent(s.matricNo)}`;
         const res = await fetch(url);
         const data = await res.json();
@@ -541,70 +534,35 @@ if (!studentId) {
           return;
         }
 
-        const semesters = [...new Set(results.map(r => r.semester))];
-        const filtered = semesterFilter ? results.filter(r => r.semester === semesterFilter) : results;
-
-        resultsBody.innerHTML = `
-          <label for="semesterFilter"><strong>Filter by Semester:</strong></label>
-          <select id="semesterFilter" style="margin:8px 0;padding:6px;border-radius:6px;">
-            <option value="">All Semesters</option>
-            ${semesters.map(s => `<option value="${s}" ${s===semesterFilter?'selected':''}>${s}</option>`).join('')}
-          </select>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Course Code</th>
-                  <th>Course Title</th>
-                  <th>Level</th>
-                  <th>Semester</th>
-                  <th>Score</th>
-                  <th>Grade</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${filtered.map(r => `
-                  <tr>
-                    <td>${r.courseCode || ''}</td>
-                    <td>${r.courseTitle || ''}</td>
-                    <td>${r.level || ''}</td>
-                    <td>${r.semester || ''}</td>
-                    <td>${r.score ?? ''}</td>
-                    <td>${r.grade ?? ''}</td>
-                  </tr>`).join('')}
-              </tbody>
-            </table>
+        resultsBody.innerHTML = results.map(r => `
+          <div class="result-box">
+            <p><strong>Exam Type:</strong> ${r.examType || 'N/A'}</p>
+            <p><strong>Serial No:</strong> ${r.serialNo || 'N/A'}</p>
+            <p><strong>Token / Pin:</strong> ${r.pin || 'N/A'}</p>
           </div>
-        `;
-
-        document.getElementById("semesterFilter").addEventListener("change", e => {
-          loadResults(e.target.value);
-        });
+        `).join('');
       }
 
       await loadResults();
 
-      // Collapsible sections
-      document.querySelectorAll(".card-header,.section-header").forEach(header => {
+      // === Section toggles ===
+      document.querySelectorAll(".section-header").forEach(header => {
         const targetId = header.getAttribute("data-target");
         const target = document.getElementById(targetId);
-        if (!target) return;
         header.addEventListener("click", () => {
           target.classList.toggle("open");
           const icon = header.querySelector(".toggle-icon");
-          if (icon) icon.textContent = target.classList.contains("open") ? "▴" : "▾";
+          icon.textContent = target.classList.contains("open") ? "▴" : "▾";
         });
       });
 
-      // Overlay preview
+      // === Overlay preview ===
       window.openOverlay = src => {
-        const overlay = document.getElementById("imageOverlay");
         document.getElementById("overlayImg").src = src;
-        overlay.style.display = "flex";
+        document.getElementById("imageOverlay").style.display = "flex";
       };
       window.closeOverlay = () => {
-        const overlay = document.getElementById("imageOverlay");
-        overlay.style.display = "none";
+        document.getElementById("imageOverlay").style.display = "none";
         document.getElementById("overlayImg").src = "";
       };
     } catch (err) {
