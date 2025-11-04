@@ -244,91 +244,131 @@
   </div>
 
   <script>
-    const backendBaseUrl = "https://ict-reg.onrender.com";
-    const studentGrid = document.getElementById("studentGrid");
-    const filterToggle = document.getElementById("filterToggle");
-    const filterBody = document.getElementById("filterBody");
-    const toggleIcon = document.getElementById("toggleIcon");
+  const backendBaseUrl = "https://ict-reg.onrender.com";
+  const studentGrid = document.getElementById("studentGrid");
+  const filterToggle = document.getElementById("filterToggle");
+  const filterBody = document.getElementById("filterBody");
+  const toggleIcon = document.getElementById("toggleIcon");
 
-    // Toggle filter animation
-    filterToggle.addEventListener("click", () => {
-      filterBody.classList.toggle("open");
-      toggleIcon.textContent = filterBody.classList.contains("open") ? "▴" : "▾";
-    });
+  // Admin session info
+  const adminName = localStorage.getItem("adminName");
+  const adminRole = localStorage.getItem("adminRole");
+  const adminDepartment = localStorage.getItem("adminDepartment");
 
-    async function fetchStudents() {
-      const q = document.getElementById("searchInput").value.trim();
-      const department = document.getElementById("departmentFilter").value;
-      const level = document.getElementById("levelFilter").value;
-      const queryParams = new URLSearchParams({ q, department, level });
+  // Redirect if not logged in
+  if (!adminName || !adminRole) {
+    window.location.href = "login.html";
+  }
 
-      try {
-        const res = await fetch(`${backendBaseUrl}/api/students?${queryParams}`);
-        const data = await res.json();
+  const isSuperAdmin = adminRole.toLowerCase().includes("super");
 
-        if (!data.success || data.data.length === 0) {
-          studentGrid.innerHTML = `<p style="text-align:center;">No students found</p>`;
-          return;
-        }
+  // 🔹 If ordinary admin → lock department filter
+  const departmentSelect = document.getElementById("departmentFilter");
+  if (!isSuperAdmin && adminDepartment) {
+    departmentSelect.value = adminDepartment;
+    departmentSelect.disabled = true;
+  }
 
-        studentGrid.innerHTML = data.data
-          .map((s, index) => {
-            const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ");
-            return `
-              <div class="student-card" onclick="viewStudent('${s._id}')">
-                <span class="serial">#${index + 1}</span>
-                <img src="${s.passport || 'https://via.placeholder.com/70'}" class="passport" alt="passport"/>
-                <div class="fullname">${fullName || "N/A"}</div>
-                <div>${s.matricNo || "N/A"}</div>
-                <div style="font-size:13px; color:#666;">${s.department || "N/A"} • ${s.level || "N/A"}</div>
-                <button class="delete-btn" onclick="event.stopPropagation(); deleteStudent('${s._id}')">Delete</button>
-              </div>
-            `;
-          })
-          .join("");
-      } catch (err) {
-        console.error("Error fetching students:", err);
-        studentGrid.innerHTML = `<p style="text-align:center;color:red;">Error loading students</p>`;
+  // Toggle filter animation
+  filterToggle.addEventListener("click", () => {
+    filterBody.classList.toggle("open");
+    toggleIcon.textContent = filterBody.classList.contains("open") ? "▴" : "▾";
+  });
+
+  async function fetchStudents() {
+    const q = document.getElementById("searchInput").value.trim();
+    const department = isSuperAdmin
+      ? document.getElementById("departmentFilter").value
+      : adminDepartment; // force admin's department
+    const level = document.getElementById("levelFilter").value;
+
+    const queryParams = new URLSearchParams({ q, department, level });
+
+    try {
+      const res = await fetch(`${backendBaseUrl}/api/students?${queryParams}`);
+      const data = await res.json();
+
+      if (!data.success || !data.data || data.data.length === 0) {
+        studentGrid.innerHTML = `<p style="text-align:center;">No students found</p>`;
+        return;
       }
-    }
 
-    // Redirect to student-info.html
-    function viewStudent(id) {
-      window.location.href = `student-info.html?id=${id}`;
-    }
-
-    // Delete student
-    async function deleteStudent(id) {
-      if (!confirm("Are you sure you want to delete this student?")) return;
-      try {
-        const res = await fetch(`${backendBaseUrl}/api/students/${id}`, { method: "DELETE" });
-        const data = await res.json();
-        if (data.success) {
-          alert("Student deleted successfully!");
-          fetchStudents();
-        } else {
-          alert("Failed to delete student.");
-        }
-      } catch (err) {
-        console.error("Delete error:", err);
-        alert("An error occurred while deleting student.");
+      // 🔹 Apply client-side department filter for safety (double-check)
+      let filteredStudents = data.data;
+      if (!isSuperAdmin && adminDepartment) {
+        filteredStudents = filteredStudents.filter(
+          (s) =>
+            s.department?.toLowerCase().trim() ===
+            adminDepartment.toLowerCase().trim()
+        );
       }
-    }
 
-    // Filter events
-    document.getElementById("searchInput").addEventListener("input", fetchStudents);
-    document.getElementById("departmentFilter").addEventListener("change", fetchStudents);
-    document.getElementById("levelFilter").addEventListener("change", fetchStudents);
-    document.getElementById("clearFilters").addEventListener("click", () => {
-      document.getElementById("searchInput").value = "";
+      if (filteredStudents.length === 0) {
+        studentGrid.innerHTML = `<p style="text-align:center;">No students found for your department.</p>`;
+        return;
+      }
+
+      studentGrid.innerHTML = filteredStudents
+        .map((s, index) => {
+          const fullName = [s.surname, s.firstname, s.middlename]
+            .filter(Boolean)
+            .join(" ");
+          return `
+            <div class="student-card" onclick="viewStudent('${s._id}')">
+              <span class="serial">#${index + 1}</span>
+              <img src="${s.passport || 'https://via.placeholder.com/70'}" class="passport" alt="passport"/>
+              <div class="fullname">${fullName || "N/A"}</div>
+              <div>${s.matricNo || "N/A"}</div>
+              <div style="font-size:13px; color:#666;">${s.department || "N/A"} • ${s.level || "N/A"}</div>
+              <button class="delete-btn" onclick="event.stopPropagation(); deleteStudent('${s._id}')">Delete</button>
+            </div>
+          `;
+        })
+        .join("");
+    } catch (err) {
+      console.error("Error fetching students:", err);
+      studentGrid.innerHTML = `<p style="text-align:center;color:red;">Error loading students</p>`;
+    }
+  }
+
+  // Redirect to student-info.html
+  function viewStudent(id) {
+    window.location.href = `student-info.html?id=${id}`;
+  }
+
+  // Delete student
+  async function deleteStudent(id) {
+    if (!confirm("Are you sure you want to delete this student?")) return;
+    try {
+      const res = await fetch(`${backendBaseUrl}/api/students/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        alert("Student deleted successfully!");
+        fetchStudents();
+      } else {
+        alert("Failed to delete student.");
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("An error occurred while deleting student.");
+    }
+  }
+
+  // Filter events
+  document.getElementById("searchInput").addEventListener("input", fetchStudents);
+  document.getElementById("departmentFilter").addEventListener("change", fetchStudents);
+  document.getElementById("levelFilter").addEventListener("change", fetchStudents);
+  document.getElementById("clearFilters").addEventListener("click", () => {
+    document.getElementById("searchInput").value = "";
+    if (isSuperAdmin) {
       document.getElementById("departmentFilter").value = "";
-      document.getElementById("levelFilter").value = "";
-      fetchStudents();
-    });
-
-    // Initial fetch
+    }
+    document.getElementById("levelFilter").value = "";
     fetchStudents();
-  </script>
+  });
 
+  // Initial fetch
+  fetchStudents();
+</script>
 </body>
 </html>
