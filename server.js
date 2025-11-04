@@ -102,12 +102,18 @@ const studentProfileSchema = new mongoose.Schema({
 
 const StudentProfile = mongoose.model("StudentProfile", studentProfileSchema);
 
-// Documents upload schema
+// ====== Document Upload Schema ======
 const DocumentSchema = new mongoose.Schema({
   studentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Student",
     required: true,
+  },
+
+  matricNumber: {
+    type: String,
+    required: false, // Optional, can be filled later
+    trim: true,
   },
 
   // Updated O'Level structure
@@ -127,7 +133,7 @@ const DocumentSchema = new mongoose.Schema({
 
   // Uploaded file URLs
   files: {
-    oLevelUploads: { type: [String], default: [] }, // optional if later you add WAEC upload
+    oLevelUploads: { type: [String], default: [] },
     jambUpload: String,
     jambAdmission: String,
     applicationForm: String,
@@ -366,17 +372,20 @@ app.post("/api/universal-login", async (req, res) => {
   }
 });
 
-// 📦 Route: Upload all documents =====
+
+// ====== 📦 Route: Upload all documents ======
 app.post("/upload-documents", upload.any(), async (req, res) => {
   try {
-    const { studentId, olevelData, jambRegNo, jambScore } = req.body;
-    if (!studentId)
+    const { studentId, matricNumber, olevelData, jambRegNo, jambScore } = req.body;
+
+    if (!studentId) {
       return res.status(400).json({ success: false, message: "Student ID required." });
+    }
 
     // Parse O’Level JSON (sent from frontend)
     const parsedOlevel = JSON.parse(olevelData || "[]");
 
-    // Prepare expected static files
+    // Define all expected file fields
     const expectedFiles = [
       "jambUpload", "jambAdmission", "applicationForm", "acceptanceForm",
       "guarantorForm", "codeOfConduct", "nd1First", "nd1Second",
@@ -385,11 +394,12 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
       "stateOfOrigin", "nin", "deptFee"
     ];
 
+    // Map files for upload
     const uploadedFiles = {};
     const fileMap = {};
     for (const file of req.files) fileMap[file.fieldname] = file;
 
-    // Upload all static files to Cloudinary
+    // Upload each file to Cloudinary if available
     for (const field of expectedFiles) {
       if (fileMap[field]) {
         const uploaded = await cloudinary.uploader.upload(fileMap[field].path, {
@@ -399,17 +409,16 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
       }
     }
 
-    // Find existing doc or create new
+    // Check if document record already exists for this student
     let existingDoc = await Document.findOne({ studentId });
 
     if (existingDoc) {
-      // Merge O’Level info
+      // ✅ Update existing document
       if (parsedOlevel.length > 0) existingDoc.oLevelData = parsedOlevel;
-
-      // Merge JAMB info
       existingDoc.jambInfo = { jambRegNo, jambScore };
+      if (matricNumber) existingDoc.matricNumber = matricNumber;
 
-      // Merge uploaded file URLs
+      // Merge uploaded files
       for (const field of expectedFiles) {
         if (uploadedFiles[field]) existingDoc.files[field] = uploadedFiles[field];
       }
@@ -422,9 +431,10 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
         data: existingDoc,
       });
     } else {
-      // Create new document record
+      // ✅ Create a new document record
       const newDoc = new Document({
         studentId,
+        matricNumber,
         oLevelData: parsedOlevel,
         jambInfo: { jambRegNo, jambScore },
         files: uploadedFiles,
