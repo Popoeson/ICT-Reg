@@ -160,8 +160,6 @@ const DocumentSchema = new mongoose.Schema({
 
 const Document = mongoose.model("DocumentUpload", DocumentSchema);
 
-const Document = mongoose.model("DocumentUpload", DocumentSchema);
-
 //========== Courses Schema =========
 const courseSchema = new mongoose.Schema({
   level: { type: String, required: true },        // ND1, ND2
