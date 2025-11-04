@@ -98,7 +98,6 @@
       color: #444;
     }
 
-    /* Read-only JAMB and O'Level styles */
     .readonly-input {
       width: 100%;
       padding: 8px;
@@ -109,25 +108,6 @@
       margin-bottom: 10px;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-
-    th {
-      background: #0056b3;
-      color: white;
-    }
-
-    /* Overlay for image preview */
     .overlay {
       display: none;
       position: fixed;
@@ -199,61 +179,61 @@ async function fetchDocuments() {
         : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
     };
 
-    // O'Level table
-    const oLevelTable = `
+    // 🧾 O'Level section (show details + uploaded result file)
+    const oLevelSection = `
       <section>
-        <h2 class="section-title">O'Level Result Input</h2>
-        ${doc.oLevelInputs?.length ? `
-          <table>
-            <thead>
-              <tr>
-                <th>Exam Year</th>
-                <th>Exam Type</th>
-                <th>Exam Number</th>
-                <th>Subject</th>
-                <th>Grade</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${doc.oLevelInputs.map(r => `
-                <tr>
-                  <td>${r.examYear}</td>
-                  <td>${r.examType}</td>
-                  <td>${r.examNumber}</td>
-                  <td>${r.subject}</td>
-                  <td>${r.grade}</td>
-                </tr>`).join('')}
-            </tbody>
-          </table>
-        ` : `<div class="no-file">No O'Level record found</div>`}
-
-        <!-- O'Level thumbnails -->
-        ${files.oLevelUploads?.length ? `
-          <div class="thumbnail-grid" style="margin-top: 15px;">
-            ${files.oLevelUploads.map((url, i) => `
-              <div class="thumbnail">
-                <img src="${url}" onclick="openOverlay('${url}')">
-                <p>O'Level Result ${i + 1}</p>
+        <h2 class="section-title">O'Level Result Details</h2>
+        ${
+          doc.oLevelData?.length
+            ? doc.oLevelData
+                .map(
+                  (r, i) => `
+              <div>
+                <label>Exam Type</label>
+                <input class="readonly-input" value="${r.examType || 'N/A'}" readonly>
+                <label>Serial Number</label>
+                <input class="readonly-input" value="${r.serialNumber || 'N/A'}" readonly>
+                <label>Pin / Token</label>
+                <input class="readonly-input" value="${r.pin || 'N/A'}" readonly>
               </div>
-            `).join('')}
-          </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}
+              ${i < doc.oLevelData.length - 1 ? '<hr style="margin:15px 0;">' : ''}
+            `
+                )
+                .join("")
+            : `<div class="no-file">No O'Level record found</div>`
+        }
+
+        <!-- Uploaded O'Level result image(s) -->
+        ${files.oLevelUploads?.length
+          ? `<div class="thumbnail-grid" style="margin-top: 15px;">
+              ${files.oLevelUploads
+                .map(
+                  (url, i) => `
+                <div class="thumbnail">
+                  <img src="${url}" onclick="openOverlay('${url}')">
+                  <p>O'Level Result ${i + 1}</p>
+                </div>`
+                )
+                .join("")}
+            </div>`
+          : `<div class="no-file">No O'Level result images uploaded</div>`}
       </section>
     `;
 
-    // JAMB info section
+    // 🎓 JAMB info section
     const jambInfo = `
       <section>
         <h2 class="section-title">JAMB Details</h2>
         <label>JAMB Reg No</label>
-        <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
+        <input class="readonly-input" value="${doc.jambInfo?.jambRegNo || 'N/A'}" readonly>
         <label>JAMB Score</label>
-        <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
+        <input class="readonly-input" value="${doc.jambInfo?.jambScore || 'N/A'}" readonly>
       </section>
     `;
 
-    // Other sections
+    // 🗂️ Other document sections
     const sections = `
-      ${oLevelTable}
+      ${oLevelSection}
       ${jambInfo}
 
       <section>
