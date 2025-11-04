@@ -415,7 +415,11 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
     if (existingDoc) {
       // ✅ Update existing document
       if (parsedOlevel.length > 0) existingDoc.oLevelData = parsedOlevel;
-      existingDoc.jambInfo = { jambRegNo, jambScore };
+      // Merge JAMB info safely (preserve if not provided)
+if (jambRegNo || jambScore) {
+  existingDoc.jambInfo.jambRegNo = jambRegNo || existingDoc.jambInfo.jambRegNo;
+  existingDoc.jambInfo.jambScore = jambScore || existingDoc.jambInfo.jambScore;
+}
       if (matricNumber) existingDoc.matricNumber = matricNumber;
 
       // Merge uploaded files
