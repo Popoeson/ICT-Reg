@@ -198,77 +198,110 @@
   </footer>
 
   <script>
-    const backendBaseUrl = "https://ict-reg.onrender.com";
-    const adminName = localStorage.getItem("adminName");
-    const adminRole = localStorage.getItem("adminRole");
-    const adminPassport = localStorage.getItem("adminPassport");
-    const adminDepartment = localStorage.getItem("adminDepartment");
+  const backendBaseUrl = "https://ict-reg.onrender.com";
+  const adminName = localStorage.getItem("adminName");
+  const adminRole = localStorage.getItem("adminRole");
+  const adminPassport = localStorage.getItem("adminPassport");
+  const adminDepartment = localStorage.getItem("adminDepartment");
 
-    // Redirect if not logged in
-    if (!adminName || !adminRole) {
-      window.location.href = "login.html";
+  // Redirect if not logged in
+  if (!adminName || !adminRole) {
+    window.location.href = "login.html";
+  } else {
+    document.querySelector(".welcome").textContent = `Welcome, ${adminName}`;
+
+    // Display role with department (for ordinary admins)
+    if (adminRole.toLowerCase() === "admin" && adminDepartment) {
+      document.getElementById("adminRole").textContent = `${adminRole} – ${adminDepartment}`;
     } else {
-      document.querySelector(".welcome").textContent = `Welcome, ${adminName}`;
-
-      // Display role with department (for ordinary admins)
-      if (adminRole.toLowerCase() === "admin" && adminDepartment) {
-        document.getElementById("adminRole").textContent = `${adminRole} – ${adminDepartment}`;
-      } else {
-        document.getElementById("adminRole").textContent = adminRole;
-      }
-
-      document.getElementById("adminPassport").src = adminPassport || "https://via.placeholder.com/40";
+      document.getElementById("adminRole").textContent = adminRole;
     }
 
-    // Logout logic
-    document.querySelector(".logout-btn").addEventListener("click", () => {
-      localStorage.removeItem("adminName");
-      localStorage.removeItem("adminRole");
-      localStorage.removeItem("adminPassport");
-      localStorage.removeItem("adminDepartment");
-      window.location.href = "login.html";
-    });
+    document.getElementById("adminPassport").src =
+      adminPassport || "https://via.placeholder.com/40";
+  }
 
-    // Navigation
-    document.getElementById("total-students-card").addEventListener("click", () => {
-      window.location.href = "students-list.html";
-    });
-    document.getElementById("total-courses-card").addEventListener("click", () => {
-      window.location.href = "courses.html";
-    });
-    document.getElementById("total-results-card").addEventListener("click", () => {
-      window.location.href = "result-index.html";
-    });
+  // Logout logic
+  document.querySelector(".logout-btn").addEventListener("click", () => {
+    localStorage.removeItem("adminName");
+    localStorage.removeItem("adminRole");
+    localStorage.removeItem("adminPassport");
+    localStorage.removeItem("adminDepartment");
+    window.location.href = "login.html";
+  });
 
-    // Fetch statistics
-    async function fetchStats() {
-      try {
-        const studentsRes = await fetch(`${backendBaseUrl}/api/students?limit=10000`);
-        const studentsData = await studentsRes.json();
-        const totalStudents = studentsData.success ? studentsData.total : 0;
+  // Navigation
+  document.getElementById("total-students-card").addEventListener("click", () => {
+    window.location.href = "students-list.html";
+  });
+  document.getElementById("total-courses-card").addEventListener("click", () => {
+    window.location.href = "courses.html";
+  });
+  document.getElementById("total-results-card").addEventListener("click", () => {
+    window.location.href = "result-index.html";
+  });
 
-        const coursesRes = await fetch(`${backendBaseUrl}/api/courses`);
-        const coursesData = await coursesRes.json();
-        const totalCourses = coursesData.success ? coursesData.data.length : 0;
+  // Fetch statistics (with department filtering)
+  async function fetchStats() {
+    try {
+      const isSuperAdmin = adminRole.toLowerCase().includes("super");
 
-        let totalResults = 0;
-        try {
-          const resultsRes = await fetch(`${backendBaseUrl}/api/results`);
-          const resultsData = await resultsRes.json();
-          totalResults = resultsData.success ? resultsData.data.length : 0;
-        } catch {
-          totalResults = 0;
-        }
+      // Fetch students
+      const studentsRes = await fetch(`${backendBaseUrl}/api/students?limit=10000`);
+      const studentsData = await studentsRes.json();
+      let studentsList = studentsData.success ? studentsData.data || [] : [];
 
-        document.getElementById("students-count").textContent = totalStudents;
-        document.getElementById("courses-count").textContent = totalCourses;
-        document.getElementById("results-count").textContent = totalResults;
-      } catch (err) {
-        console.error("Error fetching stats:", err);
+      // Filter by department if not superadmin
+      if (!isSuperAdmin && adminDepartment) {
+        studentsList = studentsList.filter(
+          (s) =>
+            s.department?.toLowerCase().trim() ===
+            adminDepartment.toLowerCase().trim()
+        );
       }
-    }
 
-    fetchStats();
-  </script>
+      const totalStudents = studentsList.length;
+
+      // Fetch courses
+      const coursesRes = await fetch(`${backendBaseUrl}/api/courses`);
+      const coursesData = await coursesRes.json();
+      let coursesList = coursesData.success ? coursesData.data || [] : [];
+
+      if (!isSuperAdmin && adminDepartment) {
+        coursesList = coursesList.filter(
+          (c) =>
+            c.department?.toLowerCase().trim() ===
+            adminDepartment.toLowerCase().trim()
+        );
+      }
+
+      const totalCourses = coursesList.length;
+
+      // Fetch results
+      const resultsRes = await fetch(`${backendBaseUrl}/api/results`);
+      const resultsData = await resultsRes.json();
+      let resultsList = resultsData.success ? resultsData.data || [] : [];
+
+      if (!isSuperAdmin && adminDepartment) {
+        resultsList = resultsList.filter(
+          (r) =>
+            r.department?.toLowerCase().trim() ===
+            adminDepartment.toLowerCase().trim()
+        );
+      }
+
+      const totalResults = resultsList.length;
+
+      // Update UI
+      document.getElementById("students-count").textContent = totalStudents;
+      document.getElementById("courses-count").textContent = totalCourses;
+      document.getElementById("results-count").textContent = totalResults;
+    } catch (err) {
+      console.error("Error fetching stats:", err);
+    }
+  }
+
+  fetchStats();
+</script>
 </body>
 </html>
