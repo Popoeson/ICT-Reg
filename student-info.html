@@ -1,4 +1,5 @@
-<!DOCTYPE html>  <html lang="en">  
+<!DOCTYPE html>  
+<html lang="en">  
 <head>  
   <meta charset="UTF-8" />  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />  
@@ -442,49 +443,49 @@ if (!studentId) {
           </section>
         `;
 
-        // 🧾 O'Level result info — match "View Uploads" structure
+        // 🧾 O'Level result info — corrected to match working structure
         const oLevelContent = `
-          ${doc.oLevelInputs?.length
-            ? doc.oLevelInputs.map(
-                (r, i) => `
+          ${doc.oLevelData?.length
+            ? doc.oLevelData
+                .map(
+                  (r, i) => `
                   <div class="readonly-block">
                     <label>Exam Type</label>
                     <input class="readonly-input" value="${r.examType || 'N/A'}" readonly>
-                    <label>Exam Year</label>
-                    <input class="readonly-input" value="${r.examYear || 'N/A'}" readonly>
-                    <label>Exam Number</label>
-                    <input class="readonly-input" value="${r.examNumber || 'N/A'}" readonly>
-                    <label>Subject</label>
-                    <input class="readonly-input" value="${r.subject || 'N/A'}" readonly>
-                    <label>Grade</label>
-                    <input class="readonly-input" value="${r.grade || 'N/A'}" readonly>
+                    <label>Serial Number</label>
+                    <input class="readonly-input" value="${r.serialNumber || 'N/A'}" readonly>
+                    <label>Pin / Token</label>
+                    <input class="readonly-input" value="${r.pin || 'N/A'}" readonly>
                   </div>
-                  ${i < doc.oLevelInputs.length - 1 ? '<hr style="margin:15px 0;">' : ''}
+                  ${i < doc.oLevelData.length - 1 ? '<hr style="margin:15px 0;">' : ''}
                 `
-              ).join("")
+                )
+                .join("")
             : `<div class="no-file">No O'Level record found</div>`
           }
 
           ${files.oLevelUploads?.length
             ? `<div class="thumbnail-grid" style="margin-top: 15px;">
-                ${files.oLevelUploads.map(
-                  (url, i) => `
-                  <div class="thumbnail">
-                    <img src="${url}" onclick="openOverlay('${url}')">
-                    <p>O'Level Result ${i + 1}</p>
-                  </div>`
-                ).join("")}
+                ${files.oLevelUploads
+                  .map(
+                    (url, i) => `
+                    <div class="thumbnail">
+                      <img src="${url}" onclick="openOverlay('${url}')">
+                      <p>O'Level Result ${i + 1}</p>
+                    </div>`
+                  )
+                  .join("")}
               </div>`
-            : `<div class="no-file">No O'Level result image uploaded</div>`
+            : `<div class="no-file">No O'Level result images uploaded</div>`
           }
         `;
 
-        // 🎓 JAMB info
+        // 🎓 JAMB info — corrected structure
         const jambContent = `
           <label>JAMB Reg No</label>
-          <input class="readonly-input" value="${doc.jambInput?.jambRegNo || 'N/A'}" readonly>
+          <input class="readonly-input" value="${doc.jambInfo?.jambRegNo || 'N/A'}" readonly>
           <label>JAMB Score</label>
-          <input class="readonly-input" value="${doc.jambInput?.jambScore || 'N/A'}" readonly>
+          <input class="readonly-input" value="${doc.jambInfo?.jambScore || 'N/A'}" readonly>
         `;
 
         // 📜 Other document groups
@@ -501,10 +502,10 @@ if (!studentId) {
         </div>`;
 
         const receipts = `<div class="thumbnail-grid">
-          ${createThumbnail(files.nd1First,"ND1 - 1st Semester Course Form")}
-          ${createThumbnail(files.nd1Second,"ND1 - 2nd Semester Course Form")}
-          ${createThumbnail(files.nd2First,"ND2 - 1st Semester Course Form")}
-          ${createThumbnail(files.nd2Second,"ND2 - 2nd Semester Course Form")}
+          ${createThumbnail(files.nd1First,"ND1 - First Semester Course Form")}
+          ${createThumbnail(files.nd1Second,"ND1 - Second Semester Course Form")}
+          ${createThumbnail(files.nd2First,"ND2 - First Semester Course Form")}
+          ${createThumbnail(files.nd2Second,"ND2 - Second Semester Course Form")}
           ${createThumbnail(files.ict1,"ICT Receipt 1")}
           ${createThumbnail(files.ict2,"ICT Receipt 2")}
           ${createThumbnail(files.ict3,"ICT Receipt 3")}
@@ -596,5 +597,5 @@ document.querySelectorAll(".card-header").forEach(header => {
   });
 });
 </script>
- </body>  
-</html>  
+</body>
+</html>
