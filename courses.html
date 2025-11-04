@@ -198,152 +198,171 @@
   </div>
 
   <script>
-    const backendURL = "https://ict-reg.onrender.com";
-    let allCourses = [];
+const backendURL = "https://ict-reg.onrender.com";
+let allCourses = [];
 
-    const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
-    const userRole = (loggedInUser.role || "").toLowerCase();
-    const userDept = (loggedInUser.department || "").toLowerCase().trim();
-    const userLevel = (loggedInUser.level || "").toUpperCase().replace(/\s+/g, '');
+// 🔹 Detect user type and role from localStorage
+let userRole = "";
+let userDept = "";
+let userLevel = "";
 
-    // Show manage button for super admin only
-    if (userRole === "superadmin") {
-      document.getElementById("manageBtn").style.display = "inline-block";
-    }
+// For Students
+if (localStorage.getItem("studentData")) {
+  const student = JSON.parse(localStorage.getItem("studentData"));
+  userRole = "student";
+  userDept = (student.department || "").toLowerCase().trim();
+  userLevel = (student.level || "").toUpperCase().replace(/\s+/g, '');
+}
+// For Admins or Superadmins
+else if (localStorage.getItem("adminRole")) {
+  userRole = (localStorage.getItem("adminRole") || "").toLowerCase();
+  userDept = (localStorage.getItem("adminDepartment") || "").toLowerCase().trim();
+}
+// Default (if nothing found)
+else {
+  console.warn("No user info found in localStorage!");
+  userRole = "guest";
+}
 
-    // Hide Department and Level filters for students
-    if (userRole === "student") {
-      document.getElementById("filterDepartment").style.display = "none";
-      document.getElementById("filterLevel").style.display = "none";
-    }
+// Show Manage Courses button for superadmin only
+if (userRole === "superadmin") {
+  document.getElementById("manageBtn").style.display = "inline-block";
+}
 
-    async function fetchCourses() {
-      try {
-        const res = await fetch(`${backendURL}/api/courses`);
-        const data = await res.json();
-        if (!data.success) throw new Error(data.message || "Failed to fetch courses");
+// Hide department & level filters for students
+if (userRole === "student") {
+  document.getElementById("filterDepartment").style.display = "none";
+  document.getElementById("filterLevel").style.display = "none";
+}
 
-        allCourses = [];
-        (data.data || []).forEach(doc => {
-          const { level, department, semester, _id: docId, courses } = doc;
-          (courses || []).forEach(course => {
-            allCourses.push({
-              level: level.toUpperCase().replace(/\s+/g, ''),
-              department: department.toLowerCase().trim(),
-              semester,
-              docId,
-              courseId: course._id,
-              code: course.code,
-              title: course.title,
-              unit: course.unit,
-              lecturer: course.lecturer
-            });
-          });
+async function fetchCourses() {
+  try {
+    const res = await fetch(`${backendURL}/api/courses`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || "Failed to fetch courses");
+
+    allCourses = [];
+    (data.data || []).forEach(doc => {
+      const { level, department, semester, _id: docId, courses } = doc;
+      (courses || []).forEach(course => {
+        allCourses.push({
+          level: level.toUpperCase().replace(/\s+/g, ''),
+          department: department.toLowerCase().trim(),
+          semester,
+          docId,
+          courseId: course._id,
+          code: course.code,
+          title: course.title,
+          unit: course.unit,
+          lecturer: course.lecturer
         });
-
-        renderFilteredDashboard();
-      } catch (err) {
-        console.error(err);
-        document.getElementById("dashboardContainer").innerHTML = `<p style="color:red;">${err.message}</p>`;
-      }
-    }
-
-    function renderFilteredDashboard() {
-      const semesterFilter = document.getElementById("filterSemester").value;
-      const departmentFilter = (document.getElementById("filterDepartment").value || "").toLowerCase().trim();
-      const levelFilter = (document.getElementById("filterLevel").value || "").toUpperCase().replace(/\s+/g, '');
-
-      let filtered = allCourses.filter(c => {
-        return (!semesterFilter || c.semester == semesterFilter) &&
-               (!departmentFilter || c.department === departmentFilter) &&
-               (!levelFilter || c.level === levelFilter);
       });
+    });
 
-      // Role-based filtering
-      if (userRole === "admin") {
-        filtered = filtered.filter(c => c.department === userDept);
-      } else if (userRole === "student") {
-        filtered = filtered.filter(c => c.department === userDept && c.level === userLevel);
-      }
+    renderFilteredDashboard();
+  } catch (err) {
+    console.error(err);
+    document.getElementById("dashboardContainer").innerHTML =
+      `<p style="color:red;">${err.message}</p>`;
+  }
+}
 
-      renderDashboard(filtered);
-    }
+function renderFilteredDashboard() {
+  const semesterFilter = document.getElementById("filterSemester").value;
+  const departmentFilter = (document.getElementById("filterDepartment").value || "").toLowerCase().trim();
+  const levelFilter = (document.getElementById("filterLevel").value || "").toUpperCase().replace(/\s+/g, '');
 
-    function renderDashboard(courses) {
-      const container = document.getElementById("dashboardContainer");
-      container.innerHTML = "";
+  let filtered = allCourses.filter(c => {
+    return (!semesterFilter || c.semester == semesterFilter) &&
+           (!departmentFilter || c.department === departmentFilter) &&
+           (!levelFilter || c.level === levelFilter);
+  });
 
-      const grouped = {};
-      courses.forEach(c => {
-        const key = `${c.semester} - ${c.department.toUpperCase()} - ${c.level}`;
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(c);
-      });
+  // 🔹 Role-based filtering
+  if (userRole === "admin") {
+    filtered = filtered.filter(c => c.department === userDept);
+  } else if (userRole === "student") {
+    filtered = filtered.filter(c => c.department === userDept && c.level === userLevel);
+  }
 
-      Object.keys(grouped).forEach(group => {
-        const section = document.createElement("div");
-        section.className = "section";
+  renderDashboard(filtered);
+}
 
-        const title = document.createElement("div");
-        title.className = "section-title";
-        title.innerText = group;
-        section.appendChild(title);
+function renderDashboard(courses) {
+  const container = document.getElementById("dashboardContainer");
+  container.innerHTML = "";
 
-        const table = document.createElement("table");
-        table.innerHTML = `
-          <thead>
+  const grouped = {};
+  courses.forEach(c => {
+    const key = `${c.semester} - ${c.department.toUpperCase()} - ${c.level}`;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(c);
+  });
+
+  Object.keys(grouped).forEach(group => {
+    const section = document.createElement("div");
+    section.className = "section";
+
+    const title = document.createElement("div");
+    title.className = "section-title";
+    title.innerText = group;
+    section.appendChild(title);
+
+    const table = document.createElement("table");
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Course Code</th>
+          <th>Title</th>
+          <th>Unit</th>
+          <th>Lecturer</th>
+          ${userRole === "superadmin" ? "<th>Actions</th>" : ""}
+        </tr>
+      </thead>
+      <tbody>
+        ${grouped[group]
+          .map(
+            (c, i) => `
             <tr>
-              <th>#</th>
-              <th>Course Code</th>
-              <th>Title</th>
-              <th>Unit</th>
-              <th>Lecturer</th>
-              ${userRole === "superadmin" ? "<th>Actions</th>" : ""}
-            </tr>
-          </thead>
-          <tbody>
-            ${grouped[group]
-              .map(
-                (c, i) => `
-                <tr>
-                  <td data-label="#">${i + 1}</td>
-                  <td data-label="Code">${c.code}</td>
-                  <td data-label="Title">${c.title}</td>
-                  <td data-label="Unit">${c.unit}</td>
-                  <td data-label="Lecturer">${c.lecturer}</td>
-                  ${
-                    userRole === "superadmin"
-                      ? `<td data-label="Actions"><button class="delete-btn" onclick="deleteCourse('${c.docId}','${c.courseId}')">Delete</button></td>`
-                      : ""
-                  }
-                </tr>`
-              )
-              .join("")}
-          </tbody>
-        `;
-        section.appendChild(table);
-        container.appendChild(section);
-      });
+              <td data-label="#">${i + 1}</td>
+              <td data-label="Code">${c.code}</td>
+              <td data-label="Title">${c.title}</td>
+              <td data-label="Unit">${c.unit}</td>
+              <td data-label="Lecturer">${c.lecturer}</td>
+              ${
+                userRole === "superadmin"
+                  ? `<td data-label="Actions"><button class="delete-btn" onclick="deleteCourse('${c.docId}','${c.courseId}')">Delete</button></td>`
+                  : ""
+              }
+            </tr>`
+          )
+          .join("")}
+      </tbody>
+    `;
+    section.appendChild(table);
+    container.appendChild(section);
+  });
 
-      if (courses.length === 0) {
-        container.innerHTML = `<p style="text-align:center;color:#555;">No courses found for your filters or role.</p>`;
-      }
-    }
+  if (courses.length === 0) {
+    container.innerHTML = `<p style="text-align:center;color:#555;">No courses found for your filters or role.</p>`;
+  }
+}
 
-    async function deleteCourse(docId, courseId) {
-      if (!confirm("Are you sure you want to delete this course?")) return;
-      try {
-        const res = await fetch(`${backendURL}/api/courses/${docId}/${courseId}`, { method: "DELETE" });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.message);
-        alert("Course deleted successfully!");
-        fetchCourses();
-      } catch (err) {
-        alert("Error deleting course: " + err.message);
-      }
-    }
-
+async function deleteCourse(docId, courseId) {
+  if (!confirm("Are you sure you want to delete this course?")) return;
+  try {
+    const res = await fetch(`${backendURL}/api/courses/${docId}/${courseId}`, { method: "DELETE" });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+    alert("Course deleted successfully!");
     fetchCourses();
-  </script>
+  } catch (err) {
+    alert("Error deleting course: " + err.message);
+  }
+}
+
+fetchCourses();
+</script>
 </body>
 </html>
