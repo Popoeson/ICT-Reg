@@ -169,7 +169,8 @@ form.addEventListener("submit", async (e) => {
 ) {
   localStorage.setItem("adminName", user.fullname);
   localStorage.setItem("adminRole", role);
-  localStorage.setItem("adminId", user._id);
+  localStorage.setItem("adminDepartment", data.department ||"");
+localStorage.setItem("adminId", user._id);
 localStorage.setItem("adminPassport", user.passport);
   window.location.href = "admin-dashboard.html";
 } else {
