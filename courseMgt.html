@@ -55,7 +55,7 @@
       transition: all 0.3s ease;
     }
 
-    .controls select:focus, .controls input:focus {
+    .controls select:focus {
       border-color: #007bff;
       outline: none;
       box-shadow: 0 0 8px rgba(0,123,255,0.3);
@@ -157,13 +157,13 @@
       .controls select, .controls button { width: 100%; }
       .submit-btn { width: 100%; margin-top: 20px; }
     }
-
   </style>
 </head>
 <body>
   <header>School Course Management</header>
   <div class="container">
     <div class="page-title" id="pageTitle">Courses for ND1 - Computer Science - Semester 1</div>
+
     <div class="controls">
       <select id="level" onchange="updateTitle()">
         <option value="ND1">ND 1</option>
@@ -180,7 +180,7 @@
         <option value="OTM">OTM</option>
         <option value="Science Lab Tech">Science Lab Tech</option>
       </select>
-      
+
       <select id="semester" onchange="updateTitle()">
         <option value="1">Semester 1</option>
         <option value="2">Semester 2</option>
@@ -209,9 +209,26 @@
   </div>
 
   <script>
+    const backendURL = "https://ict-reg.onrender.com";
+
+    // Detect logged-in user role and department
+    const role = (localStorage.getItem("adminRole") || "").trim().toLowerCase();
+    const adminDept = (localStorage.getItem("adminDepartment") || "").trim();
+
+    // Hide department dropdown for Admins
+    window.addEventListener("DOMContentLoaded", () => {
+      if (role === "admin") {
+        document.getElementById("department").style.display = "none";
+        // auto use admin's department in title
+        updateTitle();
+      }
+    });
+
     function updateTitle() {
       const level = document.getElementById('level').value;
-      const department = document.getElementById('department').value;
+      const department = role === "admin"
+        ? adminDept
+        : document.getElementById('department').value;
       const semester = document.getElementById('semester').value;
       document.getElementById('pageTitle').innerText = `Courses for ${level} - ${department} - Semester ${semester}`;
     }
@@ -241,12 +258,6 @@
       delBtn.innerText = 'Delete';
       delBtn.onclick = function(){ deleteRow(this); };
       actionCell.appendChild(delBtn);
-
-      // Optional styling for new rows
-      row.style.backgroundColor = '#fafafa';
-      row.style.borderRadius = '8px';
-      row.style.boxShadow = '0 2px 6px rgba(0,0,0,0.05)';
-      row.style.marginBottom = '8px';
     }
 
     function deleteRow(button) {
@@ -261,8 +272,10 @@
     function submitCourses() {
       const table = document.getElementById('coursesTable').getElementsByTagName('tbody')[0];
       const level = document.getElementById('level').value;
-      const department = document.getElementById('department').value;
       const semester = document.getElementById('semester').value;
+      const department = role === "admin"
+        ? adminDept
+        : document.getElementById('department').value;
 
       const courses = [];
       for (let row of table.rows) {
@@ -280,7 +293,7 @@
         return;
       }
 
-      fetch('https://ict-reg.onrender.com/api/courses', {
+      fetch(`${backendURL}/api/courses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ level, department, semester, courses })
