@@ -103,30 +103,31 @@ const studentProfileSchema = new mongoose.Schema({
 const StudentProfile = mongoose.model("StudentProfile", studentProfileSchema);
 
 // Documents upload schema
-
 const DocumentSchema = new mongoose.Schema({
   studentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Student",
     required: true,
   },
-  oLevelInputs: [
+
+  // Updated O'Level structure
+  oLevelData: [
     {
-      examYear: String,
-      examType: String,
-      examNumber: String,
-      subject: String,
-      grade: String,
+      examType: String,       // e.g. WAEC, NECO
+      serialNumber: String,   // exam serial number
+      pin: String,            // pin or token
     },
   ],
-  jambInput: {
-    regNo: String,
-    score: String,
+
+  // JAMB info
+  jambInfo: {
+    jambRegNo: String,
+    jambScore: String,
   },
 
-  // Store all uploaded file URLs
+  // Uploaded file URLs
   files: {
-    oLevelUploads: { type: [String], default: [] }, // <-- New field for O'Level result images
+    oLevelUploads: { type: [String], default: [] }, // optional if later you add WAEC upload
     jambUpload: String,
     jambAdmission: String,
     applicationForm: String,
@@ -156,6 +157,8 @@ const DocumentSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+const Document = mongoose.model("DocumentUpload", DocumentSchema);
 
 const Document = mongoose.model("DocumentUpload", DocumentSchema);
 
@@ -365,18 +368,17 @@ app.post("/api/universal-login", async (req, res) => {
   }
 });
 
-// 📦 Route: Upload all documents
+// 📦 Route: Upload all documents =====
 app.post("/upload-documents", upload.any(), async (req, res) => {
   try {
-    const { studentId, oLevelInputs, jambInput } = req.body;
+    const { studentId, olevelData, jambRegNo, jambScore } = req.body;
     if (!studentId)
       return res.status(400).json({ success: false, message: "Student ID required." });
 
-    // Parse the received JSON strings safely
-    const oLevel = JSON.parse(oLevelInputs || "[]");
-    const jamb = JSON.parse(jambInput || "{}");
+    // Parse O’Level JSON (sent from frontend)
+    const parsedOlevel = JSON.parse(olevelData || "[]");
 
-    // Expected static file fields
+    // Prepare expected static files
     const expectedFiles = [
       "jambUpload", "jambAdmission", "applicationForm", "acceptanceForm",
       "guarantorForm", "codeOfConduct", "nd1First", "nd1Second",
@@ -385,18 +387,11 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
       "stateOfOrigin", "nin", "deptFee"
     ];
 
-    // Collect dynamic O'Level upload fields
-    const oLevelFiles = req.files.filter(f => f.fieldname.startsWith("oLevelUpload"));
-
     const uploadedFiles = {};
     const fileMap = {};
+    for (const file of req.files) fileMap[file.fieldname] = file;
 
-    // Map all uploaded files
-    for (const file of req.files) {
-      fileMap[file.fieldname] = file;
-    }
-
-    // Upload all static files
+    // Upload all static files to Cloudinary
     for (const field of expectedFiles) {
       if (fileMap[field]) {
         const uploaded = await cloudinary.uploader.upload(fileMap[field].path, {
@@ -406,56 +401,40 @@ app.post("/upload-documents", upload.any(), async (req, res) => {
       }
     }
 
-    // Upload O'Level files
-    const oLevelUploads = [];
-    for (const file of oLevelFiles) {
-      const uploaded = await cloudinary.uploader.upload(file.path, {
-        folder: "student_documents/olevel",
-      });
-      oLevelUploads.push(uploaded.secure_url);
-    }
-
-    // 🧠 Check if the student already has a document record
+    // Find existing doc or create new
     let existingDoc = await Document.findOne({ studentId });
 
     if (existingDoc) {
-      // Merge O'Level table data
-      if (oLevel.length > 0) existingDoc.oLevelInputs = oLevel;
+      // Merge O’Level info
+      if (parsedOlevel.length > 0) existingDoc.oLevelData = parsedOlevel;
 
-      // Merge JAMB data
-      if (Object.keys(jamb).length > 0) existingDoc.jambInput = jamb;
+      // Merge JAMB info
+      existingDoc.jambInfo = { jambRegNo, jambScore };
 
-      // Merge static files
+      // Merge uploaded file URLs
       for (const field of expectedFiles) {
         if (uploadedFiles[field]) existingDoc.files[field] = uploadedFiles[field];
       }
 
-      // Merge O'Level file URLs
-      if (!existingDoc.files.oLevelUploads) existingDoc.files.oLevelUploads = [];
-      if (oLevelUploads.length > 0) existingDoc.files.oLevelUploads.push(...oLevelUploads);
-
       await existingDoc.save();
 
-      res.json({
+      return res.json({
         success: true,
         message: "Documents updated successfully",
         data: existingDoc,
       });
     } else {
-      // Create new record
-      const newFiles = { ...uploadedFiles };
-      if (oLevelUploads.length > 0) newFiles.oLevelUploads = oLevelUploads;
-
+      // Create new document record
       const newDoc = new Document({
         studentId,
-        oLevelInputs: oLevel,
-        jambInput: jamb,
-        files: newFiles,
+        oLevelData: parsedOlevel,
+        jambInfo: { jambRegNo, jambScore },
+        files: uploadedFiles,
       });
 
       await newDoc.save();
 
-      res.json({
+      return res.json({
         success: true,
         message: "Documents uploaded successfully",
         data: newDoc,
