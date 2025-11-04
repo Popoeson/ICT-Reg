@@ -873,7 +873,7 @@ app.post("/api/admins/register", upload.single("passport"), async (req, res) => 
   }
 });
 
-// ========= Upload Result Route (Updated with Course Lookup) =========
+// ========= Upload Result Route (Updated for Nested Courses) =========
 app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => {
   try {
     // ✅ CASE 1: BULK UPLOAD (Excel file)
@@ -909,16 +909,21 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
         const courseCode =
           (row["Course Code"] || row["CourseCode"] || row["courseCode"] || "").trim();
 
-        // ✅ Find course title from DB using courseCode
-        const foundCourse = await CourseCollection.findOne({
-          courseCode: { $regex: `^${courseCode}$`, $options: "i" },
+        // ✅ Find course title from nested structure
+        const courseDoc = await CourseCollection.findOne({
+          "courses.code": { $regex: `^${courseCode}$`, $options: "i" },
         });
 
-        if (!foundCourse) {
+        if (!courseDoc) {
           return res
             .status(400)
             .json({ message: `❌ Invalid course code found: ${courseCode}` });
         }
+
+        // Extract course title from nested array
+        const matchedCourse = courseDoc.courses.find(
+          (c) => c.code.toLowerCase() === courseCode.toLowerCase()
+        );
 
         formattedResults.push({
           fullname: row["Name"] || row["Fullname"] || row["fullname"] || "",
@@ -927,7 +932,7 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
           level,
           semester: row["Semester"] || row["semester"] || "",
           courseCode,
-          courseTitle: foundCourse.courseTitle,
+          courseTitle: matchedCourse ? matchedCourse.title : "",
           score,
           grade,
           uploadedAt: new Date(),
@@ -959,14 +964,19 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
 
     const numericScore = Number(score);
 
-    // ✅ Find course title from DB
-    const foundCourse = await CourseCollection.findOne({
-      courseCode: { $regex: `^${courseCode}$`, $options: "i" },
+    // ✅ Find course inside nested array
+    const courseDoc = await CourseCollection.findOne({
+      "courses.code": { $regex: `^${courseCode}$`, $options: "i" },
     });
 
-    if (!foundCourse) {
+    if (!courseDoc) {
       return res.status(400).json({ message: `❌ Invalid course code: ${courseCode}` });
     }
+
+    // Extract course title
+    const matchedCourse = courseDoc.courses.find(
+      (c) => c.code.toLowerCase() === courseCode.toLowerCase()
+    );
 
     // Auto-determine grade if missing
     let finalGrade = grade;
@@ -985,7 +995,7 @@ app.post("/api/upload-results", uploadExcel.single("file"), async (req, res) => 
       department,
       level,
       courseCode,
-      courseTitle: foundCourse.courseTitle,
+      courseTitle: matchedCourse ? matchedCourse.title : "",
       semester,
       score: numericScore,
       grade: finalGrade,
