@@ -180,13 +180,16 @@ async function fetchDocuments() {
     };
 
     // 🎓 Matric number display
+    
     const matricNumberSection = `
-      <div style="text-align:center; margin-bottom:15px;">
-        <h2 style="font-size:1.2em; color:#333;">Matric Number:</h2>
-        <p style="font-weight:bold; font-size:1.1em;">${doc.studentId?.matricNumber || "N/A"}</p>
-        <hr style="margin-top:10px; border:1px solid #ccc;">
-      </div>
-    `;
+  <div style="text-align:center; margin-bottom:15px;">
+    <h2 style="font-size:1.2em; color:#333;">Matric Number:</h2>
+    <p style="font-weight:bold; font-size:1.1em;">
+      ${doc.matricNumber || doc.studentId?.matricNumber || "N/A"}
+    </p>
+    <hr style="margin-top:10px; border:1px solid #ccc;">
+  </div>
+`;
 
     // 🧾 O'Level section (show details + uploaded result file)
     const oLevelSection = `
