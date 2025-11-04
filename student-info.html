@@ -411,26 +411,39 @@ if (!studentId) {
           </section>  
         `;  
   
-        const oLevelContent = `  
-          ${doc.oLevelInputs?.length ? `  
-            <table>  
-              <thead>  
-                <tr>  
-                  <th>Exam Year</th><th>Exam Type</th><th>Exam Number</th><th>Subject</th><th>Grade</th>  
-                </tr>  
-              </thead>  
-              <tbody>  
-                ${doc.oLevelInputs.map(r => `  
-                  <tr>  
-                    <td>${r.examYear || ''}</td>  
-                    <td>${r.examType || ''}</td>  
-                    <td>${r.examNumber || ''}</td>  
-                    <td>${r.subject || ''}</td>  
-                    <td>${r.grade || ''}</td>  
-                  </tr>`).join('')}  
-              </tbody>  
-            </table>  
-          ` : `<div class="no-file">No O'Level record found</div>`}  
+        const oLevelContent = `
+  ${doc.oLevelInputs?.length ? `
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Exam Year</th><th>Exam Type</th><th>Exam Number</th><th>Subject</th><th>Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${doc.oLevelInputs.map(r => `
+            <tr>
+              <td>${r.examYear || ''}</td>
+              <td>${r.examType || ''}</td>
+              <td>${r.examNumber || ''}</td>
+              <td>${r.subject || ''}</td>
+              <td>${r.grade || ''}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  ` : `<div class="no-file">No O'Level record found</div>`}
+
+  ${files.oLevelUploads?.length ? `
+    <div class="thumbnail-grid" style="margin-top: 15px;">
+      ${files.oLevelUploads.map((url,i) =>
+        `<div class="thumbnail">
+          <img src="${url}" onclick="openOverlay('${url}')">
+          <p>O'Level Result ${i+1}</p>
+        </div>`
+      ).join('')}
+    </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}
+`;
   
           ${files.oLevelUploads?.length ? `  
             <div class="thumbnail-grid" style="margin-top: 15px;">  
