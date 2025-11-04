@@ -533,32 +533,65 @@ if (!studentId) {
         `;
       }
 
-      // ====== Results Section ======
-      const resultsBody = document.getElementById("resultsBody");
-      resultsBody.innerHTML = "Loading results...";
-
-      async function loadResults() {
-        const url = `${backendURL}/api/results?matricNo=${encodeURIComponent(s.matricNo)}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const results = data.results || [];
-
-        if (!results.length) {
-          resultsBody.innerHTML = "<p style='text-align:center;color:#777;'>No results found.</p>";
-          return;
-        }
-
-        resultsBody.innerHTML = results.map(r => `
-          <div class="result-box">
-            <p><strong>Exam Type:</strong> ${r.examType || 'N/A'}</p>
-            <p><strong>Serial No:</strong> ${r.serialNo || 'N/A'}</p>
-            <p><strong>Token / Pin:</strong> ${r.pin || 'N/A'}</p>
-          </div>
-        `).join('');
-      }
-
-      await loadResults();
-
+      
+      // === Results Section ===  
+      const resultsBody = document.getElementById("resultsBody");  
+      resultsBody.innerHTML = "Loading results...";  
+  
+      async function loadResults(semesterFilter = "") {  
+        const url = `${backendURL}/api/results?matricNo=${encodeURIComponent(s.matricNo)}`;  
+        const res = await fetch(url);  
+        const data = await res.json();  
+        const results = data.results || [];  
+  
+        if (!results.length) {  
+          resultsBody.innerHTML = "<p style='text-align:center;color:#777;'>No results found.</p>";  
+          return;  
+        }  
+  
+        const semesters = [...new Set(results.map(r => r.semester))];  
+        const filtered = semesterFilter ? results.filter(r => r.semester === semesterFilter) : results;  
+  
+        resultsBody.innerHTML = `  
+          <label for="semesterFilter"><strong>Filter by Semester:</strong></label>  
+          <select id="semesterFilter" style="margin:8px 0;padding:6px;border-radius:6px;">  
+            <option value="">All Semesters</option>  
+            ${semesters.map(s => `<option value="${s}" ${s===semesterFilter?'selected':''}>${s}</option>`).join('')}  
+          </select>  
+          <div class="table-container">  
+            <table>  
+              <thead>  
+                <tr>  
+                  <th>Course Code</th>  
+                  <th>Course Title</th>  
+                  <th>Level</th>  
+                  <th>Semester</th>  
+                  <th>Score</th>  
+                  <th>Grade</th>  
+                </tr>  
+              </thead>  
+              <tbody>  
+                ${filtered.map(r => `  
+                  <tr>  
+                    <td>${r.courseCode || ''}</td>  
+                    <td>${r.courseTitle || ''}</td>  
+                    <td>${r.level || ''}</td>  
+                    <td>${r.semester || ''}</td>  
+                    <td>${r.score ?? ''}</td>  
+                    <td>${r.grade ?? ''}</td>  
+                  </tr>`).join('')}  
+              </tbody>  
+            </table>  
+          </div>  
+        `;  
+  
+        document.getElementById("semesterFilter").addEventListener("change", e => {  
+          loadResults(e.target.value);  
+        });  
+      }  
+  
+      await loadResults();  
+  
       // === Section toggles ===
       document.querySelectorAll(".section-header").forEach(header => {
         const targetId = header.getAttribute("data-target");
