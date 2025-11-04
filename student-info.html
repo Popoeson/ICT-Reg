@@ -415,33 +415,7 @@ if (!studentId) {
 
        
       // === Documents Section ===  
-      const docBody = document.getElementById("documentsBody");  
-      docBody.innerHTML = "Loading documents...";  
-  
-      const docRes = await fetch(`${backendURL}/api/documents/${studentId}`);  
-      const docData = await docRes.json();  
-  
-      if (!docData.success || !docData.data) {  
-        docBody.innerHTML = "<p style='text-align:center;'>No documents found.</p>";  
-      } else {  
-        const doc = docData.data;  
-        const files = doc.files || {};  
-  
-        const createThumbnail = (url, label) => url && url !== "N/A"  
-          ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`  
-          : `<div class="no-file">${label}<br>File not yet uploaded</div>`;  
-  
-        const createSection = (title, contentHtml, sectionId) => `  
-          <section class="document-section">  
-            <div class="section-header" data-target="${sectionId}">  
-              <h4>${title}</h4>  
-              <span class="toggle-icon">▾</span>  
-            </div>  
-            <div class="section-body" id="${sectionId}">${contentHtml}</div>  
-          </section>  
-        `;  
-  
-        const oLevelContent = `
+      const oLevelContent = `
   ${doc.oLevelInputs?.length ? `
     <div class="table-scroll">
       <table>
@@ -474,52 +448,60 @@ if (!studentId) {
       ).join('')}
     </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}
 `;
-  
-          ${files.oLevelUploads?.length ? `  
-            <div class="thumbnail-grid" style="margin-top: 15px;">  
-              ${files.oLevelUploads.map((url,i) => `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>O'Level Result ${i+1}</p></div>`).join('')}  
-            </div>` : `<div class="no-file">No O'Level result images uploaded</div>`}  
-        `;  
-  
-        const jambContent = `  
-          <label>JAMB Reg No</label>  
-          <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>  
-          <label>JAMB Score</label>  
-          <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>  
-        `;  
-        const jambDocsContent = `<div class="thumbnail-grid">${createThumbnail(files.jambUpload,"JAMB Result Upload")}${createThumbnail(files.jambAdmission,"JAMB Admission Letter")}</div>`;  
-        const schoolFormsContent = `<div class="thumbnail-grid">${createThumbnail(files.applicationForm,"Application Form")}${createThumbnail(files.acceptanceForm,"Acceptance Form")}${createThumbnail(files.guarantorForm,"Guarantor’s Form")}${createThumbnail(files.codeOfConduct,"Code of Conduct")}</div>`;  
-        const courseReceiptsContent = `<div class="thumbnail-grid">  
-          ${createThumbnail(files.nd1First,"ND1 - First Semester Course Form")}  
-          ${createThumbnail(files.nd1Second,"ND1 - Second Semester Course Form")}  
-          ${createThumbnail(files.nd2First,"ND2 - First Semester Course Form")}  
-          ${createThumbnail(files.nd2Second,"ND2 - Second Semester Course Form")}  
-          ${createThumbnail(files.ict1,"ICT Receipt 1")}  
-          ${createThumbnail(files.ict2,"ICT Receipt 2")}  
-          ${createThumbnail(files.ict3,"ICT Receipt 3")}  
-          ${createThumbnail(files.ict4,"ICT Receipt 4")}  
-          ${createThumbnail(files.fee1,"School Fees Receipt 1")}  
-          ${createThumbnail(files.fee2,"School Fees Receipt 2")}  
-          ${createThumbnail(files.fee3,"School Fees Receipt 3")}  
-          ${createThumbnail(files.fee4,"School Fees Receipt 4")}  
-        </div>`;  
-        const otherDocsContent = `<div class="thumbnail-grid">  
-          ${createThumbnail(files.acceptanceFee,"Acceptance Fee")}  
-          ${createThumbnail(files.stateOfOrigin,"State of Origin")}  
-          ${createThumbnail(files.nin,"NIN Upload")}  
-          ${createThumbnail(files.deptFee,"Departmental Fee Receipt")}  
-        </div>`;  
-  
-        docBody.innerHTML = `  
-          ${createSection("O'Level Result Input", oLevelContent,"sectionOLevel")}  
-          ${createSection("JAMB Details", jambContent,"sectionJambInfo")}  
-          ${createSection("JAMB Documents", jambDocsContent,"sectionJambDocs")}  
-          ${createSection("School Forms", schoolFormsContent,"sectionSchoolForms")}  
-          ${createSection("Course & Receipts", courseReceiptsContent,"sectionCourseReceipts")}  
-          ${createSection("Other Documents", otherDocsContent,"sectionOtherDocs")}  
-        `;  
-      }  
 
+const jambContent = `
+  <label>JAMB Reg No</label>
+  <input class="readonly-input" value="${doc.jambInput?.regNo || 'N/A'}" readonly>
+  <label>JAMB Score</label>
+  <input class="readonly-input" value="${doc.jambInput?.score || 'N/A'}" readonly>
+`;
+
+const jambDocsContent = `
+  <div class="thumbnail-grid">
+    ${createThumbnail(files.jambUpload,"JAMB Result Upload")}
+    ${createThumbnail(files.jambAdmission,"JAMB Admission Letter")}
+  </div>`;
+
+const schoolFormsContent = `
+  <div class="thumbnail-grid">
+    ${createThumbnail(files.applicationForm,"Application Form")}
+    ${createThumbnail(files.acceptanceForm,"Acceptance Form")}
+    ${createThumbnail(files.guarantorForm,"Guarantor’s Form")}
+    ${createThumbnail(files.codeOfConduct,"Code of Conduct")}
+  </div>`;
+
+const courseReceiptsContent = `
+  <div class="thumbnail-grid">
+    ${createThumbnail(files.nd1First,"ND1 - First Semester Course Form")}
+    ${createThumbnail(files.nd1Second,"ND1 - Second Semester Course Form")}
+    ${createThumbnail(files.nd2First,"ND2 - First Semester Course Form")}
+    ${createThumbnail(files.nd2Second,"ND2 - Second Semester Course Form")}
+    ${createThumbnail(files.ict1,"ICT Receipt 1")}
+    ${createThumbnail(files.ict2,"ICT Receipt 2")}
+    ${createThumbnail(files.ict3,"ICT Receipt 3")}
+    ${createThumbnail(files.ict4,"ICT Receipt 4")}
+    ${createThumbnail(files.fee1,"School Fees Receipt 1")}
+    ${createThumbnail(files.fee2,"School Fees Receipt 2")}
+    ${createThumbnail(files.fee3,"School Fees Receipt 3")}
+    ${createThumbnail(files.fee4,"School Fees Receipt 4")}
+  </div>`;
+
+const otherDocsContent = `
+  <div class="thumbnail-grid">
+    ${createThumbnail(files.acceptanceFee,"Acceptance Fee")}
+    ${createThumbnail(files.stateOfOrigin,"State of Origin")}
+    ${createThumbnail(files.nin,"NIN Upload")}
+    ${createThumbnail(files.deptFee,"Departmental Fee Receipt")}
+  </div>`;
+
+docBody.innerHTML = `
+  ${createSection("O'Level Result Input", oLevelContent,"sectionOLevel")}
+  ${createSection("JAMB Details", jambContent,"sectionJambInfo")}
+  ${createSection("JAMB Documents", jambDocsContent,"sectionJambDocs")}
+  ${createSection("School Forms", schoolFormsContent,"sectionSchoolForms")}
+  ${createSection("Course & Receipts", courseReceiptsContent,"sectionCourseReceipts")}
+  ${createSection("Other Documents", otherDocsContent,"sectionOtherDocs")}
+`;
       // === Results Section ===
       const resultsBody = document.getElementById("resultsBody");
       resultsBody.innerHTML = "Loading results...";
