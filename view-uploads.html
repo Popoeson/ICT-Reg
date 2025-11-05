@@ -158,10 +158,11 @@ const baseURL = "https://ict-reg.onrender.com";
 
 async function fetchDocuments() {
   try {
+    // Fetch student documents
     const res = await fetch(`${baseURL}/api/documents/${studentId}`);
     if (!res.ok) throw new Error(`Failed to fetch documents. Status: ${res.status}`);
-
     const data = await res.json();
+
     const main = document.getElementById("uploadsContainer");
     main.innerHTML = "";
 
@@ -176,21 +177,27 @@ async function fetchDocuments() {
 
     // 🔹 Fetch O'Level uploads from backend
     let uploadedOlevels = [];
-    try {
-      const oLevelRes = await fetch(`${baseURL}/api/olevel/${encodeURIComponent(matricNumber)}`);
-      if (!oLevelRes.ok) throw new Error(`Fetch failed with status ${oLevelRes.status}`);
-
-      const oLevelData = await oLevelRes.json();
-      if (oLevelData?.success && oLevelData?.record?.oLevelData) {
-        uploadedOlevels = oLevelData.record.oLevelData
-          .map(o => o.fileUrl)
-          .filter(url => url && url !== "N/A");
+    if (matricNumber) {
+      try {
+        const oLevelRes = await fetch(`${baseURL}/api/olevel/${encodeURIComponent(matricNumber)}`);
+        if (oLevelRes.ok) {
+          const oLevelData = await oLevelRes.json();
+          if (oLevelData?.success && oLevelData.record?.oLevelData?.length) {
+            uploadedOlevels = oLevelData.record.oLevelData
+              .map(o => o.fileUrl)
+              .filter(url => url && url !== "N/A");
+          }
+        } else if (oLevelRes.status === 404) {
+          console.warn("O'Level record not found for:", matricNumber);
+        } else {
+          console.warn("Failed fetching O'Level:", oLevelRes.status);
+        }
+      } catch (err) {
+        console.error("Error fetching O'Level uploads:", err);
       }
-    } catch (e) {
-      console.warn("No O'Level record found or fetch failed:", e.message);
     }
 
-    // 🔸 Helper: Create thumbnail block
+    // 🔸 Helper: Create thumbnail
     const createThumbnail = (url, label) => {
       return url && url !== "N/A"
         ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
@@ -260,7 +267,7 @@ async function fetchDocuments() {
       </section>
     `;
 
-    // 🗂️ All document sections
+    // 🗂️ All document sections (school forms, courses, other docs)
     const sections = `
       ${matricNumberSection}
       ${oLevelSection}
@@ -314,6 +321,7 @@ async function fetchDocuments() {
     `;
 
     main.innerHTML = sections;
+
   } catch (err) {
     console.error("Error loading documents:", err);
     document.getElementById("uploadsContainer").innerHTML =
