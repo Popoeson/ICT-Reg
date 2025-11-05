@@ -159,8 +159,9 @@ const baseURL = "https://ict-reg.onrender.com";
 async function fetchDocuments() {
   try {
     const res = await fetch(`${baseURL}/api/documents/${studentId}`);
-    const data = await res.json();
+    if (!res.ok) throw new Error(`Failed to fetch documents. Status: ${res.status}`);
 
+    const data = await res.json();
     const main = document.getElementById("uploadsContainer");
     main.innerHTML = "";
 
@@ -173,25 +174,27 @@ async function fetchDocuments() {
     const files = doc.files || {};
     const matricNumber = (doc.matricNumber || doc.studentId?.matricNumber || "").toUpperCase();
 
-    // 🔹 Fetch O'Level uploads (if any)
+    // 🔹 Fetch O'Level uploads from backend
     let uploadedOlevels = [];
     try {
-      const oLevelRes = await fetch(`${baseURL}/api/olevel/${matricNumber}`);
+      const oLevelRes = await fetch(`${baseURL}/api/olevel/${encodeURIComponent(matricNumber)}`);
+      if (!oLevelRes.ok) throw new Error(`Fetch failed with status ${oLevelRes.status}`);
+
       const oLevelData = await oLevelRes.json();
-      if (oLevelData && oLevelData.record && oLevelData.record.olevelData) {
-        uploadedOlevels = oLevelData.record.olevelData
+      if (oLevelData?.success && oLevelData?.record?.oLevelData) {
+        uploadedOlevels = oLevelData.record.oLevelData
           .map(o => o.fileUrl)
           .filter(url => url && url !== "N/A");
       }
     } catch (e) {
-      console.warn("No O'Level record found or fetch failed.", e);
+      console.warn("No O'Level record found or fetch failed:", e.message);
     }
 
-    // Helper to create thumbnails
+    // 🔸 Helper: Create thumbnail block
     const createThumbnail = (url, label) => {
       return url && url !== "N/A"
         ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
-        : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
+        : `<div class="no-file">${label}<br><small>File not yet uploaded</small></div>`;
     };
 
     // 🎓 Matric number display
@@ -212,7 +215,7 @@ async function fetchDocuments() {
             ? doc.oLevelData
                 .map(
                   (r, i) => `
-              <div>
+              <div class="olevel-block">
                 <label>Exam Type</label>
                 <input class="readonly-input" value="${r.examType || 'N/A'}" readonly>
                 <label>Serial Number</label>
@@ -257,7 +260,7 @@ async function fetchDocuments() {
       </section>
     `;
 
-    // 🗂️ Other document sections
+    // 🗂️ All document sections
     const sections = `
       ${matricNumberSection}
       ${oLevelSection}
@@ -312,23 +315,24 @@ async function fetchDocuments() {
 
     main.innerHTML = sections;
   } catch (err) {
-    console.error(err);
+    console.error("Error loading documents:", err);
     document.getElementById("uploadsContainer").innerHTML =
       "<p style='color:red; text-align:center;'>Error loading documents.</p>";
   }
 }
 
+// 🔍 Overlay viewer
 function openOverlay(src) {
   const overlay = document.getElementById("imageOverlay");
   const overlayImg = document.getElementById("overlayImg");
   overlayImg.src = src;
   overlay.style.display = "flex";
 }
-
 function closeOverlay() {
   document.getElementById("imageOverlay").style.display = "none";
 }
 
+// Load documents on page load
 fetchDocuments();
 </script>
 </body>
