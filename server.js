@@ -1083,13 +1083,14 @@ app.post("/api/olevel/upload", upload.array("files"), async (req, res) => {
   }
 });
 
-// 🔸 Fetch All O’Level Uploads
+// 🔹 Fetch all O'Level records
 app.get("/api/olevel", async (req, res) => {
   try {
     const records = await Olevel.find().sort({ uploadedAt: -1 });
-    res.json({ success: true, data: records });
+    res.json({ success: true, records });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Error fetching records", error: err.message });
+    console.error(err);
+    res.status(500).json({ success: false, message: "Error fetching O'Level records" });
   }
 });
 
