@@ -386,6 +386,7 @@ if (!studentId) {
 } else {
   (async () => {
     try {
+      // ===== Fetch student info =====
       const res = await fetch(`${backendURL}/api/students/${studentId}`);
       const data = await res.json();
       if (!data.success || !data.student) return;
@@ -399,7 +400,7 @@ if (!studentId) {
       document.getElementById("studentMatric").textContent = s.matricNo || "N/A";
       document.getElementById("studentLevel").textContent = s.level || "N/A";
 
-      // Personal info
+      // ===== Personal info =====
       const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ") || "N/A";
       document.getElementById("studentEmail").textContent = s.email || "N/A";
       document.getElementById("studentPhone").textContent = s.phone || "N/A";
@@ -412,146 +413,152 @@ if (!studentId) {
       document.getElementById("studentNokRelation").textContent = s.nokRelation || "N/A";
       document.getElementById("studentNokPhone").textContent = s.nokPhone || "N/A";
 
-      // === Fetch and display uploaded documents ===
+      // ===== Helper functions =====
+      const createThumbnail = (url, label) =>
+        url && url !== "N/A"
+          ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
+          : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
+
+      const createSection = (title, contentHtml, sectionId) => `
+        <section class="document-section">
+          <div class="section-header" data-target="${sectionId}">
+            <h4>${title}</h4>
+            <span class="toggle-icon">▾</span>
+          </div>
+          <div class="section-body" id="${sectionId}">
+            ${contentHtml}
+          </div>
+        </section>
+      `;
+
+      // ===== Fetch documents =====
       const docBody = document.getElementById("documentsBody");
       docBody.innerHTML = "Loading documents...";
 
       const docRes = await fetch(`${backendURL}/api/documents/${studentId}`);
       const docData = await docRes.json();
+      let doc = docData.data || { files: {}, oLevelData: [] };
+      const files = doc.files || {};
 
-      if (!docData.success || !docData.data) {
-        docBody.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
-      } else {
-        const doc = docData.data;
-        const files = doc.files || {};
-
-        // Helper: create image preview blocks
-        const createThumbnail = (url, label) =>
-          url && url !== "N/A"
-            ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
-            : `<div class="no-file">${label}<br>File not yet uploaded</div>`;
-
-        const createSection = (title, contentHtml, sectionId) => `
-          <section class="document-section">
-            <div class="section-header" data-target="${sectionId}">
-              <h4>${title}</h4>
-              <span class="toggle-icon">▾</span>
-            </div>
-            <div class="section-body" id="${sectionId}">
-              ${contentHtml}
-            </div>
-          </section>
-        `;
-
-        // 🧾 O'Level result info — corrected to match working structure
-        const oLevelContent = `
-          ${doc.oLevelData?.length
-            ? doc.oLevelData
-                .map(
-                  (r, i) => `
-                  <div class="readonly-block">
-                    <label>Exam Type</label>
-                    <input class="readonly-input" value="${r.examType || 'N/A'}" readonly>
-                    <label>Serial Number</label>
-                    <input class="readonly-input" value="${r.serialNumber || 'N/A'}" readonly>
-                    <label>Pin / Token</label>
-                    <input class="readonly-input" value="${r.pin || 'N/A'}" readonly>
-                  </div>
-                  ${i < doc.oLevelData.length - 1 ? '<hr style="margin:15px 0;">' : ''}
-                `
-                )
-                .join("")
-            : `<div class="no-file">No O'Level record found</div>`
+      // ===== Fetch O’Level images from Olevel collection =====
+      async function fetchOlevelImages(matricNumber) {
+        let olevelImages = [];
+        if (!matricNumber) return olevelImages;
+        try {
+          const res = await fetch(`${backendURL}/api/olevel/${encodeURIComponent(matricNumber)}`);
+          if (!res.ok) return olevelImages;
+          const data = await res.json();
+          if (data.success && Array.isArray(data.record)) {
+            olevelImages = data.record
+              .flatMap(r => r.olevelData.map(d => d.fileUrl))
+              .filter(url => url && url !== "N/A");
           }
-
-          ${files.oLevelUploads?.length
-            ? `<div class="thumbnail-grid" style="margin-top: 15px;">
-                ${files.oLevelUploads
-                  .map(
-                    (url, i) => `
-                    <div class="thumbnail">
-                      <img src="${url}" onclick="openOverlay('${url}')">
-                      <p>O'Level Result ${i + 1}</p>
-                    </div>`
-                  )
-                  .join("")}
-              </div>`
-            : `<div class="no-file">No O'Level result images uploaded</div>`
-          }
-        `;
-
-        // 🎓 JAMB info — corrected structure
-        const jambContent = `
-          <label>JAMB Reg No</label>
-          <input class="readonly-input" value="${doc.jambInfo?.jambRegNo || 'N/A'}" readonly>
-          <label>JAMB Score</label>
-          <input class="readonly-input" value="${doc.jambInfo?.jambScore || 'N/A'}" readonly>
-        `;
-
-        // 📜 Other document groups
-        const jambDocs = `<div class="thumbnail-grid">
-          ${createThumbnail(files.jambUpload,"JAMB Result Upload")}
-          ${createThumbnail(files.jambAdmission,"JAMB Admission Letter")}
-        </div>`;
-
-        const schoolForms = `<div class="thumbnail-grid">
-          ${createThumbnail(files.applicationForm,"Application Form")}
-          ${createThumbnail(files.acceptanceForm,"Acceptance Form")}
-          ${createThumbnail(files.guarantorForm,"Guarantor’s Form")}
-          ${createThumbnail(files.codeOfConduct,"Code of Conduct")}
-        </div>`;
-
-        const receipts = `<div class="thumbnail-grid">
-          ${createThumbnail(files.nd1First,"ND1 - First Semester Course Form")}
-          ${createThumbnail(files.nd1Second,"ND1 - Second Semester Course Form")}
-          ${createThumbnail(files.nd2First,"ND2 - First Semester Course Form")}
-          ${createThumbnail(files.nd2Second,"ND2 - Second Semester Course Form")}
-          ${createThumbnail(files.ict1,"ICT Receipt 1")}
-          ${createThumbnail(files.ict2,"ICT Receipt 2")}
-          ${createThumbnail(files.ict3,"ICT Receipt 3")}
-          ${createThumbnail(files.ict4,"ICT Receipt 4")}
-          ${createThumbnail(files.fee1,"School Fees Receipt 1")}
-          ${createThumbnail(files.fee2,"School Fees Receipt 2")}
-          ${createThumbnail(files.fee3,"School Fees Receipt 3")}
-          ${createThumbnail(files.fee4,"School Fees Receipt 4")}
-        </div>`;
-
-        const others = `<div class="thumbnail-grid">
-          ${createThumbnail(files.acceptanceFee,"Acceptance Fee")}
-          ${createThumbnail(files.stateOfOrigin,"State of Origin")}
-          ${createThumbnail(files.nin,"NIN Upload")}
-          ${createThumbnail(files.deptFee,"Departmental Fee Receipt")}
-        </div>`;
-
-        docBody.innerHTML = `
-          ${createSection("O'Level Result Details", oLevelContent,"sectionOLevel")}
-          ${createSection("JAMB Details", jambContent,"sectionJambInfo")}
-          ${createSection("JAMB Documents", jambDocs,"sectionJambDocs")}
-          ${createSection("School Forms", schoolForms,"sectionSchoolForms")}
-          ${createSection("Course & Receipts", receipts,"sectionReceipts")}
-          ${createSection("Other Documents", others,"sectionOthers")}
-        `;
+        } catch (err) {
+          console.error("Error fetching O'Level images:", err);
+        }
+        return olevelImages;
       }
 
-      
-      // === Results Section ===  
+      const oLevelImages = await fetchOlevelImages(s.matricNo);
+
+      // ===== O'Level input fields =====
+      const oLevelInputs = doc.oLevelData?.length
+        ? doc.oLevelData
+            .map((r, i) => `
+              <div class="readonly-block">
+                <label>Exam Type</label>
+                <input class="readonly-input" value="${r.examType || 'N/A'}" readonly>
+                <label>Serial Number</label>
+                <input class="readonly-input" value="${r.serialNumber || 'N/A'}" readonly>
+                <label>Pin / Token</label>
+                <input class="readonly-input" value="${r.pin || 'N/A'}" readonly>
+              </div>
+              ${i < doc.oLevelData.length - 1 ? '<hr style="margin:15px 0;">' : ''}
+            `)
+            .join("")
+        : `<div class="no-file">No O'Level record found</div>`;
+
+      // ===== O'Level images thumbnails =====
+      const oLevelThumbnails = oLevelImages.length
+        ? `<div class="thumbnail-grid" style="margin-top: 15px;">
+            ${oLevelImages.map((url, i) => `
+              <div class="thumbnail">
+                <img src="${url}" onclick="openOverlay('${url}')">
+                <p>O'Level Result ${i + 1}</p>
+              </div>`).join("")}
+          </div>`
+        : `<div class="no-file">No O'Level result images uploaded</div>`;
+
+      const oLevelContent = oLevelInputs + oLevelThumbnails;
+
+      // ===== JAMB info =====
+      const jambContent = `
+        <label>JAMB Reg No</label>
+        <input class="readonly-input" value="${doc.jambInfo?.jambRegNo || 'N/A'}" readonly>
+        <label>JAMB Score</label>
+        <input class="readonly-input" value="${doc.jambInfo?.jambScore || 'N/A'}" readonly>
+      `;
+      const jambDocs = `<div class="thumbnail-grid">
+        ${createThumbnail(files.jambUpload,"JAMB Result Upload")}
+        ${createThumbnail(files.jambAdmission,"JAMB Admission Letter")}
+      </div>`;
+
+      const schoolForms = `<div class="thumbnail-grid">
+        ${createThumbnail(files.applicationForm,"Application Form")}
+        ${createThumbnail(files.acceptanceForm,"Acceptance Form")}
+        ${createThumbnail(files.guarantorForm,"Guarantor’s Form")}
+        ${createThumbnail(files.codeOfConduct,"Code of Conduct")}
+      </div>`;
+
+      const receipts = `<div class="thumbnail-grid">
+        ${createThumbnail(files.nd1First,"ND1 - First Semester Course Form")}
+        ${createThumbnail(files.nd1Second,"ND1 - Second Semester Course Form")}
+        ${createThumbnail(files.nd2First,"ND2 - First Semester Course Form")}
+        ${createThumbnail(files.nd2Second,"ND2 - Second Semester Course Form")}
+        ${createThumbnail(files.ict1,"ICT Receipt 1")}
+        ${createThumbnail(files.ict2,"ICT Receipt 2")}
+        ${createThumbnail(files.ict3,"ICT Receipt 3")}
+        ${createThumbnail(files.ict4,"ICT Receipt 4")}
+        ${createThumbnail(files.fee1,"School Fees Receipt 1")}
+        ${createThumbnail(files.fee2,"School Fees Receipt 2")}
+        ${createThumbnail(files.fee3,"School Fees Receipt 3")}
+        ${createThumbnail(files.fee4,"School Fees Receipt 4")}
+      </div>`;
+
+      const others = `<div class="thumbnail-grid">
+        ${createThumbnail(files.acceptanceFee,"Acceptance Fee")}
+        ${createThumbnail(files.stateOfOrigin,"State of Origin")}
+        ${createThumbnail(files.nin,"NIN Upload")}
+        ${createThumbnail(files.deptFee,"Departmental Fee Receipt")}
+      </div>`;
+
+      docBody.innerHTML = `
+        ${createSection("O'Level Result Details", oLevelContent,"sectionOLevel")}
+        ${createSection("JAMB Details", jambContent,"sectionJambInfo")}
+        ${createSection("JAMB Documents", jambDocs,"sectionJambDocs")}
+        ${createSection("School Forms", schoolForms,"sectionSchoolForms")}
+        ${createSection("Course & Receipts", receipts,"sectionReceipts")}
+        ${createSection("Other Documents", others,"sectionOthers")}
+      `;
+
+      // ===== Results Section =====
       const resultsBody = document.getElementById("resultsBody");  
       resultsBody.innerHTML = "Loading results...";  
-  
+
       async function loadResults(semesterFilter = "") {  
         const url = `${backendURL}/api/results?matricNo=${encodeURIComponent(s.matricNo)}`;  
         const res = await fetch(url);  
         const data = await res.json();  
         const results = data.results || [];  
-  
+
         if (!results.length) {  
           resultsBody.innerHTML = "<p style='text-align:center;color:#777;'>No results found.</p>";  
           return;  
         }  
-  
+
         const semesters = [...new Set(results.map(r => r.semester))];  
         const filtered = semesterFilter ? results.filter(r => r.semester === semesterFilter) : results;  
-  
+
         resultsBody.innerHTML = `  
           <label for="semesterFilter"><strong>Filter by Semester:</strong></label>  
           <select id="semesterFilter" style="margin:8px 0;padding:6px;border-radius:6px;">  
@@ -584,15 +591,15 @@ if (!studentId) {
             </table>  
           </div>  
         `;  
-  
+
         document.getElementById("semesterFilter").addEventListener("change", e => {  
           loadResults(e.target.value);  
         });  
       }  
-  
+
       await loadResults();  
-  
-      // === Section toggles ===
+
+      // ===== Section toggles =====
       document.querySelectorAll(".section-header").forEach(header => {
         const targetId = header.getAttribute("data-target");
         const target = document.getElementById(targetId);
@@ -603,7 +610,7 @@ if (!studentId) {
         });
       });
 
-      // === Overlay preview ===
+      // ===== Overlay preview =====
       window.openOverlay = src => {
         document.getElementById("overlayImg").src = src;
         document.getElementById("imageOverlay").style.display = "flex";
@@ -619,7 +626,7 @@ if (!studentId) {
   })();
 }
 
-// === Toggle for main card sections (Personal Info, Documents, Results) ===
+// ===== Toggle for main card sections =====
 document.querySelectorAll(".card-header").forEach(header => {
   const targetId = header.getAttribute("data-target");
   const target = document.getElementById(targetId);
