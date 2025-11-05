@@ -1109,7 +1109,7 @@ app.get("/api/olevel/search", async (req, res) => {
   }
 });
 
-// ✅ Fetch O’Level record by matric number
+// ✅ Fetch all O’Level records by matric number
 app.get("/api/olevel/:matricNumber", async (req, res) => {
   try {
     const { matricNumber } = req.params;
@@ -1118,13 +1118,14 @@ app.get("/api/olevel/:matricNumber", async (req, res) => {
       return res.status(400).json({ success: false, message: "Matric number required" });
     }
 
-    const record = await Olevel.findOne({ matricNumber: matricNumber.toUpperCase() });
+    // Use find() instead of findOne() to get all uploads
+    const records = await Olevel.find({ matricNumber: matricNumber.toUpperCase() });
 
-    if (!record) {
+    if (!records || records.length === 0) {
       return res.status(404).json({ success: false, message: "O’Level record not found" });
     }
 
-    res.json({ success: true, record });
+    res.json({ success: true, record: records }); // return array of records
   } catch (err) {
     console.error("Error fetching O’Level by matric:", err);
     res.status(500).json({
