@@ -240,6 +240,18 @@ const oLevelSchema = new mongoose.Schema({
 
 const Olevel = mongoose.model("Olevel", oLevelSchema);
 
+// ================== ACCESS PIN SCHEMA ==================
+const mongoose = require("mongoose");
+
+const accessPinSchema = new mongoose.Schema({
+  pin: { type: String, required: true, unique: true },
+  matricNumber: { type: String, required: true },
+  department: { type: String, required: true },
+  used: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const AccessPin = mongoose.model("AccessPin", accessPinSchema);
 
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
@@ -1133,6 +1145,72 @@ app.get("/api/olevel/:matricNumber", async (req, res) => {
       message: "Server error while fetching O’Level",
       error: err.message
     });
+  }
+});
+
+// ================== ACCESS PIN ROUTES ==================
+
+// ✅ Generate Access Pin
+app.post("/api/generate-pin", async (req, res) => {
+  try {
+    const { department, matricNumber } = req.body;
+    if (!department || !matricNumber)
+      return res.status(400).json({ success: false, message: "All fields are required" });
+
+    const prefix = department.toUpperCase().slice(0, 3);
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const pin = `POR/${prefix}/${randomNum}`;
+
+    // Prevent duplicate unused pins
+    const existing = await AccessPin.findOne({ matricNumber, used: false });
+    if (existing)
+      return res.status(400).json({ success: false, message: "An unused pin already exists for this student." });
+
+    const newPin = new AccessPin({ pin, department, matricNumber });
+    await newPin.save();
+
+    res.json({ success: true, message: "Pin generated successfully", data: newPin });
+  } catch (err) {
+    console.error("Error generating pin:", err);
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
+  }
+});
+
+// ✅ Fetch Pins (with search)
+app.get("/api/pins", async (req, res) => {
+  try {
+    const { matricNumber, department } = req.query;
+    const filter = {};
+    if (matricNumber) filter.matricNumber = { $regex: matricNumber, $options: "i" };
+    if (department) filter.department = { $regex: department, $options: "i" };
+
+    const pins = await AccessPin.find(filter).sort({ createdAt: -1 });
+    res.json({ success: true, data: pins });
+  } catch (err) {
+    console.error("Error fetching pins:", err);
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
+  }
+});
+
+// ✅ Mark Pin as Used
+app.post("/api/use-pin", async (req, res) => {
+  try {
+    const { pin } = req.body;
+    const foundPin = await AccessPin.findOne({ pin });
+
+    if (!foundPin)
+      return res.status(404).json({ success: false, message: "Pin not found" });
+
+    if (foundPin.used)
+      return res.status(400).json({ success: false, message: "Pin already used" });
+
+    foundPin.used = true;
+    await foundPin.save();
+
+    res.json({ success: true, message: "Pin marked as used", data: foundPin });
+  } catch (err) {
+    console.error("Error marking pin as used:", err);
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 });
 
