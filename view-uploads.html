@@ -184,10 +184,12 @@ async function fetchDocuments() {
         if (oLevelRes.ok) {
           const oLevelData = await oLevelRes.json();
           if (oLevelData?.success && Array.isArray(oLevelData.record)) {
-            // oLevelData.record can have multiple entries per matric number
-            uploadedOlevels = oLevelData.record
-              .flatMap(r => r.olevelData.map(d => d.fileUrl))
-              .filter(url => url && url !== "N/A");
+            // Flatten all fileUrls from all record entries
+            uploadedOlevels = oLevelData.record.flatMap(record => 
+              (record.olevelData || [])
+                .map(d => d.fileUrl)
+                .filter(url => url && url !== "N/A")
+            );
           }
         }
       } catch (err) {
