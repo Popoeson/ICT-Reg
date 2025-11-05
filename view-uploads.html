@@ -171,6 +171,21 @@ async function fetchDocuments() {
 
     const doc = data.data;
     const files = doc.files || {};
+    const matricNumber = (doc.matricNumber || doc.studentId?.matricNumber || "").toUpperCase();
+
+    // 🔹 Fetch O'Level uploads (if any)
+    let uploadedOlevels = [];
+    try {
+      const oLevelRes = await fetch(`${baseURL}/api/olevel/${matricNumber}`);
+      const oLevelData = await oLevelRes.json();
+      if (oLevelData && oLevelData.record && oLevelData.record.olevelData) {
+        uploadedOlevels = oLevelData.record.olevelData
+          .map(o => o.fileUrl)
+          .filter(url => url && url !== "N/A");
+      }
+    } catch (e) {
+      console.warn("No O'Level record found or fetch failed.", e);
+    }
 
     // Helper to create thumbnails
     const createThumbnail = (url, label) => {
@@ -180,18 +195,15 @@ async function fetchDocuments() {
     };
 
     // 🎓 Matric number display
-    
     const matricNumberSection = `
-  <div style="text-align:center; margin-bottom:15px;">
-    <h2 style="font-size:1.2em; color:#333;">Matric Number:</h2>
-    <p style="font-weight:bold; font-size:1.1em;">
-      ${doc.matricNumber || doc.studentId?.matricNumber || "N/A"}
-    </p>
-    <hr style="margin-top:10px; border:1px solid #ccc;">
-  </div>
-`;
+      <div style="text-align:center; margin-bottom:15px;">
+        <h2 style="font-size:1.2em; color:#333;">Matric Number:</h2>
+        <p style="font-weight:bold; font-size:1.1em;">${matricNumber || "N/A"}</p>
+        <hr style="margin-top:10px; border:1px solid #ccc;">
+      </div>
+    `;
 
-    // 🧾 O'Level section (show details + uploaded result file)
+    // 🧾 O'Level section
     const oLevelSection = `
       <section>
         <h2 class="section-title">O'Level Result Details</h2>
@@ -216,19 +228,21 @@ async function fetchDocuments() {
         }
 
         <!-- Uploaded O'Level result image(s) -->
-        ${files.oLevelUploads?.length
-          ? `<div class="thumbnail-grid" style="margin-top: 15px;">
-              ${files.oLevelUploads
-                .map(
-                  (url, i) => `
-                <div class="thumbnail">
-                  <img src="${url}" onclick="openOverlay('${url}')">
-                  <p>O'Level Result ${i + 1}</p>
-                </div>`
-                )
-                .join("")}
-            </div>`
-          : `<div class="no-file">No O'Level result images uploaded</div>`}
+        ${
+          uploadedOlevels.length
+            ? `<div class="thumbnail-grid" style="margin-top: 15px;">
+                ${uploadedOlevels
+                  .map(
+                    (url, i) => `
+                    <div class="thumbnail">
+                      <img src="${url}" onclick="openOverlay('${url}')">
+                      <p>O'Level Result ${i + 1}</p>
+                    </div>`
+                  )
+                  .join("")}
+              </div>`
+            : `<div class="no-file">No O'Level result images uploaded</div>`
+        }
       </section>
     `;
 
