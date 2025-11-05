@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>O’Level Upload | ICT Registration Portal</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f7fb;
+    margin: 0;
+    color: #333;
+  }
+  header {
+    background: #007bff;
+    color: white;
+    text-align: center;
+    padding: 16px;
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+  .container {
+    max-width: 900px;
+    background: white;
+    margin: 30px auto;
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h2 {
+    text-align: center;
+    color: #007bff;
+  }
+  label {
+    display: block;
+    margin-top: 10px;
+    font-weight: 500;
+  }
+  input[type="text"], input[type="file"], select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 4px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+  }
+  button {
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-top: 15px;
+    cursor: pointer;
+  }
+  button:hover { background: #0056b3; }
+  .tab-buttons {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .tab-buttons button {
+    flex: 1;
+    border-radius: 0;
+  }
+  .tab-buttons button.active {
+    background: #0056b3;
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+  }
+  th { background: #007bff; color: white; }
+  tr:nth-child(even){ background: #f9f9f9; }
+  tr:hover{ background: #f1f1f1; }
+  #searchBar {
+    padding: 10px;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+  @media(max-width:768px){
+    th, td { font-size: 0.9rem; }
+  }
+</style>
+</head>
+<body>
+<header>📄 O’Level Upload Portal</header>
+
+<div class="container">
+
+  <div class="tab-buttons">
+    <button id="uploadTabBtn" class="active">⬆️ Upload O’Level</button>
+    <button id="viewTabBtn">👀 View Uploaded</button>
+  </div>
+
+  <!-- Upload Section -->
+  <div id="uploadTab" class="tab-content active">
+    <h2>Upload O’Level Result</h2>
+    <form id="olevelForm">
+      <label>Matric Number</label>
+      <input type="text" id="matricNumber" placeholder="COS/023035" required />
+
+      <label>How many O’Level results?</label>
+      <select id="olevelCount" required>
+        <option value="">Select</option>
+        <option value="1">One (1)</option>
+        <option value="2">Two (2)</option>
+      </select>
+
+      <div id="olevelContainer"></div>
+
+      <button type="submit">📤 Upload</button>
+    </form>
+  </div>
+
+  <!-- View Section -->
+  <div id="viewTab" class="tab-content">
+    <h2>All Uploaded O’Level Records</h2>
+    <input type="text" id="searchBar" placeholder="🔍 Search by name or matric number..." />
+    <div style="overflow-x:auto;">
+      <table id="recordsTable">
+        <thead>
+          <tr>
+            <th>Matric No</th>
+            <th>Exam Type</th>
+            <th>Serial No</th>
+            <th>Pin</th>
+            <th>File</th>
+            <th>Uploaded At</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const backendURL = "https://ict-reg.onrender.com"; // ✅ update with actual backend
+
+// ====== TAB SWITCHING ======
+const uploadTabBtn = document.getElementById("uploadTabBtn");
+const viewTabBtn = document.getElementById("viewTabBtn");
+const uploadTab = document.getElementById("uploadTab");
+const viewTab = document.getElementById("viewTab");
+
+uploadTabBtn.onclick = () => {
+  uploadTabBtn.classList.add("active");
+  viewTabBtn.classList.remove("active");
+  uploadTab.classList.add("active");
+  viewTab.classList.remove("active");
+};
+viewTabBtn.onclick = () => {
+  viewTabBtn.classList.add("active");
+  uploadTabBtn.classList.remove("active");
+  viewTab.classList.add("active");
+  uploadTab.classList.remove("active");
+  fetchOlevelRecords();
+};
+
+// ====== DYNAMIC FIELDS FOR OLEVEL COUNT ======
+const olevelCount = document.getElementById("olevelCount");
+const olevelContainer = document.getElementById("olevelContainer");
+
+olevelCount.addEventListener("change", () => {
+  olevelContainer.innerHTML = "";
+  const count = parseInt(olevelCount.value);
+  if (!count) return;
+
+  for (let i = 1; i <= count; i++) {
+    const div = document.createElement("div");
+    div.style.border = "1px solid #ccc";
+    div.style.padding = "15px";
+    div.style.marginTop = "10px";
+    div.style.borderRadius = "8px";
+
+    div.innerHTML = `
+      <h3 style="color:#007bff;">O’Level ${i}</h3>
+      <label>Exam Type</label>
+      <input type="text" id="examType${i}" placeholder="WAEC / NECO / NABTEB" required>
+      <label>Serial Number</label>
+      <input type="text" id="serial${i}" placeholder="Enter Serial Number" required>
+      <label>Pin / Token</label>
+      <input type="text" id="pin${i}" placeholder="Enter PIN or Token" required>
+      <label>Upload File</label>
+      <input type="file" id="file${i}" accept="image/*,application/pdf" required>
+    `;
+    olevelContainer.appendChild(div);
+  }
+});
+
+// ====== FORM SUBMIT ======
+document.getElementById("olevelForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const formData = new FormData();
+
+  const matricNumber = document.getElementById("matricNumber").value.trim().toUpperCase();
+  const count = parseInt(olevelCount.value);
+  if (!matricNumber || !count) return alert("Please fill all required fields");
+
+  formData.append("matricNumber", matricNumber);
+  formData.append("count", count);
+
+  const olevelData = [];
+  for (let i = 1; i <= count; i++) {
+    const examType = document.getElementById(`examType${i}`).value.trim();
+    const serial = document.getElementById(`serial${i}`).value.trim();
+    const pin = document.getElementById(`pin${i}`).value.trim();
+    const file = document.getElementById(`file${i}`).files[0];
+    if (!examType || !serial || !pin || !file)
+      return alert(`Please fill all fields for O’Level ${i}`);
+    formData.append(`file${i}`, file);
+    olevelData.push({ examType, serial, pin });
+  }
+  formData.append("olevelData", JSON.stringify(olevelData));
+
+  try {
+    const res = await fetch(`${backendURL}/api/olevel/upload`, { method: "POST", body: formData });
+    const data = await res.json();
+    alert(data.message || "Upload complete!");
+    document.getElementById("olevelForm").reset();
+    olevelContainer.innerHTML = "";
+  } catch (err) {
+    alert("Error uploading: " + err.message);
+  }
+});
+
+// ====== FETCH UPLOADED OLEVEL RECORDS ======
+async function fetchOlevelRecords(){
+  try {
+    const res = await fetch(`${backendURL}/api/olevel`);
+    const data = await res.json();
+    const tbody = document.querySelector("#recordsTable tbody");
+    tbody.innerHTML = "";
+
+    data.records.forEach(r => {
+      r.olevelData.forEach(ol => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.matricNumber || "N/A"}</td>
+          <td>${ol.examType || "N/A"}</td>
+          <td>${ol.serialNumber || "N/A"}</td>
+          <td>${ol.pin || "N/A"}</td>
+          <td><a href="${ol.fileUrl || r.file || '#'}" target="_blank">View</a></td>
+          <td>${new Date(r.uploadedAt).toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// ====== SEARCH BAR ======
+document.getElementById("searchBar").addEventListener("input", function(){
+  const search = this.value.toLowerCase();
+  document.querySelectorAll("#recordsTable tbody tr").forEach(tr => {
+    tr.style.display = tr.innerText.toLowerCase().includes(search) ? "" : "none";
+  });
+});
+</script>
+</body>
+</html>class=""
