@@ -244,7 +244,7 @@ document.getElementById("olevelForm").addEventListener("submit", async (e) => {
         return alert(`Please fill all fields for O’Level ${i}`);
 
       olevelData.push({ examType, serialNumber: serial, pin });
-      formData.append(`file${i}`, file); // names match backend now
+      formData.append("files", file);
     }
 
     formData.append("olevelData", JSON.stringify(olevelData));
