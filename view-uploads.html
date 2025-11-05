@@ -159,7 +159,6 @@ const baseURL = "https://ict-reg.onrender.com";
 
 async function fetchDocuments() {
   try {
-    // Fetch student documents
     const res = await fetch(`${baseURL}/api/documents/${studentId}`);
     if (!res.ok) throw new Error(`Failed to fetch documents. Status: ${res.status}`);
     const data = await res.json();
@@ -176,11 +175,7 @@ async function fetchDocuments() {
     const files = doc.files || {};
     const matricNumber = (doc.matricNumber || doc.studentId?.matricNumber || "").toUpperCase();
 
-    if (!matricNumber) {
-      console.warn("No matric number found in student document record:", doc);
-    }
-
-    // 🔹 Fetch O'Level images by matric number (ignoring pin/serial/examType)
+    // 🔹 Fetch O'Level images by matric number
     let uploadedOlevels = [];
     if (matricNumber) {
       try {
@@ -192,20 +187,30 @@ async function fetchDocuments() {
               .map(r => r.fileUrl)
               .filter(url => url && url !== "N/A");
           }
-          console.log("O'Level fetch result for", matricNumber, uploadedOlevels);
-        } else {
-          console.warn("O'Level fetch failed:", oLevelRes.status);
         }
       } catch (err) {
         console.error("Error fetching O'Level images:", err);
       }
     }
 
-    // 🔸 Helper: Create thumbnail
+    // 🔹 Include any additional uploads stored in doc.files.oLevelUploads
+    if (Array.isArray(files.oLevelUploads) && files.oLevelUploads.length > 0) {
+      uploadedOlevels = uploadedOlevels.concat(
+        files.oLevelUploads.filter(url => url && url !== "N/A")
+      );
+    }
+
+    // 🔸 Remove duplicates, just in case
+    uploadedOlevels = [...new Set(uploadedOlevels)];
+
+    // 🔸 Helper: Create thumbnail with proper encoding
     const createThumbnail = (url, label) => {
-      return url && url !== "N/A"
-        ? `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>${label}</p></div>`
-        : `<div class="no-file">${label}<br><small>File not yet uploaded</small></div>`;
+      if (!url || url === "N/A") {
+        return `<div class="no-file">${label}<br><small>File not yet uploaded</small></div>`;
+      }
+      // encode quotes for onclick
+      const encodedUrl = url.replace(/'/g, "\\'");
+      return `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${encodedUrl}')"><p>${label}</p></div>`;
     };
 
     // 🎓 Matric number section
@@ -217,14 +222,14 @@ async function fetchDocuments() {
       </div>
     `;
 
-    // 🧾 O'Level section (images only)
+    // 🧾 O'Level section (all images)
     const oLevelSection = `
       <section>
         <h2 class="section-title">O'Level Result Images</h2>
         <div class="thumbnail-grid">
           ${
             uploadedOlevels.length
-              ? uploadedOlevels.map((url, i) => `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>O'Level Result ${i + 1}</p></div>`).join("")
+              ? uploadedOlevels.map((url, i) => createThumbnail(url, `O'Level Result ${i + 1}`)).join("")
               : `<div class="no-file">No O'Level result images uploaded</div>`
           }
         </div>
