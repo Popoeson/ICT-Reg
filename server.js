@@ -1052,7 +1052,7 @@ app.get("/api/results", async (req, res) => {
 
 // ===== Upload Olevel Route ========
 
-// 🔸 Upload O’Level(s)
+// 🔹 Upload O’Level(s)
 app.post("/api/olevel/upload", upload.array("files"), async (req, res) => {
   try {
     const { matricNumber, olevelData } = req.body;
@@ -1060,24 +1060,25 @@ app.post("/api/olevel/upload", upload.array("files"), async (req, res) => {
     if (!matricNumber || !olevelData)
       return res.status(400).json({ success: false, message: "Missing fields" });
 
-    // Parse olevelData if sent as string
+    // Parse O'Level JSON data
     const parsedData = typeof olevelData === "string" ? JSON.parse(olevelData) : olevelData;
 
-    // Attach file URLs from Cloudinary
+    // Use file paths or URLs depending on your upload middleware
     const files = req.files || [];
+
     parsedData.forEach((entry, index) => {
-      entry.fileUrl = files[index] ? files[index].path : "";
+      entry.fileUrl = files[index] ? files[index].path : ""; // or files[index].secure_url if Cloudinary
     });
 
     const newRecord = new Olevel({
-      matricNumber,
+      matricNumber: matricNumber.toUpperCase(), // normalize
       olevelData: parsedData,
     });
 
     await newRecord.save();
     res.json({ success: true, message: "O'Level uploaded successfully!", data: newRecord });
   } catch (err) {
-    console.error(err);
+    console.error("Upload Error:", err);
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
   }
 });
