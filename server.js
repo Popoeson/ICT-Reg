@@ -1109,7 +1109,21 @@ app.get("/api/olevel/search", async (req, res) => {
   }
 });
 
+// 🔹 Fetch O’Level record by matric number
+app.get("/api/olevel/:matricNumber", async (req, res) => {
+  try {
+    const { matricNumber } = req.params;
+    const record = await Olevel.findOne({ matricNumber: matricNumber.toUpperCase() });
 
+    if (!record)
+      return res.status(404).json({ success: false, message: "O’Level record not found" });
+
+    res.json({ success: true, record });
+  } catch (err) {
+    console.error("Error fetching O’Level by matric:", err);
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
+  }
+});
 
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
