@@ -153,12 +153,13 @@
   </div>
 
  
-    <script>
+<script>
 const studentId = localStorage.getItem("studentId");
 const baseURL = "https://ict-reg.onrender.com";
 
 async function fetchDocuments() {
   try {
+    // Fetch student documents
     const res = await fetch(`${baseURL}/api/documents/${studentId}`);
     if (!res.ok) throw new Error(`Failed to fetch documents. Status: ${res.status}`);
     const data = await res.json();
@@ -175,18 +176,25 @@ async function fetchDocuments() {
     const files = doc.files || {};
     const matricNumber = (doc.matricNumber || doc.studentId?.matricNumber || "").toUpperCase();
 
-    // 🔹 Fetch O'Level images by matric number
+    if (!matricNumber) {
+      console.warn("No matric number found in student document record:", doc);
+    }
+
+    // 🔹 Fetch O'Level images by matric number (ignoring pin/serial/examType)
     let uploadedOlevels = [];
     if (matricNumber) {
       try {
         const oLevelRes = await fetch(`${baseURL}/api/olevel/${encodeURIComponent(matricNumber)}`);
         if (oLevelRes.ok) {
           const oLevelData = await oLevelRes.json();
-          if (oLevelData?.success && oLevelData.record?.oLevelData?.length) {
-            uploadedOlevels = oLevelData.record.oLevelData
+          if (oLevelData?.success && Array.isArray(oLevelData.record?.olevelData)) {
+            uploadedOlevels = oLevelData.record.olevelData
               .map(r => r.fileUrl)
               .filter(url => url && url !== "N/A");
           }
+          console.log("O'Level fetch result for", matricNumber, uploadedOlevels);
+        } else {
+          console.warn("O'Level fetch failed:", oLevelRes.status);
         }
       } catch (err) {
         console.error("Error fetching O'Level images:", err);
