@@ -190,11 +190,10 @@
         <h3>Total Results</h3>
         <p id="results-count">0</p>
       </div>
- 
+
       <div class="card" id="olevel-result-card">
         <div class="icon">⬆️</div>
         <h3>Upload O'level Results</h3>
-        
       </div>
     </div>
   </main>
@@ -247,9 +246,19 @@
     window.location.href = "result-index.html";
   });
 
-document.getElementById("olevel-result-card").addEventListener("click", () => {
-    window.location.href = "olevel-upload.html";
-  });
+  // Show/hide O'Level upload card based on role
+  const olevelCard = document.getElementById("olevel-result-card");
+  if (!adminRole.toLowerCase().includes("super")) {
+    olevelCard.style.display = "none";
+  } else {
+    olevelCard.style.display = "block";
+
+    // Navigation for super admin
+    olevelCard.addEventListener("click", () => {
+      window.location.href = "olevel-upload.html";
+    });
+  }
+
   // Fetch statistics (with department filtering)
   async function fetchStats() {
     try {
@@ -311,6 +320,6 @@ document.getElementById("olevel-result-card").addEventListener("click", () => {
   }
 
   fetchStats();
-</script>
+  </script>
 </body>
 </html>
