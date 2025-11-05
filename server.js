@@ -240,8 +240,7 @@ const oLevelSchema = new mongoose.Schema({
 
 const Olevel = mongoose.model("Olevel", oLevelSchema);
 
-// ================== ACCESS PIN SCHEMA ==================
-const mongoose = require("mongoose");
+// ================== ACCESS PIN SCHEMA ================
 
 const accessPinSchema = new mongoose.Schema({
   pin: { type: String, required: true, unique: true },
