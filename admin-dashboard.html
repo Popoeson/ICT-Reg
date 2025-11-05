@@ -195,6 +195,11 @@
         <div class="icon">⬆️</div>
         <h3>Upload O'level Results</h3>
       </div>
+
+      <div class="card" id="pin-card">
+        <div class="icon">🔐</div>
+        <h3>Upload Access Pin</h3>
+      </div>
     </div>
   </main>
 
@@ -244,6 +249,10 @@
   });
   document.getElementById("total-results-card").addEventListener("click", () => {
     window.location.href = "result-index.html";
+  });
+
+document.getElementById("pin-card").addEventListener("click", () => {
+    window.location.href = "pin.html";
   });
 
   // Show/hide O'Level upload card based on role
