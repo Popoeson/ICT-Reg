@@ -190,6 +190,12 @@
         <h3>Total Results</h3>
         <p id="results-count">0</p>
       </div>
+ 
+      <div class="card" id="olevel-result-card">
+        <div class="icon">⬆️</div>
+        <h3>Upload O'level Results</h3>
+        
+      </div>
     </div>
   </main>
 
@@ -241,6 +247,9 @@
     window.location.href = "result-index.html";
   });
 
+document.getElementById("olevel-result-card").addEventListener("click", () => {
+    window.location.href = "olevel-upload.html";
+  });
   // Fetch statistics (with department filtering)
   async function fetchStats() {
     try {
