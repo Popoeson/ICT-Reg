@@ -152,13 +152,13 @@
     <img id="overlayImg" src="" alt="Preview">
   </div>
 
-<script>
+ 
+    <script>
 const studentId = localStorage.getItem("studentId");
 const baseURL = "https://ict-reg.onrender.com";
 
 async function fetchDocuments() {
   try {
-    // Fetch student documents
     const res = await fetch(`${baseURL}/api/documents/${studentId}`);
     if (!res.ok) throw new Error(`Failed to fetch documents. Status: ${res.status}`);
     const data = await res.json();
@@ -175,7 +175,7 @@ async function fetchDocuments() {
     const files = doc.files || {};
     const matricNumber = (doc.matricNumber || doc.studentId?.matricNumber || "").toUpperCase();
 
-    // 🔹 Fetch O'Level uploads from backend
+    // 🔹 Fetch O'Level images by matric number
     let uploadedOlevels = [];
     if (matricNumber) {
       try {
@@ -184,16 +184,12 @@ async function fetchDocuments() {
           const oLevelData = await oLevelRes.json();
           if (oLevelData?.success && oLevelData.record?.oLevelData?.length) {
             uploadedOlevels = oLevelData.record.oLevelData
-              .map(o => o.fileUrl)
+              .map(r => r.fileUrl)
               .filter(url => url && url !== "N/A");
           }
-        } else if (oLevelRes.status === 404) {
-          console.warn("O'Level record not found for:", matricNumber);
-        } else {
-          console.warn("Failed fetching O'Level:", oLevelRes.status);
         }
       } catch (err) {
-        console.error("Error fetching O'Level uploads:", err);
+        console.error("Error fetching O'Level images:", err);
       }
     }
 
@@ -204,7 +200,7 @@ async function fetchDocuments() {
         : `<div class="no-file">${label}<br><small>File not yet uploaded</small></div>`;
     };
 
-    // 🎓 Matric number display
+    // 🎓 Matric number section
     const matricNumberSection = `
       <div style="text-align:center; margin-bottom:15px;">
         <h2 style="font-size:1.2em; color:#333;">Matric Number:</h2>
@@ -213,50 +209,21 @@ async function fetchDocuments() {
       </div>
     `;
 
-    // 🧾 O'Level section
+    // 🧾 O'Level section (images only)
     const oLevelSection = `
       <section>
-        <h2 class="section-title">O'Level Result Details</h2>
-        ${
-          doc.oLevelData?.length
-            ? doc.oLevelData
-                .map(
-                  (r, i) => `
-              <div class="olevel-block">
-                <label>Exam Type</label>
-                <input class="readonly-input" value="${r.examType || 'N/A'}" readonly>
-                <label>Serial Number</label>
-                <input class="readonly-input" value="${r.serialNumber || 'N/A'}" readonly>
-                <label>Pin / Token</label>
-                <input class="readonly-input" value="${r.pin || 'N/A'}" readonly>
-              </div>
-              ${i < doc.oLevelData.length - 1 ? '<hr style="margin:15px 0;">' : ''}
-            `
-                )
-                .join("")
-            : `<div class="no-file">No O'Level record found</div>`
-        }
-
-        <!-- Uploaded O'Level result image(s) -->
-        ${
-          uploadedOlevels.length
-            ? `<div class="thumbnail-grid" style="margin-top: 15px;">
-                ${uploadedOlevels
-                  .map(
-                    (url, i) => `
-                    <div class="thumbnail">
-                      <img src="${url}" onclick="openOverlay('${url}')">
-                      <p>O'Level Result ${i + 1}</p>
-                    </div>`
-                  )
-                  .join("")}
-              </div>`
-            : `<div class="no-file">No O'Level result images uploaded</div>`
-        }
+        <h2 class="section-title">O'Level Result Images</h2>
+        <div class="thumbnail-grid">
+          ${
+            uploadedOlevels.length
+              ? uploadedOlevels.map((url, i) => `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${url}')"><p>O'Level Result ${i + 1}</p></div>`).join("")
+              : `<div class="no-file">No O'Level result images uploaded</div>`
+          }
+        </div>
       </section>
     `;
 
-    // 🎓 JAMB info section
+    // 🎓 JAMB info
     const jambInfo = `
       <section>
         <h2 class="section-title">JAMB Details</h2>
@@ -267,7 +234,7 @@ async function fetchDocuments() {
       </section>
     `;
 
-    // 🗂️ All document sections (school forms, courses, other docs)
+    // 🗂️ All other sections
     const sections = `
       ${matricNumberSection}
       ${oLevelSection}
@@ -340,7 +307,6 @@ function closeOverlay() {
   document.getElementById("imageOverlay").style.display = "none";
 }
 
-// Load documents on page load
 fetchDocuments();
 </script>
 </body>
