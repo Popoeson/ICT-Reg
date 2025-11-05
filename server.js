@@ -219,6 +219,28 @@ const resultSchema = new mongoose.Schema({
 
 const Result = mongoose.model("Result", resultSchema);
 
+// ====== O'level Schema
+const oLevelSchema = new mongoose.Schema({
+  matricNumber: {
+    type: String,
+    required: true,
+    trim: true,
+    uppercase: true, // normalize to capital letters (e.g. COS/023035)
+  },
+  olevelData: [
+    {
+      examType: { type: String, required: true },
+      serialNumber: { type: String, required: true },
+      pin: { type: String, required: true },
+      fileUrl: { type: String, required: true },
+    },
+  ],
+  uploadedAt: { type: Date, default: Date.now },
+});
+
+const Olevel = mongoose.model("Olevel", oLevelSchema);
+
+
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
   return String(email || "").trim().toLowerCase();
@@ -1026,6 +1048,66 @@ app.get("/api/results", async (req, res) => {
     });
   }
 });
+
+
+// ===== Upload Olevel Route ========
+
+// 🔸 Upload O’Level(s)
+app.post("/api/olevel/upload", upload.array("files"), async (req, res) => {
+  try {
+    const { matricNumber, olevelData } = req.body;
+
+    if (!matricNumber || !olevelData)
+      return res.status(400).json({ success: false, message: "Missing fields" });
+
+    // Parse olevelData if sent as string
+    const parsedData = typeof olevelData === "string" ? JSON.parse(olevelData) : olevelData;
+
+    // Attach file URLs from Cloudinary
+    const files = req.files || [];
+    parsedData.forEach((entry, index) => {
+      entry.fileUrl = files[index] ? files[index].path : "";
+    });
+
+    const newRecord = new Olevel({
+      matricNumber,
+      olevelData: parsedData,
+    });
+
+    await newRecord.save();
+    res.json({ success: true, message: "O'Level uploaded successfully!", data: newRecord });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server Error", error: err.message });
+  }
+});
+
+// 🔸 Fetch All O’Level Uploads
+app.get("/api/olevel", async (req, res) => {
+  try {
+    const records = await Olevel.find().sort({ uploadedAt: -1 });
+    res.json({ success: true, data: records });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Error fetching records", error: err.message });
+  }
+});
+
+// 🔸 Search O’Level by Matric or Name (if linked later)
+app.get("/api/olevel/search", async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query) return res.json({ success: true, data: [] });
+
+    const results = await Olevel.find({
+      matricNumber: { $regex: new RegExp(query, "i") },
+    });
+    res.json({ success: true, data: results });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Search failed", error: err.message });
+  }
+});
+
+
 
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
