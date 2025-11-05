@@ -153,65 +153,61 @@
   </div>
 
  
-<script>
+ <script>
 const studentId = localStorage.getItem("studentId");
 const baseURL = "https://ict-reg.onrender.com";
 
 async function fetchDocuments() {
   try {
-    const res = await fetch(`${baseURL}/api/documents/${studentId}`);
+    // 🔹 Fetch all documents for the student
+    const res = await fetch(`${baseURL}/api/documents/student/${studentId}`);
     if (!res.ok) throw new Error(`Failed to fetch documents. Status: ${res.status}`);
     const data = await res.json();
 
     const main = document.getElementById("uploadsContainer");
     main.innerHTML = "";
 
-    if (!data.success || !data.data) {
+    if (!data.success || !Array.isArray(data.data) || data.data.length === 0) {
       main.innerHTML = "<p style='text-align:center;'>No documents found.</p>";
       return;
     }
 
-    const doc = data.data;
-    const files = doc.files || {};
-    const matricNumber = (doc.matricNumber || doc.studentId?.matricNumber || "").toUpperCase();
-
-    // 🔹 Fetch O'Level images by matric number
+    // 🔹 Merge all files & O'Level images across all documents
+    let allFiles = {};
     let uploadedOlevels = [];
-    if (matricNumber) {
-      try {
-        const oLevelRes = await fetch(`${baseURL}/api/olevel/${encodeURIComponent(matricNumber)}`);
-        if (oLevelRes.ok) {
-          const oLevelData = await oLevelRes.json();
-          if (oLevelData?.success && Array.isArray(oLevelData.record?.olevelData)) {
-            uploadedOlevels = oLevelData.record.olevelData
-              .map(r => r.fileUrl)
-              .filter(url => url && url !== "N/A");
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching O'Level images:", err);
+
+    data.data.forEach(doc => {
+      // Merge all files
+      if (doc.files) {
+        allFiles = {...allFiles, ...doc.files};
       }
-    }
+      // Collect oLevelData fileUrls
+      if (Array.isArray(doc.olevelData)) {
+        uploadedOlevels.push(...doc.olevelData
+          .map(r => r.fileUrl)
+          .filter(url => url && url !== "N/A")
+        );
+      }
+      // Include oLevelUploads array if present
+      if (Array.isArray(doc.files?.oLevelUploads)) {
+        uploadedOlevels.push(...doc.files.oLevelUploads.filter(url => url && url !== "N/A"));
+      }
+    });
 
-    // 🔹 Include any additional uploads stored in doc.files.oLevelUploads
-    if (Array.isArray(files.oLevelUploads) && files.oLevelUploads.length > 0) {
-      uploadedOlevels = uploadedOlevels.concat(
-        files.oLevelUploads.filter(url => url && url !== "N/A")
-      );
-    }
-
-    // 🔸 Remove duplicates, just in case
+    // Remove duplicates
     uploadedOlevels = [...new Set(uploadedOlevels)];
 
-    // 🔸 Helper: Create thumbnail with proper encoding
+    // 🔸 Helper: Create thumbnail
     const createThumbnail = (url, label) => {
       if (!url || url === "N/A") {
         return `<div class="no-file">${label}<br><small>File not yet uploaded</small></div>`;
       }
-      // encode quotes for onclick
       const encodedUrl = url.replace(/'/g, "\\'");
       return `<div class="thumbnail"><img src="${url}" onclick="openOverlay('${encodedUrl}')"><p>${label}</p></div>`;
     };
+
+    // Matric number (take first document's matricNumber)
+    const matricNumber = (data.data[0].matricNumber || "").toUpperCase();
 
     // 🎓 Matric number section
     const matricNumberSection = `
@@ -222,7 +218,7 @@ async function fetchDocuments() {
       </div>
     `;
 
-    // 🧾 O'Level section (all images)
+    // 🧾 O'Level section
     const oLevelSection = `
       <section>
         <h2 class="section-title">O'Level Result Images</h2>
@@ -236,71 +232,86 @@ async function fetchDocuments() {
       </section>
     `;
 
-    // 🎓 JAMB info
+    // 🎓 JAMB info (merge first valid info)
+    const firstJambDoc = data.data.find(d => d.jambInfo);
     const jambInfo = `
       <section>
         <h2 class="section-title">JAMB Details</h2>
         <label>JAMB Reg No</label>
-        <input class="readonly-input" value="${doc.jambInfo?.jambRegNo || 'N/A'}" readonly>
+        <input class="readonly-input" value="${firstJambDoc?.jambInfo?.jambRegNo || 'N/A'}" readonly>
         <label>JAMB Score</label>
-        <input class="readonly-input" value="${doc.jambInfo?.jambScore || 'N/A'}" readonly>
+        <input class="readonly-input" value="${firstJambDoc?.jambInfo?.jambScore || 'N/A'}" readonly>
       </section>
     `;
 
-    // 🗂️ All other sections
-    const sections = `
-      ${matricNumberSection}
-      ${oLevelSection}
-      ${jambInfo}
+    // 🗂️ Helper: merge all other files from all documents
+    const mergedFiles = {...allFiles};
 
+    // Sections for other files
+    const jambDocsSection = `
       <section>
         <h2 class="section-title">JAMB Documents</h2>
         <div class="thumbnail-grid">
-          ${createThumbnail(files.jambUpload, "JAMB Result Upload")}
-          ${createThumbnail(files.jambAdmission, "JAMB Admission Letter")}
-        </div>
-      </section>
-
-      <section>
-        <h2 class="section-title">School Forms</h2>
-        <div class="thumbnail-grid">
-          ${createThumbnail(files.applicationForm, "Application Form")}
-          ${createThumbnail(files.acceptanceForm, "Acceptance Form")}
-          ${createThumbnail(files.guarantorForm, "Guarantor’s Form")}
-          ${createThumbnail(files.codeOfConduct, "Code of Conduct")}
-        </div>
-      </section>
-
-      <section>
-        <h2 class="section-title">Course & Receipts</h2>
-        <div class="thumbnail-grid">
-          ${createThumbnail(files.nd1First, "ND1 - First Semester Course Form")}
-          ${createThumbnail(files.nd1Second, "ND1 - Second Semester Course Form")}
-          ${createThumbnail(files.nd2First, "ND2 - First Semester Course Form")}
-          ${createThumbnail(files.nd2Second, "ND2 - Second Semester Course Form")}
-          ${createThumbnail(files.ict1, "ICT Receipt 1")}
-          ${createThumbnail(files.ict2, "ICT Receipt 2")}
-          ${createThumbnail(files.ict3, "ICT Receipt 3")}
-          ${createThumbnail(files.ict4, "ICT Receipt 4")}
-          ${createThumbnail(files.fee1, "School Fees Receipt 1")}
-          ${createThumbnail(files.fee2, "School Fees Receipt 2")}
-          ${createThumbnail(files.fee3, "School Fees Receipt 3")}
-          ${createThumbnail(files.fee4, "School Fees Receipt 4")}
-        </div>
-      </section>
-
-      <section>
-        <h2 class="section-title">Other Documents</h2>
-        <div class="thumbnail-grid">
-          ${createThumbnail(files.acceptanceFee, "Acceptance Fee")}
-          ${createThumbnail(files.stateOfOrigin, "State of Origin")}
-          ${createThumbnail(files.nin, "NIN Upload")}
-          ${createThumbnail(files.deptFee, "Departmental Fee Receipt")}
+          ${createThumbnail(mergedFiles.jambUpload, "JAMB Result Upload")}
+          ${createThumbnail(mergedFiles.jambAdmission, "JAMB Admission Letter")}
         </div>
       </section>
     `;
 
-    main.innerHTML = sections;
+    const schoolFormsSection = `
+      <section>
+        <h2 class="section-title">School Forms</h2>
+        <div class="thumbnail-grid">
+          ${createThumbnail(mergedFiles.applicationForm, "Application Form")}
+          ${createThumbnail(mergedFiles.acceptanceForm, "Acceptance Form")}
+          ${createThumbnail(mergedFiles.guarantorForm, "Guarantor’s Form")}
+          ${createThumbnail(mergedFiles.codeOfConduct, "Code of Conduct")}
+        </div>
+      </section>
+    `;
+
+    const courseReceiptsSection = `
+      <section>
+        <h2 class="section-title">Course & Receipts</h2>
+        <div class="thumbnail-grid">
+          ${createThumbnail(mergedFiles.nd1First, "ND1 - First Semester Course Form")}
+          ${createThumbnail(mergedFiles.nd1Second, "ND1 - Second Semester Course Form")}
+          ${createThumbnail(mergedFiles.nd2First, "ND2 - First Semester Course Form")}
+          ${createThumbnail(mergedFiles.nd2Second, "ND2 - Second Semester Course Form")}
+          ${createThumbnail(mergedFiles.ict1, "ICT Receipt 1")}
+          ${createThumbnail(mergedFiles.ict2, "ICT Receipt 2")}
+          ${createThumbnail(mergedFiles.ict3, "ICT Receipt 3")}
+          ${createThumbnail(mergedFiles.ict4, "ICT Receipt 4")}
+          ${createThumbnail(mergedFiles.fee1, "School Fees Receipt 1")}
+          ${createThumbnail(mergedFiles.fee2, "School Fees Receipt 2")}
+          ${createThumbnail(mergedFiles.fee3, "School Fees Receipt 3")}
+          ${createThumbnail(mergedFiles.fee4, "School Fees Receipt 4")}
+        </div>
+      </section>
+    `;
+
+    const otherDocsSection = `
+      <section>
+        <h2 class="section-title">Other Documents</h2>
+        <div class="thumbnail-grid">
+          ${createThumbnail(mergedFiles.acceptanceFee, "Acceptance Fee")}
+          ${createThumbnail(mergedFiles.stateOfOrigin, "State of Origin")}
+          ${createThumbnail(mergedFiles.nin, "NIN Upload")}
+          ${createThumbnail(mergedFiles.deptFee, "Departmental Fee Receipt")}
+        </div>
+      </section>
+    `;
+
+    // 🔹 Render everything
+    main.innerHTML = `
+      ${matricNumberSection}
+      ${oLevelSection}
+      ${jambInfo}
+      ${jambDocsSection}
+      ${schoolFormsSection}
+      ${courseReceiptsSection}
+      ${otherDocsSection}
+    `;
 
   } catch (err) {
     console.error("Error loading documents:", err);
