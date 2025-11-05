@@ -91,6 +91,7 @@
   @media(max-width:768px){
     th, td { font-size: 0.9rem; }
   }
+
 </style>
 </head>
 <body>
@@ -122,6 +123,23 @@
       <button type="submit">📤 Upload</button>
     </form>
   </div>
+
+
+<!-- 🔄 Spinner Overlay -->
+<div id="spinnerOverlay" style="
+  display:none;
+  position:fixed;
+  top:0; left:0; right:0; bottom:0;
+  background:rgba(0,0,0,0.5);
+  color:white;
+  font-size:1.2rem;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+">
+  Uploading, please wait...
+</div>
+
 
   <!-- View Section -->
   <div id="viewTab" class="tab-content">
@@ -200,39 +218,55 @@ olevelCount.addEventListener("change", () => {
   }
 });
 
-// ====== FORM SUBMIT ======
+// ===== FORM SUBMIT =====
 document.getElementById("olevelForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const formData = new FormData();
-
-  const matricNumber = document.getElementById("matricNumber").value.trim().toUpperCase();
-  const count = parseInt(olevelCount.value);
-  if (!matricNumber || !count) return alert("Please fill all required fields");
-
-  formData.append("matricNumber", matricNumber);
-  formData.append("count", count);
-
-  const olevelData = [];
-  for (let i = 1; i <= count; i++) {
-    const examType = document.getElementById(`examType${i}`).value.trim();
-    const serial = document.getElementById(`serial${i}`).value.trim();
-    const pin = document.getElementById(`pin${i}`).value.trim();
-    const file = document.getElementById(`file${i}`).files[0];
-    if (!examType || !serial || !pin || !file)
-      return alert(`Please fill all fields for O’Level ${i}`);
-    formData.append(`file${i}`, file);
-    olevelData.push({ examType, serial, pin });
-  }
-  formData.append("olevelData", JSON.stringify(olevelData));
+  const spinner = document.getElementById("spinnerOverlay");
+  spinner.style.display = "flex"; // show spinner
 
   try {
-    const res = await fetch(`${backendURL}/api/olevel/upload`, { method: "POST", body: formData });
+    const formData = new FormData();
+
+    const matricNumber = document.getElementById("matricNumber").value.trim().toUpperCase();
+    const count = parseInt(olevelCount.value);
+    if (!matricNumber || !count) return alert("Please fill all required fields");
+
+    formData.append("matricNumber", matricNumber);
+    const olevelData = [];
+
+    for (let i = 1; i <= count; i++) {
+      const examType = document.getElementById(`examType${i}`).value.trim();
+      const serial = document.getElementById(`serial${i}`).value.trim();
+      const pin = document.getElementById(`pin${i}`).value.trim();
+      const file = document.getElementById(`file${i}`).files[0];
+
+      if (!examType || !serial || !pin || !file)
+        return alert(`Please fill all fields for O’Level ${i}`);
+
+      olevelData.push({ examType, serialNumber: serial, pin });
+      formData.append(`file${i}`, file); // names match backend now
+    }
+
+    formData.append("olevelData", JSON.stringify(olevelData));
+
+    const res = await fetch(`${backendURL}/api/olevel/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error("Failed to upload");
+
     const data = await res.json();
-    alert(data.message || "Upload complete!");
+    if (!data.success) throw new Error(data.message);
+
+    alert("✅ O’Level uploaded successfully!");
     document.getElementById("olevelForm").reset();
     olevelContainer.innerHTML = "";
   } catch (err) {
+    console.error(err);
     alert("Error uploading: " + err.message);
+  } finally {
+    spinner.style.display = "none"; // hide spinner
   }
 });
 
