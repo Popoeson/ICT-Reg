@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Access Pin Management</title>
+  <style>
+    /* White + Blue theme */
+    :root{
+      --primary: #007bff;
+      --primary-dark: #0056b3;
+      --muted: #6c757d;
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --radius: 8px;
+      --gap: 12px;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:#222}
+    header{background:var(--primary);color:#fff;padding:16px 18px;text-align:center;font-weight:700}
+    .wrap{max-width:980px;margin:22px auto;padding:0 16px}
+    .tabs{display:flex;gap:8px;justify-content:center;margin-bottom:18px}
+    .tab{padding:10px 18px;border-radius:8px 8px 0 0;background:var(--card);border:1px solid var(--primary);color:var(--primary);cursor:pointer}
+    .tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .panel{background:var(--card);border-radius:0 8px 8px 8px;padding:18px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+    label{display:block;font-weight:600;margin:8px 0 6px}
+    input[type=text], select{width:100%;padding:10px;border-radius:6px;border:1px solid #ddd}
+    .row{display:flex;gap:12px;align-items:center}
+    .row .col{flex:1}
+    button{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:6px;cursor:pointer}
+    button.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary)}
+    button[disabled]{opacity:0.6;cursor:not-allowed}
+    .muted{color:var(--muted);}
+    .mt{margin-top:12px}
+    .logs-controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+    .logs-controls input, .logs-controls select{padding:8px;border-radius:6px;border:1px solid #ddd}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border:1px solid #e7e7e7;text-align:center;font-size:0.95rem}
+    th{background:var(--primary);color:#fff}
+    .status-used{color:#d9534f;font-weight:700}
+    .status-unused{color:#28a745;font-weight:700}
+    .small{font-size:0.9rem}
+    .center{text-align:center}
+    @media(max-width:700px){
+      .row{flex-direction:column}
+      .tabs{flex-wrap:wrap}
+      th,td{font-size:0.85rem}
+    }
+  </style>
+</head>
+<body>
+  <header>Access Pin Management</header>
+  <div class="wrap">
+    <div class="tabs" role="tablist" aria-label="Pin tabs">
+      <div class="tab active" data-target="generateTab">Generate Access Pin</div>
+      <div class="tab" data-target="logsTab">Access Pin Logs</div>
+    </div>
+
+    <!-- Generate Tab -->
+    <div id="generateTab" class="panel" style="display:block">
+      <h3 style="margin:0 0 12px 0;color:var(--primary)">Generate Access Pin</h3>
+
+      <div style="max-width:600px">
+        <label for="departmentInput">Department</label>
+        <select id="departmentInput">
+          <option value="">Select department</option>
+          <option value="Accountancy">Accountancy</option>
+          <option value="Business Admin">Business Admin</option>
+          <option value="Computer Science">Computer Science</option>
+          <option value="Computer Engineering">Computer Engineering</option>
+          <option value="Elect/Elect">Elect/Elect</option>
+          <option value="Mass Communication">Mass Communication</option>
+          <option value="Estate Management">Estate Management</option>
+          <option value="OTM">OTM</option>
+        </select>
+
+        <label for="matricInput">Matric Number</label>
+        <input type="text" id="matricInput" placeholder="e.g. COS/023035" />
+
+        <div class="mt">
+          <button id="generateBtn">Generate Pin</button>
+        </div>
+
+        <p id="generateMsg" class="small mt muted"></p>
+      </div>
+    </div>
+
+    <!-- Logs Tab -->
+    <div id="logsTab" class="panel" style="display:none">
+      <h3 style="margin:0 0 12px 0;color:var(--primary)">Access Pin Logs</h3>
+
+      <div class="logs-controls">
+        <input id="searchMatric" type="text" placeholder="Search by matric number" />
+        <select id="filterDept">
+          <option value="">All departments</option>
+          <option>Accountancy</option>
+          <option>Business Admin</option>
+          <option>Computer Science</option>
+          <option>Computer Engineering</option>
+          <option>Elect/Elect</option>
+          <option>Mass Communication</option>
+          <option>Estate Management</option>
+          <option>OTM</option>
+        </select>
+
+        <select id="filterUsed">
+          <option value="">All status</option>
+          <option value="unused">Unused only</option>
+          <option value="used">Used only</option>
+        </select>
+
+        <button id="searchBtn" class="ghost">Search</button>
+        <div style="flex:1"></div>
+        <button id="refreshBtn" class="ghost">Refresh</button>
+      </div>
+
+      <div style="overflow:auto">
+        <table aria-live="polite" id="pinsTable">
+          <thead>
+            <tr>
+              <th>Pin</th>
+              <th>Matric Number</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Generated At</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="pinsTbody">
+            <tr><td colspan="6" class="center muted">Loading pins...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const backendBaseUrl = "https://ict-reg.onrender.com"; // change if needed
+
+      // Tabs
+      document.querySelectorAll(".tab").forEach(tab=>{
+        tab.onclick = () => {
+          document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+          document.querySelectorAll(".panel").forEach(p=>p.style.display = "none");
+          tab.classList.add("active");
+          document.getElementById(tab.dataset.target).style.display = "block";
+        };
+      });
+
+      // Generate pin elements
+      const deptInput = document.getElementById("departmentInput");
+      const matricInput = document.getElementById("matricInput");
+      const generateBtn = document.getElementById("generateBtn");
+      const generateMsg = document.getElementById("generateMsg");
+
+      generateBtn.addEventListener("click", async ()=>{
+        generateMsg.textContent = "";
+        const department = (deptInput.value || "").trim();
+        const matricNumber = (matricInput.value || "").trim();
+
+        if (!department || !matricNumber) {
+          generateMsg.style.color = "red";
+          generateMsg.textContent = "Please provide department and matric number.";
+          return;
+        }
+
+        generateBtn.disabled = true;
+        generateBtn.textContent = "Generating...";
+
+        try {
+          const res = await fetch(`${backendBaseUrl}/api/generate-pin`, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ department, matricNumber })
+          });
+
+          const payload = await res.json();
+          if (res.ok && payload.success) {
+            generateMsg.style.color = "green";
+            generateMsg.textContent = `Pin generated: ${payload.data.pin}`;
+            // Optionally clear inputs
+            // deptInput.value = ""; matricInput.value = "";
+            // refresh logs
+            await loadPins();
+          } else {
+            generateMsg.style.color = "red";
+            generateMsg.textContent = payload.message || "Failed to generate pin";
+          }
+        } catch (err) {
+          console.error(err);
+          generateMsg.style.color = "red";
+          generateMsg.textContent = "Network/server error while generating pin.";
+        } finally {
+          generateBtn.disabled = false;
+          generateBtn.textContent = "Generate Pin";
+        }
+      });
+
+      // Logs controls
+      const searchMatric = document.getElementById("searchMatric");
+      const filterDept = document.getElementById("filterDept");
+      const filterUsed = document.getElementById("filterUsed");
+      const searchBtn = document.getElementById("searchBtn");
+      const refreshBtn = document.getElementById("refreshBtn");
+      const pinsTbody = document.getElementById("pinsTbody");
+
+      // Fetch pins
+      async function loadPins() {
+        pinsTbody.innerHTML = `<tr><td colspan="6" class="center muted">Loading pins...</td></tr>`;
+        const q = new URLSearchParams({
+          matricNumber: searchMatric.value.trim(),
+          department: filterDept.value.trim()
+        }).toString();
+
+        try {
+          const res = await fetch(`${backendBaseUrl}/api/pins?${q}`);
+          const payload = await res.json();
+          if (!res.ok || !payload.success) {
+            pinsTbody.innerHTML = `<tr><td colspan="6" class="center muted">Error loading pins.</td></tr>`;
+            return;
+          }
+          let pins = payload.data || [];
+
+          // client-side used filter (API returns all matching; we also filter 'used' if selected)
+          const usedFilter = filterUsed.value;
+          if (usedFilter === "used") pins = pins.filter(p => p.used === true);
+          else if (usedFilter === "unused") pins = pins.filter(p => p.used === false);
+
+          if (pins.length === 0) {
+            pinsTbody.innerHTML = `<tr><td colspan="6" class="center muted">No pins found.</td></tr>`;
+            return;
+          }
+
+          pinsTbody.innerHTML = pins.map(pin => {
+            const statusHtml = pin.used ? `<span class="status-used">Used</span>` : `<span class="status-unused">Unused</span>`;
+            const generatedAt = new Date(pin.createdAt).toLocaleString();
+            const disableBtn = pin.used ? "disabled" : "";
+            // Mark used button
+            const actionBtn = `<button data-pin="${pin.pin}" class="markUsedBtn" ${disableBtn}>Mark Used</button>`;
+            return `<tr>
+              <td class="small">${pin.pin}</td>
+              <td>${pin.matricNumber}</td>
+              <td>${pin.department}</td>
+              <td>${statusHtml}</td>
+              <td class="small">${generatedAt}</td>
+              <td>${actionBtn}</td>
+            </tr>`;
+          }).join("");
+        } catch (err) {
+          console.error(err);
+          pinsTbody.innerHTML = `<tr><td colspan="6" class="center muted">Network error while fetching pins.</td></tr>`;
+        }
+      }
+
+      // Wire search + filter controls
+      searchBtn.addEventListener("click", loadPins);
+      refreshBtn.addEventListener("click", () => { searchMatric.value = ""; filterDept.value = ""; filterUsed.value = ""; loadPins(); });
+      searchMatric.addEventListener("keyup", (e) => { if (e.key === "Enter") loadPins(); });
+
+      // Delegate click for mark-used buttons
+      document.addEventListener("click", async (e)=>{
+        if (e.target && e.target.classList.contains("markUsedBtn")) {
+          const pinVal = e.target.dataset.pin;
+          if (!confirm(`Mark pin ${pinVal} as used? This action cannot be undone.`)) return;
+          e.target.disabled = true;
+          e.target.textContent = "Marking...";
+
+          try {
+            const res = await fetch(`${backendBaseUrl}/api/use-pin`, {
+              method: "POST",
+              headers: {"Content-Type":"application/json"},
+              body: JSON.stringify({ pin: pinVal })
+            });
+            const payload = await res.json();
+            if (res.ok && payload.success) {
+              // reload pins
+              await loadPins();
+            } else {
+              alert(payload.message || "Failed to mark pin used");
+              e.target.disabled = false;
+              e.target.textContent = "Mark Used";
+            }
+          } catch (err) {
+            console.error(err);
+            alert("Network/server error while marking pin used.");
+            e.target.disabled = false;
+            e.target.textContent = "Mark Used";
+          }
+        }
+      });
+
+      // initial load
+      loadPins();
+    })();
+  </script>
+</body>
+</html>
