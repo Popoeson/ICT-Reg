@@ -13,25 +13,25 @@
       --muted: #6c757d;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
-    body{margin:0;background:var(--bg);color:#222}
-    header{background:var(--primary);color:#fff;padding:16px;text-align:center;font-weight:700}
-    .wrap{max-width:900px;margin:20px auto;padding:0 16px}
-    .tabs{display:flex;gap:8px;justify-content:center;margin-bottom:18px;flex-wrap:wrap}
-    .tab{padding:10px 18px;border-radius:8px 8px 0 0;background:var(--card);border:1px solid var(--primary);color:var(--primary);cursor:pointer}
-    .tab.active{background:var(--primary);color:#fff}
-    .panel{background:var(--card);border-radius:0 8px 8px 8px;padding:18px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
-    label{display:block;font-weight:600;margin:8px 0 6px}
-    input, select{width:100%;padding:10px;border-radius:6px;border:1px solid #ddd}
-    button{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:6px;cursor:pointer}
-    button.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary)}
-    button[disabled]{opacity:0.6;cursor:not-allowed}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{padding:8px;border:1px solid #e7e7e7;text-align:center;font-size:0.95rem}
-    th{background:var(--primary);color:#fff}
-    .status-used{color:#d9534f;font-weight:700}
-    .status-unused{color:#28a745;font-weight:700}
-    .logs-controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
-    .logs-controls input, .logs-controls select{padding:8px;border-radius:6px;border:1px solid #ddd}
+    body { margin: 0; background: var(--bg); color: #222; }
+    header { background: var(--primary); color: #fff; padding: 16px; text-align: center; font-weight: 700; }
+    .wrap { max-width: 900px; margin: 20px auto; padding: 0 16px; }
+    .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; flex-wrap: wrap; }
+    .tab { padding: 10px 18px; border-radius: 8px 8px 0 0; background: var(--card); border: 1px solid var(--primary); color: var(--primary); cursor: pointer; }
+    .tab.active { background: var(--primary); color: #fff; }
+    .panel { background: var(--card); border-radius: 0 8px 8px 8px; padding: 18px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+    label { display: block; font-weight: 600; margin: 8px 0 6px; }
+    input, select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd; }
+    button { background: var(--primary); color: #fff; padding: 10px 14px; border: none; border-radius: 6px; cursor: pointer; }
+    button.ghost { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+    button[disabled] { opacity: 0.6; cursor: not-allowed; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { padding: 8px; border: 1px solid #e7e7e7; text-align: center; font-size: 0.95rem; }
+    th { background: var(--primary); color: #fff; }
+    .status-used { color: #d9534f; font-weight: 700; }
+    .status-unused { color: #28a745; font-weight: 700; }
+    .logs-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .logs-controls input, .logs-controls select { padding: 8px; border-radius: 6px; border: 1px solid #ddd; }
   </style>
 </head>
 <body>
@@ -70,6 +70,8 @@
         </select>
         <button id="searchBtn" class="ghost">Search</button>
         <button id="refreshBtn" class="ghost">Refresh</button>
+        <button id="copyAllBtn" class="ghost">Copy All Pins</button>
+        <button id="deleteAllBtn" class="ghost" style="color:red;border-color:red">Delete All</button>
       </div>
 
       <div style="overflow:auto">
@@ -105,47 +107,36 @@
       };
     });
 
-   
-    // Load courses dynamically (fixed to handle nested structure)
-async function loadCourses() {
-  const courseSelect = document.getElementById("courseSelect");
-  try {
-    const res = await fetch(`${backendBaseUrl}/api/courses`);
-    const payload = await res.json();
+    // Load courses
+    async function loadCourses() {
+      const courseSelect = document.getElementById("courseSelect");
+      try {
+        const res = await fetch(`${backendBaseUrl}/api/courses`);
+        const payload = await res.json();
 
-    if (!payload.success || !payload.data || payload.data.length === 0) {
-      courseSelect.innerHTML = `<option>No courses available</option>`;
-      return;
-    }
+        if (!payload.success || !payload.data?.length) {
+          courseSelect.innerHTML = `<option>No courses available</option>`;
+          return;
+        }
 
-    // Flatten nested structure like in courses.html
-    const allCourses = [];
-    payload.data.forEach(doc => {
-      const { department, level, semester, courses } = doc;
-      (courses || []).forEach(course => {
-        allCourses.push({
-          code: course.code,
-          title: course.title,
-          dept: department,
-          level,
-          semester
+        const allCourses = [];
+        payload.data.forEach(doc => {
+          const { department, level, courses } = doc;
+          (courses || []).forEach(course => {
+            allCourses.push({ code: course.code, title: course.title, dept: department, level });
+          });
         });
-      });
-    });
 
-    // Populate dropdown
-    courseSelect.innerHTML = `<option value="">Select a course</option>`;
-    allCourses.forEach(c => {
-      courseSelect.innerHTML += `
-        <option value="${c.code}" data-title="${c.title}">
-          ${c.code} – ${c.title} (${c.dept}, ${c.level})
-        </option>`;
-    });
-  } catch (err) {
-    console.error("Error loading courses:", err);
-    courseSelect.innerHTML = `<option>Error loading courses</option>`;
-  }
-}
+        courseSelect.innerHTML = `<option value="">Select a course</option>`;
+        allCourses.forEach(c => {
+          courseSelect.innerHTML += `<option value="${c.code}" data-title="${c.title}">
+            ${c.code} – ${c.title} (${c.dept}, ${c.level})
+          </option>`;
+        });
+      } catch {
+        courseSelect.innerHTML = `<option>Error loading courses</option>`;
+      }
+    }
 
     // Generate pins
     document.getElementById("generateBtn").addEventListener("click", async () => {
@@ -155,14 +146,9 @@ async function loadCourses() {
       const amount = document.getElementById("pinAmount").value;
       const msg = document.getElementById("generateMsg");
 
-      if (!code) {
-        msg.style.color = "red";
-        msg.textContent = "Please select a course.";
-        return;
-      }
+      if (!code) return msgDisplay("Please select a course.", "red");
 
-      msg.style.color = "gray";
-      msg.textContent = "Generating pins...";
+      msgDisplay("Generating pins...", "gray");
       try {
         const res = await fetch(`${backendBaseUrl}/api/course-pins/generate`, {
           method: "POST",
@@ -171,20 +157,21 @@ async function loadCourses() {
         });
         const payload = await res.json();
         if (payload.success) {
-          msg.style.color = "green";
-          msg.textContent = payload.message;
+          msgDisplay(payload.message, "green");
           loadPins();
-        } else {
-          msg.style.color = "red";
-          msg.textContent = payload.message;
-        }
+        } else msgDisplay(payload.message, "red");
       } catch {
-        msg.style.color = "red";
-        msg.textContent = "Server error while generating pins.";
+        msgDisplay("Server error while generating pins.", "red");
       }
     });
 
-    // Load pins log
+    function msgDisplay(text, color) {
+      const msg = document.getElementById("generateMsg");
+      msg.style.color = color;
+      msg.textContent = text;
+    }
+
+    // Load pins
     async function loadPins() {
       const q = new URLSearchParams({
         courseCode: document.getElementById("searchCourse").value.trim(),
@@ -208,14 +195,16 @@ async function loadCourses() {
         tbody.innerHTML = pins.map(p => {
           const status = p.used ? `<span class="status-used">Used</span>` : `<span class="status-unused">Unused</span>`;
           const created = new Date(p.createdAt).toLocaleString();
-          const btn = p.used ? "—" : `<button class="ghost markUsedBtn" data-pin="${p.pin}">Mark Used</button>`;
           return `<tr>
             <td>${p.pin}</td>
             <td>${p.courseCode}</td>
             <td>${p.courseTitle}</td>
             <td>${status}</td>
             <td>${created}</td>
-            <td>${btn}</td>
+            <td>
+              <button class="ghost deleteBtn" data-id="${p._id}" style="color:red">Delete</button>
+              ${!p.used ? `<button class="ghost markUsedBtn" data-pin="${p.pin}">Mark Used</button>` : ""}
+            </td>
           </tr>`;
         }).join("");
       } catch {
@@ -223,6 +212,7 @@ async function loadCourses() {
       }
     }
 
+    // Buttons
     document.getElementById("searchBtn").addEventListener("click", loadPins);
     document.getElementById("refreshBtn").addEventListener("click", () => {
       document.getElementById("searchCourse").value = "";
@@ -230,6 +220,22 @@ async function loadCourses() {
       loadPins();
     });
 
+    // Copy all pins
+    document.getElementById("copyAllBtn").addEventListener("click", async () => {
+      const pins = [...document.querySelectorAll("#pinsTbody tr td:first-child")].map(td => td.textContent.trim()).join("\n");
+      if (!pins) return alert("No pins to copy.");
+      await navigator.clipboard.writeText(pins);
+      alert("All pins copied to clipboard!");
+    });
+
+    // Delete all pins
+    document.getElementById("deleteAllBtn").addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to delete ALL pins?")) return;
+      await fetch(`${backendBaseUrl}/api/course-pins/delete-all`, { method: "DELETE" });
+      loadPins();
+    });
+
+    // Mark used or delete single pin
     document.addEventListener("click", async e => {
       if (e.target.classList.contains("markUsedBtn")) {
         const pin = e.target.dataset.pin;
@@ -239,6 +245,13 @@ async function loadCourses() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ pin })
         });
+        loadPins();
+      }
+
+      if (e.target.classList.contains("deleteBtn")) {
+        const id = e.target.dataset.id;
+        if (!confirm("Delete this pin?")) return;
+        await fetch(`${backendBaseUrl}/api/course-pins/${id}`, { method: "DELETE" });
         loadPins();
       }
     });
