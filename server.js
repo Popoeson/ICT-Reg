@@ -1164,13 +1164,18 @@ app.post("/api/course-pins/generate", async (req, res) => {
       const random = Math.floor(1000 + Math.random() * 9000);
       const prefix = courseCode.split(" ")[0].toUpperCase();
       const pinCode = `REG/${prefix}/${random}`;
-
       pins.push({ courseCode, courseTitle, pin: pinCode });
     }
 
     await CoursePin.insertMany(pins);
 
-    res.json({ success: true, message: `${count} pin(s) generated successfully.`, data: pins });
+    const generatedPins = pins.map((p) => p.pin);
+
+    res.json({
+      success: true,
+      message: `${count} pin(s) generated successfully.`,
+      generatedPins, // frontend uses this
+    });
   } catch (err) {
     console.error("Error generating course pins:", err);
     res.status(500).json({ success: false, message: "Server error generating pins" });
