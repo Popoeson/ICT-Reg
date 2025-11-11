@@ -257,7 +257,7 @@
       if (e.target.classList.contains("deleteBtn")) {
         const id = e.target.dataset.id;
         if (!confirm("Delete this pin?")) return;
-        await fetch(`${backendBaseUrl}/api/course-pins/delete-all/${id}`, { method: "DELETE" });
+        await fetch(`${backendBaseUrl}/api/course-pins/${id}`, { method: "DELETE" });
         loadPins();
       }
     });
