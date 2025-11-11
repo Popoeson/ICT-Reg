@@ -1233,13 +1233,21 @@ app.delete("/api/course-pins/:id", async (req, res) => {
   }
 });
 
-// Delete all pins
+// === Delete all course pins ===
 app.delete("/api/course-pins/delete-all", async (req, res) => {
   try {
-    await CoursePin.deleteMany({});
-    res.json({ success: true, message: "All pins deleted successfully" });
-  } catch {
-    res.status(500).json({ success: false, message: "Error deleting all pins" });
+    const result = await CoursePin.deleteMany({});
+    res.json({
+      success: true,
+      message: `All pins deleted successfully (${result.deletedCount} removed)`
+    });
+  } catch (err) {
+    console.error("Error deleting all pins:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting all pins",
+      error: err.message
+    });
   }
 });
 
