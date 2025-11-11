@@ -242,15 +242,18 @@ const Olevel = mongoose.model("Olevel", oLevelSchema);
 
 // ================== ACCESS PIN SCHEMA ================
 
-const accessPinSchema = new mongoose.Schema({
+// === CoursePin Schema ===
+const mongoose = require("mongoose");
+
+const CoursePinSchema = new mongoose.Schema({
+  courseCode: { type: String, required: true },
+  courseTitle: { type: String, required: true },
   pin: { type: String, required: true, unique: true },
-  matricNumber: { type: String, required: true },
-  department: { type: String, required: true },
   used: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now },
+  createdAt: { type: Date, default: Date.now }
 });
 
-const AccessPin = mongoose.model("AccessPin", accessPinSchema);
+const CoursePin = mongoose.model("CoursePin", CoursePinSchema);
 
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
@@ -1148,68 +1151,72 @@ app.get("/api/olevel/:matricNumber", async (req, res) => {
 });
 
 // ================== ACCESS PIN ROUTES ==================
-
-// ✅ Generate Access Pin
-app.post("/api/generate-pin", async (req, res) => {
+// === Generate course registration pins ===
+app.post("/api/course-pins/generate", async (req, res) => {
   try {
-    const { department, matricNumber } = req.body;
-    if (!department || !matricNumber)
-      return res.status(400).json({ success: false, message: "All fields are required" });
+    const { courseCode, courseTitle, amount } = req.body;
+    if (!courseCode || !courseTitle) {
+      return res.status(400).json({ success: false, message: "Course and title required" });
+    }
 
-    const prefix = department.toUpperCase().slice(0, 3);
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    const pin = `POR/${prefix}/${randomNum}`;
+    const count = parseInt(amount) || 1;
+    const pins = [];
 
-    // Prevent duplicate unused pins
-    const existing = await AccessPin.findOne({ matricNumber, used: false });
-    if (existing)
-      return res.status(400).json({ success: false, message: "An unused pin already exists for this student." });
+    for (let i = 0; i < count; i++) {
+      const random = Math.floor(1000 + Math.random() * 9000);
+      const prefix = courseCode.split(" ")[0].toUpperCase();
+      const pinCode = `REG/${prefix}/${random}`;
 
-    const newPin = new AccessPin({ pin, department, matricNumber });
-    await newPin.save();
+      pins.push({ courseCode, courseTitle, pin: pinCode });
+    }
 
-    res.json({ success: true, message: "Pin generated successfully", data: newPin });
+    await CoursePin.insertMany(pins);
+
+    res.json({ success: true, message: `${count} pin(s) generated successfully.`, data: pins });
   } catch (err) {
-    console.error("Error generating pin:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    console.error("Error generating course pins:", err);
+    res.status(500).json({ success: false, message: "Server error generating pins" });
   }
 });
 
-// ✅ Fetch Pins (with search)
-app.get("/api/pins", async (req, res) => {
+// === Fetch all pins (with search/filter) ===
+app.get("/api/course-pins", async (req, res) => {
   try {
-    const { matricNumber, department } = req.query;
-    const filter = {};
-    if (matricNumber) filter.matricNumber = { $regex: matricNumber, $options: "i" };
-    if (department) filter.department = { $regex: department, $options: "i" };
+    const { courseCode, used } = req.query;
+    const query = {};
 
-    const pins = await AccessPin.find(filter).sort({ createdAt: -1 });
+    if (courseCode) {
+      query.courseCode = { $regex: new RegExp(courseCode, "i") };
+    }
+
+    if (used === "true") query.used = true;
+    if (used === "false") query.used = false;
+
+    const pins = await CoursePin.find(query).sort({ createdAt: -1 });
     res.json({ success: true, data: pins });
   } catch (err) {
-    console.error("Error fetching pins:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    console.error("Error fetching course pins:", err);
+    res.status(500).json({ success: false, message: "Error fetching course pins" });
   }
 });
 
-// ✅ Mark Pin as Used
-app.post("/api/use-pin", async (req, res) => {
+// === Mark pin as used ===
+app.post("/api/course-pins/use", async (req, res) => {
   try {
     const { pin } = req.body;
-    const foundPin = await AccessPin.findOne({ pin });
+    if (!pin) return res.status(400).json({ success: false, message: "Pin required" });
 
-    if (!foundPin)
-      return res.status(404).json({ success: false, message: "Pin not found" });
+    const record = await CoursePin.findOne({ pin });
+    if (!record) return res.status(404).json({ success: false, message: "Pin not found" });
+    if (record.used) return res.json({ success: false, message: "Pin already marked as used" });
 
-    if (foundPin.used)
-      return res.status(400).json({ success: false, message: "Pin already used" });
+    record.used = true;
+    await record.save();
 
-    foundPin.used = true;
-    await foundPin.save();
-
-    res.json({ success: true, message: "Pin marked as used", data: foundPin });
+    res.json({ success: true, message: "Pin marked as used." });
   } catch (err) {
-    console.error("Error marking pin as used:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    console.error("Error marking pin used:", err);
+    res.status(500).json({ success: false, message: "Server error marking pin used" });
   }
 });
 
