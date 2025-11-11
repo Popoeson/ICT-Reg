@@ -53,8 +53,13 @@
       <label>Number of Pins</label>
       <input type="number" id="pinAmount" min="1" value="1" />
 
-      <button id="generateBtn" style="margin-top:12px">Generate Pins</button>
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button id="generateBtn">Generate Pins</button>
+        <button id="copyGeneratedBtn" class="ghost">Copy Generated Pins</button>
+      </div>
+
       <p id="generateMsg" style="margin-top:10px;color:var(--muted)"></p>
+      <textarea id="generatedPinsBox" readonly style="display:none;width:100%;height:120px;margin-top:10px;border-radius:6px;border:1px solid #ddd;padding:8px;"></textarea>
     </div>
 
     <!-- Logs -->
@@ -70,7 +75,6 @@
         </select>
         <button id="searchBtn" class="ghost">Search</button>
         <button id="refreshBtn" class="ghost">Refresh</button>
-        <button id="copyAllBtn" class="ghost">Copy All Pins</button>
         <button id="deleteAllBtn" class="ghost" style="color:red;border-color:red">Delete All</button>
       </div>
 
@@ -96,6 +100,7 @@
 
   <script>
     const backendBaseUrl = "https://ict-reg.onrender.com";
+    let lastGeneratedPins = [];
 
     // Tabs
     document.querySelectorAll(".tab").forEach(tab => {
@@ -113,7 +118,6 @@
       try {
         const res = await fetch(`${backendBaseUrl}/api/courses`);
         const payload = await res.json();
-
         if (!payload.success || !payload.data?.length) {
           courseSelect.innerHTML = `<option>No courses available</option>`;
           return;
@@ -145,6 +149,7 @@
       const title = select.selectedOptions[0]?.dataset.title;
       const amount = document.getElementById("pinAmount").value;
       const msg = document.getElementById("generateMsg");
+      const pinsBox = document.getElementById("generatedPinsBox");
 
       if (!code) return msgDisplay("Please select a course.", "red");
 
@@ -156,13 +161,22 @@
           body: JSON.stringify({ courseCode: code, courseTitle: title, amount })
         });
         const payload = await res.json();
-        if (payload.success) {
+        if (payload.success && payload.generatedPins?.length) {
           msgDisplay(payload.message, "green");
-          loadPins();
-        } else msgDisplay(payload.message, "red");
+          lastGeneratedPins = payload.generatedPins;
+          pinsBox.style.display = "block";
+          pinsBox.value = lastGeneratedPins.join("\n");
+        } else msgDisplay(payload.message || "Error generating pins", "red");
       } catch {
         msgDisplay("Server error while generating pins.", "red");
       }
+    });
+
+    // Copy generated pins
+    document.getElementById("copyGeneratedBtn").addEventListener("click", async () => {
+      if (!lastGeneratedPins.length) return alert("No pins generated yet.");
+      await navigator.clipboard.writeText(lastGeneratedPins.join("\n"));
+      alert("Generated pins copied to clipboard!");
     });
 
     function msgDisplay(text, color) {
@@ -218,14 +232,6 @@
       document.getElementById("searchCourse").value = "";
       document.getElementById("filterUsed").value = "";
       loadPins();
-    });
-
-    // Copy all pins
-    document.getElementById("copyAllBtn").addEventListener("click", async () => {
-      const pins = [...document.querySelectorAll("#pinsTbody tr td:first-child")].map(td => td.textContent.trim()).join("\n");
-      if (!pins) return alert("No pins to copy.");
-      await navigator.clipboard.writeText(pins);
-      alert("All pins copied to clipboard!");
     });
 
     // Delete all pins
