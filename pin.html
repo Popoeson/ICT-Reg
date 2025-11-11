@@ -105,24 +105,47 @@
       };
     });
 
-    // Load courses dynamically
-    async function loadCourses() {
-      const courseSelect = document.getElementById("courseSelect");
-      try {
-        const res = await fetch(`${backendBaseUrl}/api/courses`);
-        const payload = await res.json();
-        if (payload.success && payload.data.length > 0) {
-          courseSelect.innerHTML = `<option value="">Select a course</option>`;
-          payload.data.forEach(c => {
-            courseSelect.innerHTML += `<option value="${c.courseCode}" data-title="${c.courseTitle}">${c.courseCode} – ${c.courseTitle}</option>`;
-          });
-        } else {
-          courseSelect.innerHTML = `<option>No courses available</option>`;
-        }
-      } catch {
-        courseSelect.innerHTML = `<option>Error loading courses</option>`;
-      }
+   
+    // Load courses dynamically (fixed to handle nested structure)
+async function loadCourses() {
+  const courseSelect = document.getElementById("courseSelect");
+  try {
+    const res = await fetch(`${backendBaseUrl}/api/courses`);
+    const payload = await res.json();
+
+    if (!payload.success || !payload.data || payload.data.length === 0) {
+      courseSelect.innerHTML = `<option>No courses available</option>`;
+      return;
     }
+
+    // Flatten nested structure like in courses.html
+    const allCourses = [];
+    payload.data.forEach(doc => {
+      const { department, level, semester, courses } = doc;
+      (courses || []).forEach(course => {
+        allCourses.push({
+          code: course.code,
+          title: course.title,
+          dept: department,
+          level,
+          semester
+        });
+      });
+    });
+
+    // Populate dropdown
+    courseSelect.innerHTML = `<option value="">Select a course</option>`;
+    allCourses.forEach(c => {
+      courseSelect.innerHTML += `
+        <option value="${c.code}" data-title="${c.title}">
+          ${c.code} – ${c.title} (${c.dept}, ${c.level})
+        </option>`;
+    });
+  } catch (err) {
+    console.error("Error loading courses:", err);
+    courseSelect.innerHTML = `<option>Error loading courses</option>`;
+  }
+}
 
     // Generate pins
     document.getElementById("generateBtn").addEventListener("click", async () => {
