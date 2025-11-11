@@ -1218,6 +1218,26 @@ app.post("/api/course-pins/use", async (req, res) => {
   }
 });
 
+// Delete single pin
+app.delete("/api/course-pins/:id", async (req, res) => {
+  try {
+    await CoursePin.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: "Pin deleted successfully" });
+  } catch {
+    res.status(500).json({ success: false, message: "Error deleting pin" });
+  }
+});
+
+// Delete all pins
+app.delete("/api/course-pins/delete-all", async (req, res) => {
+  try {
+    await CoursePin.deleteMany({});
+    res.json({ success: true, message: "All pins deleted successfully" });
+  } catch {
+    res.status(500).json({ success: false, message: "Error deleting all pins" });
+  }
+});
+
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
