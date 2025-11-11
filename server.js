@@ -243,8 +243,6 @@ const Olevel = mongoose.model("Olevel", oLevelSchema);
 // ================== ACCESS PIN SCHEMA ================
 
 // === CoursePin Schema ===
-const mongoose = require("mongoose");
-
 const CoursePinSchema = new mongoose.Schema({
   courseCode: { type: String, required: true },
   courseTitle: { type: String, required: true },
