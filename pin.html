@@ -99,171 +99,189 @@
   </div>
 
   <script>
-    const backendBaseUrl = "https://ict-reg.onrender.com";
-    let lastGeneratedPins = [];
+  const backendBaseUrl = "https://ict-reg.onrender.com";
+  let lastGeneratedPins = [];
 
-    // Tabs
-    document.querySelectorAll(".tab").forEach(tab => {
-      tab.onclick = () => {
-        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-        document.querySelectorAll(".panel").forEach(p => p.style.display = "none");
-        tab.classList.add("active");
-        document.getElementById(tab.dataset.target).style.display = "block";
-      };
-    });
+  // Tabs
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(p => p.style.display = "none");
+      tab.classList.add("active");
+      document.getElementById(tab.dataset.target).style.display = "block";
+    };
+  });
 
-    // Load courses
-    async function loadCourses() {
-      const courseSelect = document.getElementById("courseSelect");
-      try {
-        const res = await fetch(`${backendBaseUrl}/api/courses`);
-        const payload = await res.json();
-        if (!payload.success || !payload.data?.length) {
-          courseSelect.innerHTML = `<option>No courses available</option>`;
-          return;
-        }
-
-        const allCourses = [];
-        payload.data.forEach(doc => {
-          const { department, level, courses } = doc;
-          (courses || []).forEach(course => {
-            allCourses.push({ code: course.code, title: course.title, dept: department, level });
-          });
-        });
-
-        courseSelect.innerHTML = `<option value="">Select a course</option>`;
-        allCourses.forEach(c => {
-          courseSelect.innerHTML += `<option value="${c.code}" data-title="${c.title}">
-            ${c.code} – ${c.title} (${c.dept}, ${c.level})
-          </option>`;
-        });
-      } catch {
-        courseSelect.innerHTML = `<option>Error loading courses</option>`;
+  // Load courses
+  async function loadCourses() {
+    const courseSelect = document.getElementById("courseSelect");
+    try {
+      const res = await fetch(`${backendBaseUrl}/api/courses`);
+      const payload = await res.json();
+      if (!payload.success || !payload.data?.length) {
+        courseSelect.innerHTML = `<option>No courses available</option>`;
+        return;
       }
+
+      const allCourses = [];
+      payload.data.forEach(doc => {
+        const { department, level, courses } = doc;
+        (courses || []).forEach(course => {
+          allCourses.push({ code: course.code, title: course.title, dept: department, level });
+        });
+      });
+
+      courseSelect.innerHTML = `<option value="">Select a course</option>`;
+      allCourses.forEach(c => {
+        courseSelect.innerHTML += `<option value="${c.code}" data-title="${c.title}">
+          ${c.code} – ${c.title} (${c.dept}, ${c.level})
+        </option>`;
+      });
+    } catch {
+      courseSelect.innerHTML = `<option>Error loading courses</option>`;
     }
+  }
 
-    // Generate pins
-    document.getElementById("generateBtn").addEventListener("click", async () => {
-      const select = document.getElementById("courseSelect");
-      const code = select.value;
-      const title = select.selectedOptions[0]?.dataset.title;
-      const amount = document.getElementById("pinAmount").value;
-      const msg = document.getElementById("generateMsg");
-      const pinsBox = document.getElementById("generatedPinsBox");
+  // Generate pins
+  document.getElementById("generateBtn").addEventListener("click", async () => {
+    const select = document.getElementById("courseSelect");
+    const code = select.value;
+    const title = select.selectedOptions[0]?.dataset.title;
+    const amount = document.getElementById("pinAmount").value;
+    const msg = document.getElementById("generateMsg");
+    const pinsBox = document.getElementById("generatedPinsBox");
 
-      if (!code) return msgDisplay("Please select a course.", "red");
+    if (!code) return msgDisplay("Please select a course.", "red");
 
-      msgDisplay("Generating pins...", "gray");
-      try {
-        const res = await fetch(`${backendBaseUrl}/api/course-pins/generate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ courseCode: code, courseTitle: title, amount })
-        });
-        const payload = await res.json();
-        if (payload.success && payload.generatedPins?.length) {
-          msgDisplay(payload.message, "green");
-          lastGeneratedPins = payload.generatedPins;
-          pinsBox.style.display = "block";
-          pinsBox.value = lastGeneratedPins.join("\n");
-        } else msgDisplay(payload.message || "Error generating pins", "red");
-      } catch {
-        msgDisplay("Server error while generating pins.", "red");
-      }
-    });
-
-    // Copy generated pins
-    document.getElementById("copyGeneratedBtn").addEventListener("click", async () => {
-      if (!lastGeneratedPins.length) return alert("No pins generated yet.");
-      await navigator.clipboard.writeText(lastGeneratedPins.join("\n"));
-      alert("Generated pins copied to clipboard!");
-    });
-
-    function msgDisplay(text, color) {
-      const msg = document.getElementById("generateMsg");
-      msg.style.color = color;
-      msg.textContent = text;
+    msgDisplay("Generating pins...", "gray");
+    try {
+      const res = await fetch(`${backendBaseUrl}/api/course-pins/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseCode: code, courseTitle: title, amount })
+      });
+      const payload = await res.json();
+      if (payload.success && payload.generatedPins?.length) {
+        msgDisplay(payload.message, "green");
+        lastGeneratedPins = payload.generatedPins;
+        pinsBox.style.display = "block";
+        pinsBox.value = lastGeneratedPins.join("\n");
+      } else msgDisplay(payload.message || "Error generating pins", "red");
+    } catch {
+      msgDisplay("Server error while generating pins.", "red");
     }
+  });
 
-    // Load pins
-    async function loadPins() {
-      const q = new URLSearchParams({
-        courseCode: document.getElementById("searchCourse").value.trim(),
-        used: document.getElementById("filterUsed").value
-      }).toString();
+  // Copy generated pins
+  document.getElementById("copyGeneratedBtn").addEventListener("click", async () => {
+    if (!lastGeneratedPins.length) return alert("No pins generated yet.");
+    await navigator.clipboard.writeText(lastGeneratedPins.join("\n"));
+    alert("Generated pins copied to clipboard!");
+  });
 
-      const tbody = document.getElementById("pinsTbody");
-      tbody.innerHTML = `<tr><td colspan="6">Loading...</td></tr>`;
+  function msgDisplay(text, color) {
+    const msg = document.getElementById("generateMsg");
+    msg.style.color = color;
+    msg.textContent = text;
+  }
 
-      try {
-        const res = await fetch(`${backendBaseUrl}/api/course-pins?${q}`);
-        const payload = await res.json();
-        if (!payload.success) throw new Error();
-        const pins = payload.data;
+  // Load pins
+  async function loadPins() {
+    const q = new URLSearchParams({
+      courseCode: document.getElementById("searchCourse").value.trim(),
+      used: document.getElementById("filterUsed").value
+    }).toString();
 
-        if (pins.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6">No pins found</td></tr>`;
-          return;
-        }
+    const tbody = document.getElementById("pinsTbody");
+    tbody.innerHTML = `<tr><td colspan="6">Loading...</td></tr>`;
 
-        tbody.innerHTML = pins.map(p => {
-          const status = p.used ? `<span class="status-used">Used</span>` : `<span class="status-unused">Unused</span>`;
-          const created = new Date(p.createdAt).toLocaleString();
-          return `<tr>
-            <td>${p.pin}</td>
-            <td>${p.courseCode}</td>
-            <td>${p.courseTitle}</td>
-            <td>${status}</td>
-            <td>${created}</td>
-            <td>
-              <button class="ghost deleteBtn" data-id="${p._id}" style="color:red">Delete</button>
-              ${!p.used ? `<button class="ghost markUsedBtn" data-pin="${p.pin}">Mark Used</button>` : ""}
-            </td>
-          </tr>`;
-        }).join("");
-      } catch {
-        tbody.innerHTML = `<tr><td colspan="6">Error loading pins</td></tr>`;
+    try {
+      const res = await fetch(`${backendBaseUrl}/api/course-pins?${q}`);
+      const payload = await res.json();
+      if (!payload.success) throw new Error();
+      const pins = payload.data;
+
+      if (pins.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6">No pins found</td></tr>`;
+        return;
       }
+
+      tbody.innerHTML = pins.map(p => {
+        const status = p.used ? `<span class="status-used">Used</span>` : `<span class="status-unused">Unused</span>`;
+        const created = new Date(p.createdAt).toLocaleString();
+        return `<tr>
+          <td>${p.pin}</td>
+          <td>${p.courseCode}</td>
+          <td>${p.courseTitle}</td>
+          <td>${status}</td>
+          <td>${created}</td>
+          <td>
+            <button class="ghost deleteBtn" data-id="${p._id}" style="color:red">Delete</button>
+            ${!p.used ? `<button class="ghost markUsedBtn" data-pin="${p.pin}">Mark Used</button>` : ""}
+          </td>
+        </tr>`;
+      }).join("");
+    } catch {
+      tbody.innerHTML = `<tr><td colspan="6">Error loading pins</td></tr>`;
     }
+  }
 
-    // Buttons
-    document.getElementById("searchBtn").addEventListener("click", loadPins);
-    document.getElementById("refreshBtn").addEventListener("click", () => {
-      document.getElementById("searchCourse").value = "";
-      document.getElementById("filterUsed").value = "";
-      loadPins();
-    });
+  // --- ✅ Delete All Pins Function ---
+  async function deleteAllPins() {
+    if (!confirm("Are you sure you want to delete all pins?")) return;
 
-    // Delete all pins
-    document.getElementById("deleteAllBtn").addEventListener("click", async () => {
-      if (!confirm("Are you sure you want to delete ALL pins?")) return;
-      await fetch(`${backendBaseUrl}/api/course-pins/delete-all`, { method: "DELETE" });
-      loadPins();
-    });
+    try {
+      const response = await fetch(`${backendBaseUrl}/api/course-pins/delete-all`, {
+        method: "DELETE"
+      });
 
-    // Mark used or delete single pin
-    document.addEventListener("click", async e => {
-      if (e.target.classList.contains("markUsedBtn")) {
-        const pin = e.target.dataset.pin;
-        if (!confirm(`Mark pin ${pin} as used?`)) return;
-        await fetch(`${backendBaseUrl}/api/course-pins/use`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pin })
-        });
-        loadPins();
+      const result = await response.json();
+      if (response.ok) {
+        alert(result.message);
+        loadPins(); // refresh table
+      } else {
+        alert("Error deleting pins: " + result.message);
       }
+    } catch (err) {
+      console.error("❌ Error deleting pins:", err);
+      alert("Server error deleting pins");
+    }
+  }
 
-      if (e.target.classList.contains("deleteBtn")) {
-        const id = e.target.dataset.id;
-        if (!confirm("Delete this pin?")) return;
-        await fetch(`${backendBaseUrl}/api/course-pins/${id}`, { method: "DELETE" });
-        loadPins();
-      }
-    });
-
-    loadCourses();
+  // --- Buttons ---
+  document.getElementById("searchBtn").addEventListener("click", loadPins);
+  document.getElementById("refreshBtn").addEventListener("click", () => {
+    document.getElementById("searchCourse").value = "";
+    document.getElementById("filterUsed").value = "";
     loadPins();
-  </script>
+  });
+
+  // Replace old event with the new one
+  document.getElementById("deleteAllBtn").addEventListener("click", deleteAllPins);
+
+  // Mark used or delete single pin
+  document.addEventListener("click", async e => {
+    if (e.target.classList.contains("markUsedBtn")) {
+      const pin = e.target.dataset.pin;
+      if (!confirm(`Mark pin ${pin} as used?`)) return;
+      await fetch(`${backendBaseUrl}/api/course-pins/use`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin })
+      });
+      loadPins();
+    }
+
+    if (e.target.classList.contains("deleteBtn")) {
+      const id = e.target.dataset.id;
+      if (!confirm("Delete this pin?")) return;
+      await fetch(`${backendBaseUrl}/api/course-pins/${id}`, { method: "DELETE" });
+      loadPins();
+    }
+  });
+
+  loadCourses();
+  loadPins();
+</script>
 </body>
 </html>
