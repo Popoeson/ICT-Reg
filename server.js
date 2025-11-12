@@ -1233,13 +1233,12 @@ app.delete("/api/course-pins/:id", async (req, res) => {
   }
 });
 
-// ====== DELETE ALL PINS =======
-
+// === Delete all course pins ===
 app.delete("/api/course-pins/delete-all", async (req, res) => {
   try {
-    console.log("🔥 Delete-all endpoint hit");
+    console.log("🧨 Delete-all endpoint hit");
     const result = await CoursePin.deleteMany({});
-    console.log("🔥 Delete result:", result);
+    console.log("✅ Delete result:", result);
     res.json({
       success: true,
       message: `All pins deleted successfully (${result.deletedCount} removed)`
@@ -1253,6 +1252,7 @@ app.delete("/api/course-pins/delete-all", async (req, res) => {
     });
   }
 });
+
 
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
