@@ -1,236 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Course Registration</title>
-
-<style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Course Registration</title>
+  <style>
     body {
-        font-family: Arial, sans-serif;
-        background: #f4f9ff;
-        margin: 0;
-        padding: 0;
-    }
-
-    header {
-        background: #0b3c8c;
-        color: white;
-        padding: 18px;
-        text-align: center;
-        font-size: 22px;
-        font-weight: bold;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
     }
 
     .container {
-        max-width: 900px;
-        margin: 25px auto;
-        background: white;
-        padding: 20px;
-        border-radius: 6px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
     }
 
     h2 {
-        color: #0b3c8c;
-        margin-bottom: 10px;
+      margin-bottom: 10px;
     }
 
-    .course-box {
-        border: 1px solid #ccc;
-        padding: 15px;
-        border-radius: 6px;
-        margin-bottom: 12px;
-        background: #f9fcff;
+    .course-list {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
     }
 
-    .registered {
-        border-left: 6px solid #0bb30b;
-        background: #eaffea;
+    .course-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
     }
 
-    .unregistered {
-        border-left: 6px solid #d9534f;
-        background: #fff3f3;
+    .course-item:last-child {
+      border-bottom: none;
     }
 
     button {
-        background: #0b3c8c;
-        color: white;
-        border: none;
-        padding: 10px 16px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 14px;
+      padding: 8px 12px;
+      background: #008000;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
 
-    button:hover {
-        background: #092d6b;
+    button:disabled {
+      background: gray;
+      cursor: not-allowed;
     }
 
-    /* Modal */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 9999;
-        inset: 0;
-        background: rgba(0,0,0,0.5);
-        justify-content: center;
-        align-items: center;
+    #message {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      display: none;
     }
-
-    .modal-content {
-        background: white;
-        padding: 20px;
-        width: 320px;
-        border-radius: 8px;
-        text-align: center;
-    }
-
-    input {
-        width: 90%;
-        padding: 10px;
-        margin: 10px 0;
-        border: 1px solid #0b3c8c;
-        border-radius: 5px;
-    }
-</style>
+  </style>
 </head>
-
 <body>
 
-<header>Course Registration</header>
+  <div class="container">
+    <h2>Course Registration</h2>
 
-<div class="container">
-    <h2>Your Courses</h2>
-    <div id="courseList">Loading courses...</div>
-</div>
+    <p><b>Name:</b> <span id="studentName"></span></p>
+    <p><b>Matric Number:</b> <span id="studentMatric"></span></p>
+    <p><b>Department:</b> <span id="studentDept"></span></p>
+    <p><b>Level:</b> <span id="studentLevel"></span></p>
 
-<!-- PIN MODAL -->
-<div id="pinModal" class="modal">
-    <div class="modal-content">
-        <h3 style="color:#0b3c8c;">Enter Registration Pin</h3>
-        <p id="modalCourse" style="font-weight:bold;"></p>
+    <hr>
 
-        <input type="text" id="pinInput" placeholder="Enter Pin Here" />
+    <h3>Available Courses</h3>
+    <div id="coursesContainer" class="course-list"></div>
 
-        <button onclick="submitPin()">Submit</button><br><br>
-        <button style="background:#999;" onclick="closeModal()">Cancel</button>
-    </div>
-</div>
+    <h3 style="margin-top:25px;">Registered Courses</h3>
+    <div id="registeredContainer" class="course-list"></div>
 
-<script>
-let selectedCourse = null;
+    <div id="message"></div>
+  </div>
 
-// Load student data
-const student = JSON.parse(localStorage.getItem("studentData"));
-if (!student) {
-    alert("Session expired. Please login again.");
-    window.location.href = "student-login.html";
-}
+  <script>
+    const API_BASE = "https://ict-reg.onrender.com";
 
-const userDept  = student.department.toLowerCase().trim();
-const userLevel = student.level.toUpperCase().replace(/\s+/g, '');
+    document.addEventListener("DOMContentLoaded", loadStudent);
 
+    async function loadStudent() {
+      const student = JSON.parse(localStorage.getItem("student"));
 
-// Fetch courses + registered courses
-async function loadCourses() {
-    document.getElementById("courseList").innerHTML = "Loading...";
+      if (!student) {
+        alert("No student logged in.");
+        return (window.location.href = "student-login.html");
+      }
 
-    try {
-        const courseRes = await fetch(`https://ict-reg.onrender.com/api/courses?department=${userDept}&level=${userLevel}`);
-        const courseData = await courseRes.json();
+      // Display student data
+      document.getElementById("studentName").textContent = student.fullName;
+      document.getElementById("studentMatric").textContent = student.matricNumber;
+      document.getElementById("studentDept").textContent = student.department;
+      document.getElementById("studentLevel").textContent = student.level;
 
-        const regRes = await fetch(`https://ict-reg.onrender.com/api/registered-courses?matric=${student.matricNumber}`);
-        const regData = await regRes.json();
+      loadCourses(student.matricNumber);
+    }
 
-        const courses = courseData.courses || [];
-        const registered = regData.data || [];
+    /** LOAD COURSES + REGISTERED COURSES (single backend route) */
+    async function loadCourses(matric) {
+      try {
+        const res = await fetch(`${API_BASE}/api/course-registration/${matric}`);
+        const data = await res.json();
 
-        displayCourses(courses, registered);
-    } catch (err) {
+        if (!data.success) {
+          return showMessage("Error loading courses.", true);
+        }
+
+        displayAvailableCourses(data.courses || [], data.registered || []);
+        displayRegisteredCourses(data.registered || []);
+
+      } catch (err) {
+        showMessage("Failed to load courses (network error).", true);
         console.error(err);
-        document.getElementById("courseList").innerHTML = "Error loading courses.";
+      }
     }
-}
 
-function displayCourses(courses, registered) {
-    const container = document.getElementById("courseList");
-    container.innerHTML = "";
+    /** DISPLAY COURSES AVAILABLE FOR REGISTRATION */
+    function displayAvailableCourses(courses, registered) {
+      const container = document.getElementById("coursesContainer");
+      container.innerHTML = "";
 
-    if (courses.length === 0) {
-        container.innerHTML = `<p>No courses found for your level & department.</p>`;
+      if (courses.length === 0) {
+        container.innerHTML = "<p>No courses available.</p>";
         return;
-    }
+      }
 
-    courses.forEach(course => {
-        const isReg = registered.some(r => r.courseCode === course.code);
+      const registeredCodes = registered.map(r => r.courseCode);
 
+      courses.forEach(course => {
         const div = document.createElement("div");
-        div.className = "course-box " + (isReg ? "registered" : "unregistered");
+        div.classList.add("course-item");
+
+        const isRegistered = registeredCodes.includes(course.code);
 
         div.innerHTML = `
-            <strong>${course.code} - ${course.title}</strong><br>
-            Unit: ${course.unit}<br>
-            Lecturer: ${course.lecturer}<br><br>
-            ${isReg 
-                ? `<span style="color:#0bb30b; font-weight:bold;">REGISTERED</span>` 
-                : `<button onclick="openPinModal('${course.code}', '${course.title}')">Register</button>`
-            }
+          <span><b>${course.code}</b> — ${course.title}</span>
+          <button ${isRegistered ? "disabled" : ""} onclick="registerCourse('${course.code}', '${course.title}')">
+            ${isRegistered ? "Registered" : "Register"}
+          </button>
         `;
 
         container.appendChild(div);
-    });
-}
+      });
+    }
 
-// Modal functions
-function openPinModal(code, title) {
-    selectedCourse = { code, title };
-    document.getElementById("modalCourse").innerText = `${code} - ${title}`;
-    document.getElementById("pinModal").style.display = "flex";
-}
+    /** DISPLAY ALREADY REGISTERED COURSES */
+    function displayRegisteredCourses(registered) {
+      const container = document.getElementById("registeredContainer");
+      container.innerHTML = "";
 
-function closeModal() {
-    document.getElementById("pinModal").style.display = "none";
-    document.getElementById("pinInput").value = "";
-}
+      if (registered.length === 0) {
+        container.innerHTML = "<p>No registered courses yet.</p>";
+        return;
+      }
 
-async function submitPin() {
-    const pin = document.getElementById("pinInput").value.trim();
-    if (pin === "") return alert("Enter pin");
+      registered.forEach(reg => {
+        const div = document.createElement("div");
+        div.classList.add("course-item");
+        div.innerHTML = `<span><b>${reg.courseCode}</b> — ${reg.courseTitle}</span>`;
+        container.appendChild(div);
+      });
+    }
 
-    const payload = {
-        matricNumber: student.matricNumber,
-        studentName: student.fullName,
-        department: student.department,
-        level: student.level,
-        courseCode: selectedCourse.code,
-        courseTitle: selectedCourse.title,
-        pin
-    };
+    /** REGISTER A COURSE */
+    async function registerCourse(code, title) {
+      const student = JSON.parse(localStorage.getItem("student"));
+      const pin = prompt(`Enter the PIN for ${code}`);
 
-    try {
-        const res = await fetch("https://ict-reg.onrender.com/api/course-register", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+      if (!pin) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/course-register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            matricNumber: student.matricNumber,
+            studentName: student.fullName,
+            department: student.department,
+            level: student.level,
+            courseCode: code,
+            courseTitle: title,
+            pin
+          })
         });
 
         const data = await res.json();
-        alert(data.message);
 
         if (data.success) {
-            closeModal();
-            loadCourses(); // refresh page list
+          showMessage("Course registered successfully!");
+          loadCourses(student.matricNumber); // reload list
+        } else {
+          showMessage(data.message || "Registration failed.", true);
         }
-    } catch (err) {
+
+      } catch (err) {
+        showMessage("Network error registering course.", true);
         console.error(err);
-        alert("Error submitting pin");
+      }
     }
-}
 
-loadCourses();
-</script>
+    /** NOTIFICATION MESSAGE */
+    function showMessage(msg, isError = false) {
+      const box = document.getElementById("message");
+      box.style.display = "block";
+      box.style.background = isError ? "#ffcccc" : "#d4f8d4";
+      box.style.color = isError ? "red" : "green";
+      box.textContent = msg;
 
+      setTimeout(() => (box.style.display = "none"), 4000);
+    }
+  </script>
 </body>
 </html>
