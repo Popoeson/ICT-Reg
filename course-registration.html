@@ -91,11 +91,11 @@
     document.addEventListener("DOMContentLoaded", loadStudent);
 
     async function loadStudent() {
-      const student = JSON.parse(localStorage.getItem("student"));
+      const student = JSON.parse(localStorage.getItem("studentData"));
 
       if (!student) {
         alert("No student logged in.");
-        return (window.location.href = "student-login.html");
+        return (window.location.href = "login.html");
       }
 
       // Display student data
