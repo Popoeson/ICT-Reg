@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Registration</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background-color: #f4f7fb;
+      color: #222;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #004aad;
+      color: #fff;
+      text-align: center;
+      padding: 20px 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 900px;
+      margin: 30px auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      padding: 25px;
+    }
+
+    .student-info {
+      margin-bottom: 25px;
+    }
+
+    .student-info h3 {
+      color: #004aad;
+      margin-bottom: 10px;
+    }
+
+    .course-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .course-table th, .course-table td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+
+    .course-table th {
+      background-color: #004aad;
+      color: #fff;
+    }
+
+    .course-table tr:nth-child(even) {
+      background-color: #f2f6fc;
+    }
+
+    .register-btn {
+      background-color: #004aad;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .register-btn:hover {
+      background-color: #003380;
+    }
+
+    .registered {
+      color: green;
+      font-weight: 600;
+    }
+
+    .not-registered {
+      color: red;
+      font-weight: 600;
+    }
+
+    .pin-input {
+      width: 90%;
+      padding: 8px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .popup {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .popup-content {
+      background: #fff;
+      padding: 20px 25px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .popup-content h3 {
+      color: #004aad;
+      margin-bottom: 15px;
+    }
+
+    .popup-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .cancel-btn {
+      background-color: #ccc;
+      color: #333;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>Course Registration</header>
+
+  <div class="container">
+    <div class="student-info">
+      <h3>Student Info</h3>
+      <p><b>Name:</b> <span id="studentName">Loading...</span></p>
+      <p><b>Department:</b> <span id="department">Loading...</span></p>
+      <p><b>Level:</b> <span id="level">Loading...</span></p>
+    </div>
+
+    <table class="course-table">
+      <thead>
+        <tr>
+          <th>Course Code</th>
+          <th>Course Title</th>
+          <th>Unit</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="courseList">
+        <tr><td colspan="5" style="text-align:center;">Loading courses...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Popup for Pin Entry -->
+  <div id="pinPopup" class="popup">
+    <div class="popup-content">
+      <h3>Enter Registration Pin</h3>
+      <p id="popupCourseTitle"></p>
+      <input type="text" id="pinInput" class="pin-input" placeholder="Enter pin e.g. REG/COM/1234" />
+      <div class="popup-buttons">
+        <button class="register-btn" onclick="submitPin()">Submit</button>
+        <button class="cancel-btn" onclick="closePopup()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const apiBase = "https://ict-reg.onrender.com";
+    let selectedCourse = null;
+    const student = {
+      name: localStorage.getItem("studentName") || "John Doe",
+      department: localStorage.getItem("department") || "Computer Science",
+      level: localStorage.getItem("level") || "ND2",
+      matric: localStorage.getItem("matricNumber") || "CS/ND2/001"
+    };
+
+    document.getElementById("studentName").textContent = student.name;
+    document.getElementById("department").textContent = student.department;
+    document.getElementById("level").textContent = student.level;
+
+    // === Fetch Courses ===
+    async function fetchCourses() {
+      try {
+        const res = await fetch(`${apiBase}/api/courses?department=${student.department}&level=${student.level}`);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || "Failed to fetch");
+        displayCourses(data.courses);
+      } catch (err) {
+        console.error(err);
+        document.getElementById("courseList").innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">Error loading courses</td></tr>`;
+      }
+    }
+
+    // === Display Courses ===
+    async function displayCourses(courses) {
+      const res = await fetch(`${apiBase}/api/registered-courses?matric=${student.matric}`);
+      const registered = await res.json();
+      const registeredCodes = registered.map(r => r.courseCode);
+
+      const rows = courses.map(course => {
+        const isRegistered = registeredCodes.includes(course.code);
+        return `
+          <tr>
+            <td>${course.code}</td>
+            <td>${course.title}</td>
+            <td>${course.unit}</td>
+            <td class="${isRegistered ? 'registered' : 'not-registered'}">
+              ${isRegistered ? 'Registered' : 'Not Registered'}
+            </td>
+            <td>
+              ${isRegistered
+                ? '—'
+                : `<button class="register-btn" onclick="openPopup('${course.code}','${course.title}')">Register</button>`}
+            </td>
+          </tr>
+        `;
+      }).join("");
+      document.getElementById("courseList").innerHTML = rows;
+    }
+
+    // === Open Pin Popup ===
+    function openPopup(code, title) {
+      selectedCourse = { code, title };
+      document.getElementById("popupCourseTitle").textContent = `${title} (${code})`;
+      document.getElementById("pinPopup").style.display = "flex";
+    }
+
+    // === Close Popup ===
+    function closePopup() {
+      document.getElementById("pinPopup").style.display = "none";
+      document.getElementById("pinInput").value = "";
+    }
+
+    // === Submit Pin ===
+    async function submitPin() {
+      const pin = document.getElementById("pinInput").value.trim();
+      if (!pin) return alert("Please enter a pin");
+
+      try {
+        const res = await fetch(`${apiBase}/api/course-register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            matricNumber: student.matric,
+            department: student.department,
+            level: student.level,
+            courseCode: selectedCourse.code,
+            courseTitle: selectedCourse.title,
+            pin
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          alert("✅ Course registered successfully!");
+          closePopup();
+          fetchCourses();
+        } else {
+          alert("❌ " + data.message);
+        }
+      } catch (err) {
+        alert("Server error while registering course");
+      }
+    }
+
+    fetchCourses();
+  </script>
+</body>
+</html>
