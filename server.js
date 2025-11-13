@@ -253,6 +253,20 @@ const CoursePinSchema = new mongoose.Schema({
 
 const CoursePin = mongoose.model("CoursePin", CoursePinSchema);
 
+// === Course Registration Schema ===
+const CourseRegistrationSchema = new mongoose.Schema({
+  matricNumber: { type: String, required: true },
+  studentName: { type: String },
+  department: { type: String, required: true },
+  level: { type: String, required: true },
+  courseCode: { type: String, required: true },
+  courseTitle: { type: String, required: true },
+  pinUsed: { type: String, required: true },
+  registeredAt: { type: Date, default: Date.now }
+});
+
+const CourseRegistration = mongoose.model("CourseRegistration", CourseRegistrationSchema);
+
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
   return String(email || "").trim().toLowerCase();
@@ -1250,6 +1264,88 @@ app.delete("/api/course-pins/:id", async (req, res) => {
     res.json({ success: true, message: "Pin deleted successfully" });
   } catch {
     res.status(500).json({ success: false, message: "Error deleting pin" });
+  }
+});
+
+
+// === FETCH COURSES BASED ON DEPARTMENT & LEVEL ===
+app.get("/api/courses", async (req, res) => {
+  try {
+    const { department, level } = req.query;
+    if (!department || !level) {
+      return res.status(400).json({ success: false, message: "Department and level required" });
+    }
+
+    const doc = await Course.findOne({ department, level });
+    if (!doc) {
+      return res.json({ success: true, courses: [] });
+    }
+
+    res.json({ success: true, courses: doc.courses });
+  } catch (err) {
+    console.error("❌ Error fetching courses:", err);
+    res.status(500).json({ success: false, message: "Server error fetching courses" });
+  }
+});
+
+// === FETCH STUDENT REGISTERED COURSES ===
+app.get("/api/registered-courses", async (req, res) => {
+  try {
+    const { matric } = req.query;
+    if (!matric) {
+      return res.status(400).json({ success: false, message: "Matric number required" });
+    }
+
+    const regs = await CourseRegistration.find({ matricNumber: matric });
+    res.json({ success: true, data: regs });
+  } catch (err) {
+    console.error("❌ Error fetching registrations:", err);
+    res.status(500).json({ success: false, message: "Server error fetching registrations" });
+  }
+});
+
+// === REGISTER A COURSE ===
+app.post("/api/course-register", async (req, res) => {
+  try {
+    const { matricNumber, studentName, department, level, courseCode, courseTitle, pin } = req.body;
+
+    if (!matricNumber || !department || !level || !courseCode || !pin) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
+    // Check if course already registered by student
+    const already = await CourseRegistration.findOne({ matricNumber, courseCode });
+    if (already) {
+      return res.json({ success: false, message: "Course already registered" });
+    }
+
+    // Validate pin
+    const validPin = await CoursePin.findOne({ pin, courseCode, used: false });
+    if (!validPin) {
+      return res.json({ success: false, message: "Invalid or already used pin" });
+    }
+
+    // Register the course
+    const newReg = new CourseRegistration({
+      matricNumber,
+      studentName,
+      department,
+      level,
+      courseCode,
+      courseTitle,
+      pinUsed: pin
+    });
+
+    await newReg.save();
+
+    // Mark pin as used
+    validPin.used = true;
+    await validPin.save();
+
+    res.json({ success: true, message: "Course registered successfully" });
+  } catch (err) {
+    console.error("❌ Error registering course:", err);
+    res.status(500).json({ success: false, message: "Server error registering course" });
   }
 });
 
