@@ -135,18 +135,18 @@
 
   // normalize server item to expected shape
   function normalize(item) {
-    return {
-      id: item._id || item.id || "",
-      matric: item.matricNumber || item.matric || item.studentMatric || item.matricNo || "",
-      studentName: item.studentName || item.studentName || item.name || item.fullname || item.fullName || "",
-      courseCode: (item.courseCode || item.code || item.course || "").trim(),
-      courseTitle: (item.courseTitle || item.title || item.courseTitle || "").trim(),
-      level: (item.level || "").toUpperCase(),
-      department: item.department || item.dept || "",
-      semester: item.semester !== undefined ? String(item.semester) : (item.sem || ""),
-      createdAt: item.createdAt || item.registeredAt || item.date || ""
-    };
-  }
+  return {
+    id: item.id || item._id,
+    matric: item.matricNumber || "",
+    studentName: item.studentName || "",
+    courseCode: item.courseCode || "",
+    courseTitle: item.courseTitle || "",
+    level: item.level || "",
+    department: item.department || "",
+    semester: item.semester || "",
+    createdAt: item.registeredAt || item.createdAt || ""
+  };
+}
 
   // Fetch all registrations from server
   async function fetchRegistrations() {
