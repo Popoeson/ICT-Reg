@@ -276,7 +276,7 @@
     btn.textContent = "Checking...";
 
     try {
-      const response = await fetch(`${backendBaseUrl}/api/course-registrations/register`, {
+      const response = await fetch(`${backendBaseUrl}/api/course-register`, {
         method: "POST",
         headers: { "Content-Type":"application/json" },
         body: JSON.stringify({ studentId, courseCode: code, pin })
