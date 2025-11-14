@@ -310,6 +310,30 @@ th {
     width: 120px;
   }
 }
+
+/* Verify Button */
+.verify-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: green;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.3s;
+}
+
+.verify-btn:hover {
+  background: #0a780a;
+}
+
+.verify-btn.disabled {
+  background: gray;
+  cursor: not-allowed;
+}
 </style>
 
 </head>  
@@ -323,6 +347,8 @@ th {
         <span id="studentDept">N/A</span>  
         <span id="studentMatric">N/A</span>  
         <span id="studentLevel">N/A</span>  
+
+    <button class="verify-btn" id="verifyBtn" style="display:none;">Verify Student</button>
       </div>  
    <!--   <button class="edit-btn" id="editStudentBtn">Edit Student</button>  --->
     </div>  <!-- Personal Information Section -->  
