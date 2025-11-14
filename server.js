@@ -1268,39 +1268,35 @@ app.delete("/api/course-pins/:id", async (req, res) => {
 });
 
 
-// === FETCH COURSES + REGISTERED COURSES FOR A STUDENT ===
+// === UNIFIED COURSE REGISTRATION FETCH (courses + registered) ===
 app.get("/api/course-registration/:matric", async (req, res) => {
   try {
-    const matric = req.params.matric;
+    const { matric } = req.params;
 
-    // 1️⃣ Fetch student details
-    const student = await Student.findOne({ matric });
+    // Fetch student first
+    const student = await Student.findOne({ matricNumber: matric });
     if (!student) {
-      return res.status(404).json({ success: false, message: "Student not found" });
+      return res.json({ success: false, message: "Student not found" });
     }
 
-    const { department, level } = student;
+    const department = student.department;
+    const level = student.level;
 
-    // 2️⃣ Fetch courses for the student’s department & level
+    // Fetch courses for student’s dept + level
     const courseDoc = await Course.findOne({ department, level });
-    const courses = courseDoc ? courseDoc.courses : [];
 
-    // 3️⃣ Fetch registered courses for this specific student
-    const registered = await CourseRegistration.find({ matricNumber: matric });
+    // Fetch registration records
+    const regDocs = await CourseRegistration.find({ matricNumber: matric });
 
-    // 4️⃣ Return combined data
     res.json({
       success: true,
-      courses,
-      registered
+      courses: courseDoc ? courseDoc.courses : [],
+      registered: regDocs
     });
 
   } catch (err) {
-    console.error("❌ Error loading course registration data:", err);
-    res.status(500).json({
-      success: false,
-      message: "Server error loading registration data"
-    });
+    console.error("❌ Error fetching course registration:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
