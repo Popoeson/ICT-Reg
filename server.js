@@ -1366,7 +1366,7 @@ app.post("/api/course-register", async (req, res) => {
 // ==========================
 app.get("/api/admin/all-registered-courses", async (req, res) => {
   try {
-    const all = await RegisteredCourse.find().sort({ registeredAt: -1 }).lean();
+    const all = await CourseRegistration.find().sort({ registeredAt: -1 }).lean();
 
     res.json({
       success: true,
@@ -1378,7 +1378,7 @@ app.get("/api/admin/all-registered-courses", async (req, res) => {
         level: item.level,
         courseCode: item.courseCode,
         courseTitle: item.courseTitle,
-        semester: item.semester || "",  // if you ever add it
+        semester: item.semester || "",
         registeredAt: item.registeredAt
       }))
     });
