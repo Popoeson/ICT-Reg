@@ -1361,6 +1361,65 @@ app.post("/api/course-register", async (req, res) => {
   }
 });
 
+// ==========================
+// ADMIN — GET ALL REGISTERED COURSES
+// ==========================
+app.get("/api/admin/all-registered-courses", async (req, res) => {
+  try {
+    // Fetch EVERY registration
+    const registrations = await CourseRegistration.find().lean();
+
+    if (!registrations.length) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // Get student and course IDs
+    const studentIds = [...new Set(registrations.map(r => r.studentId))];
+    const courseIds = [...new Set(registrations.map(r => r.courseId))];
+
+    // Fetch referenced documents
+    const students = await Student.find({ _id: { $in: studentIds } }).lean();
+    const courses  = await Course.find({ _id: { $in: courseIds } }).lean();
+
+    // Convert arrays to maps for fast lookup
+    const studentMap = {};
+    const courseMap = {};
+
+    students.forEach(s => { studentMap[s._id] = s; });
+    courses.forEach(c => { courseMap[c._id] = c; });
+
+    // Build the admin-friendly objects
+    const finalData = registrations.map(reg => {
+      const student = studentMap[reg.studentId] || {};
+      const course = courseMap[reg.courseId] || {};
+
+      return {
+        _id: reg._id,
+        studentId: reg.studentId,
+        matricNumber: student.matricNumber || "",
+        studentName: student.fullName || student.name || "",
+        department: student.department || "",
+        level: student.level || "",
+        semester: course.semester || "",
+        courseId: reg.courseId,
+        courseCode: course.code || course.courseCode || "",
+        courseTitle: course.title || course.courseTitle || "",
+        createdAt: reg.createdAt
+      };
+    });
+
+    return res.json({ success: true, data: finalData });
+
+  } catch (err) {
+    console.error("ADMIN LOAD ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error loading registered courses",
+      error: err.message
+    });
+  }
+});
+
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
