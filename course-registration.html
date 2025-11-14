@@ -183,7 +183,7 @@
   // Load registered
   async function loadRegistered() {
     try {
-      const res = await fetch(`${backendBaseUrl}/api/registrations/${studentId}`);
+      const res = await fetch(`${backendBaseUrl}/api/registered-courses/${studentId}`);
       const payload = await res.json();
 
       const regList =
