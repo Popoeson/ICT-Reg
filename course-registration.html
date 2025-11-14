@@ -21,7 +21,6 @@
     .card{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
     h2{margin:0 0 12px 0;color:var(--primary)}
     .muted{color:var(--muted)}
-    .filters{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
     select, input[type=text]{padding:8px;border-radius:8px;border:1px solid #ddd;width:100%}
     .course-row{display:flex;gap:12px;align-items:center;padding:10px;border-radius:8px;border:1px solid #eef; margin-bottom:10px;background:#fbfdff}
     .course-info{flex:1}
@@ -92,12 +91,14 @@
 
 <script>
 (async function(){
-  const backendBaseUrl = "https://ict-reg.onrender.com"; // change if needed
-  // get studentId from query param or localStorage (adapt to your site)
+
+  const backendBaseUrl = "https://ict-reg.onrender.com";
   const urlParams = new URLSearchParams(window.location.search);
-  const studentId = urlParams.get("id") || localStorage.getItem("studentId"); 
+  const studentId = urlParams.get("id") || localStorage.getItem("studentId");
+
   if (!studentId) {
-    document.getElementById("availableContainer").innerHTML = '<div class="empty">No student specified in URL or localStorage.</div>';
+    document.getElementById("availableContainer").innerHTML =
+      '<div class="empty">No student specified.</div>';
     return;
   }
 
@@ -112,207 +113,211 @@
   const filterSemesterEl = document.getElementById("filterSemester");
   const refreshBtn = document.getElementById("refreshBtn");
 
-  // cached lists
-  let allCourses = [];        // flattened { code, title, dept, level, semester }
-  let registered = [];        // array of registered course objects (codes)
-  let available = [];         // array computed
+  // Cached
+  let allCourses = [];
+  let registered = [];
+  let available = [];
 
-  // load student basic (optional: display name)
+  let studentDepartment = "";
+  let studentLevel = "";
+
+  // Load student
   async function loadStudent() {
     try {
       const res = await fetch(`${backendBaseUrl}/api/students/${studentId}`);
-      if (!res.ok) return;
       const payload = await res.json();
-      if (payload?.success && payload.student) {
+
+      if (payload.success && payload.student) {
         const s = payload.student;
-        const full = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ") || "N/A";
-        studentNameEl.textContent = full;
+        studentDepartment = s.department?.trim() || "";
+        studentLevel = s.level?.trim() || "";
+        const fullname = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ");
+        studentNameEl.textContent = fullname || "N/A";
         studentMatricEl.textContent = s.matricNo || s.regNo || "N/A";
       }
-    } catch(err) {
-      console.error("Error loading student:", err);
+    } catch (err) {
+      console.error("loadStudent err:", err);
     }
   }
 
-  // fetch and flatten courses (same approach as courses.html)
+  // Load and filter courses
   async function loadCourses() {
     try {
       const res = await fetch(`${backendBaseUrl}/api/courses`);
       const payload = await res.json();
+
       if (!payload.success || !Array.isArray(payload.data)) {
         allCourses = [];
-        console.warn("courses endpoint returned unexpected data", payload);
         return;
       }
-      const flattened = [];
-      (payload.data || []).forEach(doc => {
+
+      const raw = payload.data;
+
+      // Flatten:
+      let flattened = [];
+      raw.forEach(doc => {
         const { level, department, semester, courses } = doc;
         (courses || []).forEach(c => {
-          // normalize code/title fields as returned by your DB
           flattened.push({
             code: (c.code || c.courseCode || "").trim(),
             title: (c.title || c.courseTitle || "").trim(),
-            level: (level || "").toUpperCase(),
+            level: (level || "").trim(),
             department: (department || "").trim(),
             semester: Number(semester) || Number(c.semester) || null
           });
         });
       });
-      allCourses = flattened;
-    } catch(err) {
-      console.error("Error loading courses:", err);
+
+      // NOW FILTER by student department & level
+      allCourses = flattened.filter(c =>
+        c.department?.toLowerCase() === studentDepartment?.toLowerCase() &&
+        c.level?.toLowerCase() === studentLevel?.toLowerCase()
+      );
+
+    } catch (err) {
+      console.error("loadCourses error:", err);
       allCourses = [];
     }
   }
 
-  // fetch registered courses for the student
+  // Load registered
   async function loadRegistered() {
     try {
-      // backend should return an array under data.registered or data.registeredCourses
       const res = await fetch(`${backendBaseUrl}/api/registrations/${studentId}`);
-      if (!res.ok) {
-        // try an alternative endpoint if your backend differs (optional)
-        console.warn("registrations endpoint returned", res.status);
+      const payload = await res.json();
+
+      const regList =
+        payload.registered ||
+        payload.data?.registered ||
+        payload.registeredCourses ||
+        payload.data?.registeredCourses ||
+        payload.data ||
+        [];
+
+      if (!Array.isArray(regList)) {
         registered = [];
         return;
       }
-      const payload = await res.json();
-      // defensive: accept several shapes
-      // e.g. { registered: [ { courseCode: "...", ... } ] } or { data: { registered: [...] } } or { registeredCourses: [...] }
-      const regCandidates = payload.registered || payload.data?.registered || payload.registeredCourses || payload.data?.registeredCourses || payload.data || payload;
-      // Normalize to array of codes or objects:
-      if (Array.isArray(regCandidates)) {
-        // if items are strings (course codes) or objects
-        registered = regCandidates.map(item => {
-          if (typeof item === "string") return { code: item };
-          // normalize keys
-          return {
-            code: (item.courseCode || item.code || item.course || "").trim(),
-            title: (item.courseTitle || item.title || item.courseTitle || "").trim()
-          };
-        }).filter(Boolean);
-      } else {
-        registered = [];
-      }
-    } catch(err) {
-      console.error("Error loading registered courses:", err);
+
+      registered = regList.map(item => ({
+        code: (item.code || item.courseCode || "").trim(),
+        title: (item.title || item.courseTitle || "").trim()
+      }));
+
+    } catch (err) {
+      console.error("loadRegistered error:", err);
       registered = [];
     }
   }
 
-  // Compute available (unregistered) courses using safe checks
+  // Compute available (unregistered)
   function computeAvailable() {
-    // If registered is array of objects with .code
-    const regCodes = new Set((registered || []).map(r => (r.code || "").toUpperCase().trim()));
-    const semesterFilter = (filterSemesterEl.value || "").trim();
-    available = (allCourses || []).filter(c => {
-      if (!c.code) return false;
-      if (semesterFilter && String(c.semester) !== semesterFilter) return false;
-      return !regCodes.has((c.code || "").toUpperCase().trim());
+    const regCodes = new Set(registered.map(r => r.code.toUpperCase()));
+    const semFilter = filterSemesterEl.value;
+
+    available = allCourses.filter(c => {
+      if (semFilter && String(c.semester) !== semFilter) return false;
+      return !regCodes.has(c.code.toUpperCase());
     });
   }
 
-  // render lists
+  // Render
   function render() {
     // Available
-    if (!Array.isArray(available) || available.length === 0) {
-      availableContainer.innerHTML = `<div class="empty">No available courses found.</div>`;
+    if (!available.length) {
+      availableContainer.innerHTML = `<div class="empty">No available courses</div>`;
       availCountEl.textContent = "";
     } else {
       availCountEl.textContent = `(${available.length})`;
       availableContainer.innerHTML = available.map(c => `
-        <div class="course-row" data-code="${escapeHtml(c.code)}">
+        <div class="course-row" data-code="${c.code}">
           <div class="course-info">
-            <div class="course-code">${escapeHtml(c.code)}</div>
-            <div class="course-title">${escapeHtml(c.title)}</div>
-            <div class="course-meta">${escapeHtml(c.department)} · ${escapeHtml(c.level)} · Sem ${c.semester || '-'}</div>
+            <div class="course-code">${c.code}</div>
+            <div class="course-title">${c.title}</div>
+            <div class="course-meta">${c.department} · ${c.level} · Sem ${c.semester}</div>
           </div>
           <div class="actions">
-            <input class="pin" placeholder="Enter pin" aria-label="pin for ${escapeHtml(c.code)}" />
-            <button class="registerBtn small" data-code="${escapeHtml(c.code)}">Register</button>
+            <input class="pin" placeholder="Enter pin" />
+            <button class="registerBtn small" data-code="${c.code}">Register</button>
           </div>
         </div>
       `).join("");
     }
 
     // Registered
-    if (!Array.isArray(registered) || registered.length === 0) {
-      registeredContainer.innerHTML = `<div class="empty">No courses registered yet.</div>`;
+    if (!registered.length) {
+      registeredContainer.innerHTML = `<div class="empty">No courses registered yet</div>`;
       regCountEl.textContent = "";
     } else {
       regCountEl.textContent = `(${registered.length})`;
       registeredContainer.innerHTML = registered.map(r => `
         <div class="course-row">
           <div class="course-info">
-            <div class="course-code">${escapeHtml(r.code)}</div>
-            <div class="course-title">${escapeHtml(r.title || '')}</div>
+            <div class="course-code">${r.code}</div>
+            <div class="course-title">${r.title}</div>
           </div>
-          <div class="actions">
-            <span class="status status-registered">Registered</span>
-          </div>
+          <div class="actions"><span class="status status-registered">Registered</span></div>
         </div>
       `).join("");
     }
   }
 
-  // register handler (delegated)
-  document.addEventListener("click", async (ev) => {
-    const btn = ev.target.closest && ev.target.closest(".registerBtn");
+  // Register handler
+  document.addEventListener("click", async ev => {
+    const btn = ev.target.closest(".registerBtn");
     if (!btn) return;
+
     const code = btn.dataset.code;
     const row = btn.closest(".course-row");
-    const pinInput = row?.querySelector("input.pin");
-    const pin = pinInput?.value?.trim();
-    if (!pin) return showMessage("Please enter pin before registering.", "error");
+    const pin = row.querySelector("input.pin").value.trim();
+    if (!pin) return showMessage("Enter pin before registering", "error");
 
-    // disable button while processing
     btn.disabled = true;
     btn.textContent = "Checking...";
 
     try {
-      const payload = { studentId, courseCode: code, pin };
-      const res = await fetch(`${backendBaseUrl}/api/course-registrations/register`, {
+      const response = await fetch(`${backendBaseUrl}/api/course-registrations/register`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({ studentId, courseCode: code, pin })
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        showMessage(`Successfully registered ${code}.`, "success");
-        // refresh lists
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        showMessage(`Successfully registered ${code}`, "success");
         await reloadAll();
       } else {
-        const msg = data.message || "Pin invalid or already used";
-        showMessage(msg, "error");
+        showMessage(data.message || "Invalid or used pin", "error");
       }
+
     } catch (err) {
-      console.error("Registration error:", err);
-      showMessage("Server error during registration.", "error");
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Register";
+      console.error(err);
+      showMessage("Server error during registration", "error");
     }
+
+    btn.disabled = false;
+    btn.textContent = "Register";
   });
 
-  // utility: escape HTML
-  function escapeHtml(s='') {
-    return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function showMessage(msg, type="success", timeout=3000) {
+    feedback.innerHTML = `<div class="msg ${type === "success" ? "success":"error"}">${msg}</div>`;
+    if (timeout) setTimeout(()=> feedback.innerHTML="", timeout);
   }
 
-  function showMessage(text, type='success', timeout=5000) {
-    feedback.innerHTML = `<div class="msg ${type==='success'?'success':'error'}">${escapeHtml(text)}</div>`;
-    if (timeout) setTimeout(()=>{ feedback.innerHTML = ''; }, timeout);
-  }
-
-  // reload everything
   async function reloadAll() {
-    await Promise.all([ loadStudent(), loadCourses(), loadRegistered() ]);
+    await loadStudent();
+    await loadCourses();
+    await loadRegistered();
     computeAvailable();
     render();
   }
 
-  // initial load
-  filterSemesterEl.addEventListener("change", () => { computeAvailable(); render(); });
+  filterSemesterEl.addEventListener("change", () => {
+    computeAvailable();
+    render();
+  });
+
   refreshBtn.addEventListener("click", reloadAll);
 
   await reloadAll();
