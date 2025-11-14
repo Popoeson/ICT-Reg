@@ -80,6 +80,7 @@
         <div class="meta"><span class="muted">Showing</span> <span id="visibleCount" class="badge">0</span> <span class="muted">of</span> <span id="totalCount" class="muted">0</span></div>
         <button id="exportCsv" class="ghost small">Export CSV</button>
         <button id="refreshBtn" class="ghost small">Refresh</button>
+<button id="deleteAllBtn" class="danger small">Delete All</button>
       </div>
     </div>
 
@@ -295,6 +296,23 @@
   });
   refreshBtn.addEventListener("click", fetchRegistrations);
   exportCsvBtn.addEventListener("click", exportCSV);
+
+// Delete All button
+document.getElementById("deleteAllBtn").addEventListener("click", async () => {
+  if (!confirm("Are you sure you want to delete ALL registrations? This cannot be undone.")) return;
+
+  try {
+    const res = await fetch(`${backendBase}/api/course-registrations`, { method: "DELETE" });
+    const payload = await res.json();
+    if (!res.ok || !payload.success) throw new Error(payload.message || "Server error");
+
+    alert(payload.message);
+    fetchRegistrations(); // refresh table
+  } catch (err) {
+    console.error("Delete all error:", err);
+    alert("Error deleting all registrations: " + (err.message || "server error"));
+  }
+});
 
   // initial load
   fetchRegistrations();
