@@ -1393,6 +1393,51 @@ app.get("/api/admin/all-registered-courses", async (req, res) => {
   }
 });
 
+// DELETE all course registrations
+app.delete("/api/course-registrations", async (req, res) => {
+  try {
+    const result = await CourseRegistration.deleteMany({}); // deletes all documents
+
+    res.json({
+      success: true,
+      message: `All registrations deleted successfully (${result.deletedCount} records).`
+    });
+  } catch (err) {
+    console.error("DELETE ALL REGISTRATIONS ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete all registrations",
+      error: err.message
+    });
+  }
+});
+
+// DELETE a single course registration
+app.delete("/api/course-registrations/:id", async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ success: false, message: "Registration ID is required" });
+  }
+
+  try {
+    const deleted = await CourseRegistration.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "Registration not found" });
+    }
+
+    res.json({ success: true, message: "Registration deleted successfully" });
+  } catch (err) {
+    console.error("DELETE REGISTRATION ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete registration",
+      error: err.message
+    });
+  }
+});
+
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
