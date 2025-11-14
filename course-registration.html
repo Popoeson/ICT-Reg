@@ -279,8 +279,15 @@
       const response = await fetch(`${backendBaseUrl}/api/course-register`, {
         method: "POST",
         headers: { "Content-Type":"application/json" },
-        body: JSON.stringify({ studentId, courseCode: code, pin })
-      });
+        body: JSON.stringify({
+  matricNumber: studentMatricEl.textContent.trim(),
+  studentName: studentNameEl.textContent.trim(),
+  department: studentDepartment,
+  level: studentLevel,
+  courseCode: code,
+  courseTitle: row.querySelector(".course-title").textContent.trim(),
+  pin
+})
 
       const data = await response.json();
 
