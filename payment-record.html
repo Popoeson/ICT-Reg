@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Student Payments</title>
+<style>
+  :root {
+    --primary: #007bff;
+    --danger: #dc3545;
+    --bg: #f5f7fa;
+    --card: #fff;
+    --muted: #6c757d;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+  body { margin:0; background: var(--bg); color:#222; }
+  header { background: var(--primary); color:#fff; padding:16px; text-align:center; font-weight:700; }
+  .container { max-width:1200px; margin:20px auto; padding:16px; }
+  .tabs { display:flex; gap:12px; margin-bottom:16px; }
+  .tab { padding:10px 20px; cursor:pointer; border-radius:8px; background:#eee; }
+  .tab.active { background:var(--primary); color:#fff; font-weight:600; }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+  .card { background:var(--card); border-radius:12px; padding:14px; margin-bottom:12px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
+  .card-header { display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+  .card-body { display:none; margin-top:10px; border-top:1px solid #eee; padding-top:10px; }
+  input, select { padding:10px; border-radius:6px; border:1px solid #ddd; width:100%; margin-bottom:10px; }
+  button { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; background:var(--primary); color:#fff; }
+  button.danger { background: var(--danger); }
+  .flex { display:flex; gap:12px; flex-wrap:wrap; }
+  .flex input, .flex select { flex:1; }
+</style>
+</head>
+<body>
+<header>Admin — Student Payments</header>
+<div class="container">
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" data-tab="newPayment">New Payment</div>
+    <div class="tab" data-tab="records">Records</div>
+  </div>
+
+  <!-- Tab Contents -->
+
+  <!-- NEW PAYMENT TAB -->
+  <div id="newPayment" class="tab-content active">
+    <div class="card">
+      <h3>Enter Payment</h3>
+      <form id="paymentForm">
+        <input type="text" id="matric" placeholder="Matric Number" required />
+        <input type="text" id="studentName" placeholder="Student Name" readonly />
+        <input type="text" id="department" placeholder="Department" readonly />
+
+        <input type="text" id="receipt" placeholder="Receipt Number" required />
+        <input type="text" id="amount" placeholder="₦ Amount" required />
+        <select id="paymentType" required>
+          <option value="">Select Payment Type</option>
+          <option value="Part Payment">Part Payment</option>
+          <option value="Balance Payment">Balance Payment</option>
+          <option value="Full Payment">Full Payment</option>
+        </select>
+        <input type="text" id="paymentId" placeholder="System Payment ID" readonly />
+
+        <button type="submit">Save Payment</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- RECORDS TAB -->
+  <div id="records" class="tab-content">
+    <div id="recordsContainer">
+      <p>Loading records…</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  // Tab switching
+  const tabs = document.querySelectorAll(".tab");
+  const contents = document.querySelectorAll(".tab-content");
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      tabs.forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      const target = tab.dataset.tab;
+      contents.forEach(c => c.id === target ? c.classList.add("active") : c.classList.remove("active"));
+    });
+  });
+
+  const matricInput = document.getElementById("matric");
+  const studentNameInput = document.getElementById("studentName");
+  const departmentInput = document.getElementById("department");
+  const paymentIdInput = document.getElementById("paymentId");
+  const amountInput = document.getElementById("amount");
+  const paymentForm = document.getElementById("paymentForm");
+  const recordsContainer = document.getElementById("recordsContainer");
+
+  // Auto-generate Payment ID
+  function generatePaymentId() {
+    const randomNum = Math.floor(10000 + Math.random() * 90000);
+    return `PAY/EF/${randomNum}`;
+  }
+  paymentIdInput.value = generatePaymentId();
+
+  // Fetch student info on matric input blur
+  matricInput.addEventListener("blur", async () => {
+    const matric = matricInput.value.trim();
+    if (!matric) return;
+    try {
+      const res = await fetch(`https://ict-reg.onrender.com/api/students/${encodeURIComponent(matric)}`);
+      if (!res.ok) throw new Error("Student not found");
+      const data = await res.json();
+      studentNameInput.value = data.studentName || "";
+      departmentInput.value = data.department || "";
+    } catch (err) {
+      console.error(err);
+      studentNameInput.value = "";
+      departmentInput.value = "";
+      alert("Student not found!");
+    }
+  });
+
+  // Amount input: only numbers, auto ₦ prefix
+  amountInput.addEventListener("input", () => {
+    let val = amountInput.value.replace(/[^0-9]/g, "");
+    amountInput.value = val ? `₦${val}` : "";
+  });
+
+  // Save payment
+  paymentForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = {
+      matricNumber: matricInput.value.trim(),
+      studentName: studentNameInput.value,
+      department: departmentInput.value,
+      receiptNo: document.getElementById("receipt").value.trim(),
+      amount: parseInt(amountInput.value.replace(/\D/g,'')),
+      paymentType: document.getElementById("paymentType").value,
+      systemPaymentId: paymentIdInput.value
+    };
+    try {
+      const res = await fetch("https://ict-reg.onrender.com/api/payments", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || "Server error");
+      alert("Payment recorded successfully!");
+      paymentForm.reset();
+      paymentIdInput.value = generatePaymentId();
+      studentNameInput.value = "";
+      departmentInput.value = "";
+      loadRecords(); // refresh records tab
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save payment: " + (err.message || "Server error"));
+    }
+  });
+
+  // Load all payment records
+  async function loadRecords() {
+    try {
+      const res = await fetch("https://ict-reg.onrender.com/api/payments");
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || "Server error");
+
+      // Group by student
+      const grouped = {};
+      data.data.forEach(p => {
+        if (!grouped[p.matricNumber]) grouped[p.matricNumber] = {studentName:p.studentName, department:p.department, payments:[]};
+        grouped[p.matricNumber].payments.push(p);
+      });
+
+      // Render cards
+      recordsContainer.innerHTML = Object.values(grouped).map((s, i) => `
+        <div class="card">
+          <div class="card-header" data-index="${i}">
+            <span>${i+1}. ${s.studentName} (${s.matricNumber}) - ${s.department}</span>
+            <span>▼</span>
+          </div>
+          <div class="card-body">
+            ${s.payments.map(p => `
+              <p>Receipt: ${p.receiptNo} | Amount: ₦${p.amount} | Type: ${p.paymentType} | ID: ${p.systemPaymentId}</p>
+            `).join("")}
+          </div>
+        </div>
+      `).join("");
+
+      // Add expand/collapse behavior
+      document.querySelectorAll(".card-header").forEach(header => {
+        header.addEventListener("click", () => {
+          const body = header.nextElementSibling;
+          body.style.display = body.style.display === "block" ? "none" : "block";
+        });
+      });
+
+    } catch (err) {
+      console.error(err);
+      recordsContainer.innerHTML = "<p>Failed to load payment records.</p>";
+    }
+  }
+
+  loadRecords(); // initial load
+
+})();
+</script>
+</body>
+</html>
