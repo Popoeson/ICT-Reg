@@ -7,29 +7,56 @@
 <style>
   :root {
     --primary: #007bff;
+    --secondary: #6c757d;
+    --success: #28a745;
     --danger: #dc3545;
     --bg: #f5f7fa;
     --card: #fff;
+    --text-dark: #222;
     --muted: #6c757d;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
-  body { margin:0; background: var(--bg); color:#222; }
-  header { background: var(--primary); color:#fff; padding:16px; text-align:center; font-weight:700; }
+
+  body { margin:0; background: var(--bg); color: var(--text-dark); }
+  header { background: var(--primary); color:#fff; padding:16px; text-align:center; font-weight:700; font-size:20px; }
   .container { max-width:1200px; margin:20px auto; padding:16px; }
+
+  /* Tabs */
   .tabs { display:flex; gap:12px; margin-bottom:16px; }
-  .tab { padding:10px 20px; cursor:pointer; border-radius:8px; background:#eee; }
+  .tab { padding:10px 20px; cursor:pointer; border-radius:8px; background:#eee; transition:0.3s; }
   .tab.active { background:var(--primary); color:#fff; font-weight:600; }
   .tab-content { display:none; }
   .tab-content.active { display:block; }
-  .card { background:var(--card); border-radius:12px; padding:14px; margin-bottom:12px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
-  .card-header { display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+
+  /* Card */
+  .card { background:var(--card); border-radius:12px; padding:16px; margin-bottom:16px; box-shadow:0 4px 16px rgba(0,0,0,0.08); border-left:4px solid var(--primary); transition:0.3s; }
+  .card:hover { transform: translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.1); }
+  .card-header { display:flex; justify-content:space-between; align-items:center; cursor:pointer; font-weight:600; font-size:16px; }
   .card-body { display:none; margin-top:10px; border-top:1px solid #eee; padding-top:10px; }
-  input, select { padding:10px; border-radius:6px; border:1px solid #ddd; width:100%; margin-bottom:10px; }
-  button { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; background:var(--primary); color:#fff; }
-  button.danger { background: var(--danger); }
+
+  /* Form */
+  form { display:flex; flex-direction:column; gap:12px; }
+  input, select { padding:10px; border-radius:6px; border:1px solid #ddd; width:100%; font-size:14px; }
+  button { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; background:var(--primary); color:#fff; font-weight:600; transition:0.3s; }
+  button:hover { background:#0056b3; }
+
   .flex { display:flex; gap:12px; flex-wrap:wrap; }
   .flex input, .flex select { flex:1; }
   .spinner { display:inline-block; margin-left:6px; }
+
+  /* Badges */
+  .badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:600; color:#fff; }
+  .badge.type { background: var(--primary); }
+  .badge.semester { background: var(--success); }
+  .badge.part { background: #17a2b8; }
+  .badge.balance { background: #ffc107; color:#000; }
+  .badge.full { background: var(--danger); }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .flex { flex-direction:column; }
+  }
+
 </style>
 </head>
 <body>
@@ -48,25 +75,35 @@
       <h3>Enter Payment</h3>
       <form id="paymentForm">
         <input type="text" id="matric" placeholder="Matric Number" required />
+
         <div class="flex">
           <input type="text" id="studentName" placeholder="Student Name" readonly />
           <span id="nameSpinner" class="spinner" style="display:none;">⏳</span>
         </div>
+
         <div class="flex">
           <input type="text" id="department" placeholder="Department" readonly />
+          <input type="text" id="level" placeholder="Level" readonly />
           <span id="deptSpinner" class="spinner" style="display:none;">⏳</span>
         </div>
 
         <input type="text" id="receipt" placeholder="Receipt Number" required />
         <input type="text" id="amount" placeholder="₦ Amount" required />
+
         <select id="paymentType" required>
           <option value="">Select Payment Type</option>
           <option value="Part Payment">Part Payment</option>
           <option value="Balance Payment">Balance Payment</option>
           <option value="Full Payment">Full Payment</option>
         </select>
-        <input type="text" id="paymentId" placeholder="System Payment ID" readonly />
 
+        <select id="semester" required>
+          <option value="">Select Semester</option>
+          <option value="First Semester">First Semester</option>
+          <option value="Second Semester">Second Semester</option>
+        </select>
+
+        <input type="text" id="paymentId" placeholder="System Payment ID" readonly />
         <button type="submit">Save Payment</button>
       </form>
     </div>
@@ -83,6 +120,8 @@
 
 <script>
 (() => {
+  const backendURL = "https://ict-reg.onrender.com";
+
   // ===== Tabs =====
   const tabs = document.querySelectorAll(".tab");
   const contents = document.querySelectorAll(".tab-content");
@@ -99,12 +138,14 @@
   const matricInput = document.getElementById("matric");
   const studentNameInput = document.getElementById("studentName");
   const departmentInput = document.getElementById("department");
+  const levelInput = document.getElementById("level");
   const nameSpinner = document.getElementById("nameSpinner");
   const deptSpinner = document.getElementById("deptSpinner");
   const paymentIdInput = document.getElementById("paymentId");
   const amountInput = document.getElementById("amount");
   const paymentForm = document.getElementById("paymentForm");
   const recordsContainer = document.getElementById("recordsContainer");
+  const semesterInput = document.getElementById("semester");
 
   // ===== Generate Payment ID =====
   function generatePaymentId() {
@@ -113,18 +154,19 @@
   }
   paymentIdInput.value = generatePaymentId();
 
-  // ===== Debounce helper =====
+  // ===== Debounce =====
   function debounce(fn, delay=300){
     let t;
     return (...args) => { clearTimeout(t); t = setTimeout(()=> fn(...args), delay); }
   }
 
   // ===== Fetch student info =====
-  async function fetchStudentInfo(){
+  async function fetchStudentInfo() {
     const matric = matricInput.value.trim();
     if (!matric) {
       studentNameInput.value = "";
       departmentInput.value = "";
+      levelInput.value = "";
       return;
     }
 
@@ -132,18 +174,21 @@
     deptSpinner.style.display = "inline";
     studentNameInput.value = "";
     departmentInput.value = "";
+    levelInput.value = "";
 
     try {
-      const res = await fetch(`https://ict-reg.onrender.com/api/students/matric/${encodeURIComponent(matric)}`);
+      const res = await fetch(`${backendURL}/api/students/matric/${encodeURIComponent(matric)}`);
       if (!res.ok) throw new Error("Student not found");
       const data = await res.json();
 
-      studentNameInput.value = data.studentName || `${data.firstname || ''} ${data.middlename || ''} ${data.surname || ''}`.trim();
+      studentNameInput.value = data.studentName || "";
       departmentInput.value = data.department || "";
+      levelInput.value = data.level || "";
     } catch (err) {
       console.error(err);
       studentNameInput.value = "";
       departmentInput.value = "";
+      levelInput.value = "";
     } finally {
       nameSpinner.style.display = "none";
       deptSpinner.style.display = "none";
@@ -165,13 +210,15 @@
       matricNumber: matricInput.value.trim(),
       studentName: studentNameInput.value,
       department: departmentInput.value,
+      level: levelInput.value,
       receiptNo: document.getElementById("receipt").value.trim(),
       amount: parseInt(amountInput.value.replace(/\D/g,'')),
       paymentType: document.getElementById("paymentType").value,
+      semester: semesterInput.value,
       systemPaymentId: paymentIdInput.value
     };
     try {
-      const res = await fetch("https://ict-reg.onrender.com/api/payments", {
+      const res = await fetch(`${backendURL}/api/payments`, {
         method: "POST",
         headers: {"Content-Type":"application/json"},
         body: JSON.stringify(payload)
@@ -183,6 +230,7 @@
       paymentIdInput.value = generatePaymentId();
       studentNameInput.value = "";
       departmentInput.value = "";
+      levelInput.value = "";
       loadRecords();
     } catch (err) {
       console.error(err);
@@ -193,25 +241,36 @@
   // ===== Load Payment Records =====
   async function loadRecords() {
     try {
-      const res = await fetch("https://ict-reg.onrender.com/api/payments");
+      const res = await fetch(`${backendURL}/api/payments`);
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || "Server error");
 
       const grouped = {};
       data.data.forEach(p => {
-        if (!grouped[p.matricNumber]) grouped[p.matricNumber] = {studentName:p.studentName, department:p.department, payments:[]};
+        if (!grouped[p.matricNumber]) grouped[p.matricNumber] = {
+          studentName: p.studentName,
+          department: p.department,
+          level: p.level,
+          payments: []
+        };
         grouped[p.matricNumber].payments.push(p);
       });
 
       recordsContainer.innerHTML = Object.values(grouped).map((s, i) => `
         <div class="card">
           <div class="card-header" data-index="${i}">
-            <span>${i+1}. ${s.studentName} (${s.payments[0].matricNumber}) - ${s.department}</span>
+            <span>${i+1}. ${s.studentName} (${s.payments[0].matricNumber}) - ${s.department} - ${s.level}</span>
             <span>▼</span>
           </div>
           <div class="card-body">
             ${s.payments.map(p => `
-              <p>Receipt: ${p.receiptNo} | Amount: ₦${p.amount} | Type: ${p.paymentType} | ID: ${p.systemPaymentId}</p>
+              <p>
+                <span class="badge ${p.paymentType === 'Part Payment' ? 'part' : p.paymentType === 'Balance Payment' ? 'balance' : 'full'} type">${p.paymentType}</span>
+                <span class="badge semester">${p.semester}</span>
+                <strong>Receipt:</strong> ${p.receiptNo} |
+                <strong>Amount:</strong> ₦${p.amount} |
+                <strong>ID:</strong> ${p.systemPaymentId}
+              </p>
             `).join("")}
           </div>
         </div>
@@ -231,7 +290,6 @@
   }
 
   loadRecords();
-
 })();
 </script>
 </body>
