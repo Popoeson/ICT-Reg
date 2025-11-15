@@ -29,6 +29,7 @@
   button.danger { background: var(--danger); }
   .flex { display:flex; gap:12px; flex-wrap:wrap; }
   .flex input, .flex select { flex:1; }
+  .spinner { display:inline-block; margin-left:6px; }
 </style>
 </head>
 <body>
@@ -41,16 +42,20 @@
     <div class="tab" data-tab="records">Records</div>
   </div>
 
-  <!-- Tab Contents -->
-
   <!-- NEW PAYMENT TAB -->
   <div id="newPayment" class="tab-content active">
     <div class="card">
       <h3>Enter Payment</h3>
       <form id="paymentForm">
         <input type="text" id="matric" placeholder="Matric Number" required />
-        <input type="text" id="studentName" placeholder="Student Name" readonly />
-        <input type="text" id="department" placeholder="Department" readonly />
+        <div class="flex">
+          <input type="text" id="studentName" placeholder="Student Name" readonly />
+          <span id="nameSpinner" class="spinner" style="display:none;">⏳</span>
+        </div>
+        <div class="flex">
+          <input type="text" id="department" placeholder="Department" readonly />
+          <span id="deptSpinner" class="spinner" style="display:none;">⏳</span>
+        </div>
 
         <input type="text" id="receipt" placeholder="Receipt Number" required />
         <input type="text" id="amount" placeholder="₦ Amount" required />
@@ -78,7 +83,7 @@
 
 <script>
 (() => {
-  // Tab switching
+  // ===== Tabs =====
   const tabs = document.querySelectorAll(".tab");
   const contents = document.querySelectorAll(".tab-content");
   tabs.forEach(tab => {
@@ -90,46 +95,70 @@
     });
   });
 
+  // ===== Elements =====
   const matricInput = document.getElementById("matric");
   const studentNameInput = document.getElementById("studentName");
   const departmentInput = document.getElementById("department");
+  const nameSpinner = document.getElementById("nameSpinner");
+  const deptSpinner = document.getElementById("deptSpinner");
   const paymentIdInput = document.getElementById("paymentId");
   const amountInput = document.getElementById("amount");
   const paymentForm = document.getElementById("paymentForm");
   const recordsContainer = document.getElementById("recordsContainer");
 
-  // Auto-generate Payment ID
+  // ===== Generate Payment ID =====
   function generatePaymentId() {
     const randomNum = Math.floor(10000 + Math.random() * 90000);
     return `PAY/EF/${randomNum}`;
   }
   paymentIdInput.value = generatePaymentId();
 
-  // Fetch student info on matric input blur
-  matricInput.addEventListener("blur", async () => {
+  // ===== Debounce helper =====
+  function debounce(fn, delay=300){
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(()=> fn(...args), delay); }
+  }
+
+  // ===== Fetch student info =====
+  async function fetchStudentInfo(){
     const matric = matricInput.value.trim();
-    if (!matric) return;
+    if (!matric) {
+      studentNameInput.value = "";
+      departmentInput.value = "";
+      return;
+    }
+
+    nameSpinner.style.display = "inline";
+    deptSpinner.style.display = "inline";
+    studentNameInput.value = "";
+    departmentInput.value = "";
+
     try {
       const res = await fetch(`https://ict-reg.onrender.com/api/students/${encodeURIComponent(matric)}`);
       if (!res.ok) throw new Error("Student not found");
       const data = await res.json();
-      studentNameInput.value = data.studentName || "";
+
+      studentNameInput.value = data.studentName || `${data.firstname || ''} ${data.middlename || ''} ${data.surname || ''}`.trim();
       departmentInput.value = data.department || "";
     } catch (err) {
       console.error(err);
       studentNameInput.value = "";
       departmentInput.value = "";
-      alert("Student not found!");
+    } finally {
+      nameSpinner.style.display = "none";
+      deptSpinner.style.display = "none";
     }
-  });
+  }
 
-  // Amount input: only numbers, auto ₦ prefix
+  matricInput.addEventListener("input", debounce(fetchStudentInfo, 500));
+
+  // ===== Amount formatting =====
   amountInput.addEventListener("input", () => {
     let val = amountInput.value.replace(/[^0-9]/g, "");
     amountInput.value = val ? `₦${val}` : "";
   });
 
-  // Save payment
+  // ===== Save Payment =====
   paymentForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const payload = {
@@ -154,32 +183,30 @@
       paymentIdInput.value = generatePaymentId();
       studentNameInput.value = "";
       departmentInput.value = "";
-      loadRecords(); // refresh records tab
+      loadRecords();
     } catch (err) {
       console.error(err);
       alert("Failed to save payment: " + (err.message || "Server error"));
     }
   });
 
-  // Load all payment records
+  // ===== Load Payment Records =====
   async function loadRecords() {
     try {
       const res = await fetch("https://ict-reg.onrender.com/api/payments");
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || "Server error");
 
-      // Group by student
       const grouped = {};
       data.data.forEach(p => {
         if (!grouped[p.matricNumber]) grouped[p.matricNumber] = {studentName:p.studentName, department:p.department, payments:[]};
         grouped[p.matricNumber].payments.push(p);
       });
 
-      // Render cards
       recordsContainer.innerHTML = Object.values(grouped).map((s, i) => `
         <div class="card">
           <div class="card-header" data-index="${i}">
-            <span>${i+1}. ${s.studentName} (${s.matricNumber}) - ${s.department}</span>
+            <span>${i+1}. ${s.studentName} (${s.payments[0].matricNumber}) - ${s.department}</span>
             <span>▼</span>
           </div>
           <div class="card-body">
@@ -190,7 +217,6 @@
         </div>
       `).join("");
 
-      // Add expand/collapse behavior
       document.querySelectorAll(".card-header").forEach(header => {
         header.addEventListener("click", () => {
           const body = header.nextElementSibling;
@@ -204,7 +230,7 @@
     }
   }
 
-  loadRecords(); // initial load
+  loadRecords();
 
 })();
 </script>
