@@ -278,60 +278,104 @@
     }
   });
 
-  // ===== Load Payment Records =====
-  async function loadRecords() {
-    try {
-      const res = await fetch(`${backendURL}/api/payments`);
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message || "Server error");
+  // ===== Load Payment Records with Search & Filters =====
+let allRecords = []; // store original data
 
-      const grouped = {};
-      data.data.forEach(p => {
-        if (!grouped[p.matricNumber]) grouped[p.matricNumber] = {
-          studentName: p.studentName,
-          department: p.department,
-          level: p.level,
-          payments: []
-        };
-        grouped[p.matricNumber].payments.push(p);
-      });
+async function loadRecords() {
+  try {
+    const res = await fetch(`${backendURL}/api/payments`);
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || "Server error");
 
-      recordsContainer.innerHTML = Object.values(grouped).map((s, i) => `
-        <div class="card">
-          <div class="card-header" data-index="${i}">
-            <span>${i+1}. ${s.studentName} (${s.payments[0].matricNumber}) - ${s.department} - ${s.level}</span>
-            <span>▼</span>
-          </div>
-          <div class="card-body">
-            ${s.payments.map(p => `
-              <p>
-  <span class="badge ${p.paymentType === 'Part Payment' ? 'part' : p.paymentType === 'Balance Payment' ? 'balance' : 'full'} type">${p.paymentType}</span>
-  <span class="badge semester">${p.semester}</span>
-  <span class="badge level" style="background:#343a40;">Level: ${p.level}</span>
-  <br>
-  <strong>Receipt:</strong> ${p.receiptNo} |
-  <strong>Amount:</strong> ₦${p.amount} |
-  <strong>ID:</strong> ${p.systemPaymentId}
-</p>
-            `).join("")}
-          </div>
-        </div>
-      `).join("");
+    // Group by matric number
+    const grouped = {};
+    data.data.forEach(p => {
+      if (!grouped[p.matricNumber]) grouped[p.matricNumber] = {
+        matricNumber: p.matricNumber,
+        studentName: p.studentName,
+        department: p.department,
+        level: p.level,
+        payments: []
+      };
+      grouped[p.matricNumber].payments.push(p);
+    });
 
-      document.querySelectorAll(".card-header").forEach(header => {
-        header.addEventListener("click", () => {
-          const body = header.nextElementSibling;
-          body.style.display = body.style.display === "block" ? "none" : "block";
-        });
-      });
+    allRecords = Object.values(grouped);
 
-    } catch (err) {
-      console.error(err);
-      recordsContainer.innerHTML = "<p>Failed to load payment records.</p>";
-    }
+    renderRecords();
+  } catch (err) {
+    console.error(err);
+    recordsContainer.innerHTML = "<p>Failed to load payment records.</p>";
+  }
+}
+
+// ===== APPLY FILTERS =====
+function renderRecords() {
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const semester = document.getElementById("filterSemester").value;
+  const level = document.getElementById("filterLevel").value;
+  const dept = document.getElementById("filterDept").value;
+
+  const filtered = allRecords.filter(s => {
+    const matchSearch =
+      s.studentName.toLowerCase().includes(search) ||
+      s.matricNumber.toLowerCase().includes(search);
+
+    const matchDept = dept ? s.department === dept : true;
+    const matchLevel = level ? s.level === level : true;
+
+    // semester must check inside payment list
+    const matchSemester = semester
+      ? s.payments.some(p => p.semester === semester)
+      : true;
+
+    return matchSearch && matchDept && matchLevel && matchSemester;
+  });
+
+  if (filtered.length === 0) {
+    recordsContainer.innerHTML = "<p>No records found.</p>";
+    return;
   }
 
-  loadRecords();
+  recordsContainer.innerHTML = filtered.map((s, i) => `
+    <div class="card">
+      <div class="card-header" data-index="${i}">
+        <span>${i+1}. ${s.studentName} (${s.matricNumber}) - ${s.department} - ${s.level}</span>
+        <span>▼</span>
+      </div>
+      <div class="card-body">
+        ${s.payments.map(p => `
+          <p>
+            <span class="badge ${p.paymentType === 'Part Payment' ? 'part' :
+              p.paymentType === 'Balance Payment' ? 'balance' : 'full'} type">${p.paymentType}</span>
+            <span class="badge semester">${p.semester}</span>
+            <span class="badge level">Level: ${p.level}</span>
+            <br>
+            <strong>Receipt:</strong> ${p.receiptNo} |
+            <strong>Amount:</strong> ₦${p.amount} |
+            <strong>ID:</strong> ${p.systemPaymentId}
+          </p>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  document.querySelectorAll(".card-header").forEach(header => {
+    header.addEventListener("click", () => {
+      const body = header.nextElementSibling;
+      body.style.display = body.style.display === "block" ? "none" : "block";
+    });
+  });
+}
+
+// ===== Filter Triggers =====
+document.getElementById("searchInput").addEventListener("input", renderRecords);
+document.getElementById("filterSemester").addEventListener("change", renderRecords);
+document.getElementById("filterLevel").addEventListener("change", renderRecords);
+document.getElementById("filterDept").addEventListener("change", renderRecords);
+
+loadRecords();
+
 })();
 </script>
 </body>
