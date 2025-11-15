@@ -113,12 +113,48 @@
     </div>
   </div>
 
-  <!-- RECORDS TAB -->
-  <div id="records" class="tab-content">
-    <div id="recordsContainer">
-      <p>Loading records…</p>
+    <!-- RECORDS TAB -->
+<div id="records" class="tab-content">
+
+  <!-- FILTERS -->
+  <div class="card" style="margin-bottom:16px;">
+    <h3>Search & Filters</h3>
+
+    <div class="flex">
+      <input type="text" id="searchInput" placeholder="Search by Name or Matric Number..." />
+
+      <select id="filterSemester">
+        <option value="">All Semesters</option>
+        <option value="First Semester">First Semester</option>
+        <option value="Second Semester">Second Semester</option>
+      </select>
+
+      <select id="filterLevel">
+        <option value="">All Levels</option>
+        <option value="ND1">ND1</option>
+        <option value="ND2">ND2</option>
+        <option value="HND1">HND1</option>
+        <option value="HND2">HND2</option>
+      </select>
+
+      <select id="filterDept">
+        <option value="">All Departments</option>
+        <option>Computer Science</option>
+        <option>Computer Engineering</option>
+        <option>Accountancy</option>
+        <option>Business Admin</option>
+        <option>Estate Management</option>
+        <option>Electrical Electronic Engineering</option>
+        <option>Office Technology Management</option>
+        <option>Science Laboratory Technology</option>
+      </select>
     </div>
   </div>
+
+  <div id="recordsContainer">
+    <p>Loading records…</p>
+  </div>
+</div>
 
 </div>
 
