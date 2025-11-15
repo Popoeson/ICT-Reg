@@ -289,6 +289,8 @@ const PaymentSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+const Payment = mongoose.model("Payment", PaymentSchema);
+
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
   return String(email || "").trim().toLowerCase();
