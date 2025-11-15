@@ -1478,6 +1478,8 @@ app.post("/api/payments", async (req, res) => {
 
  const payment = new Payment({ matricNumber, studentName, department, level, receiptNo, amount, paymentType, semester, systemPaymentId });
 
+      await payment.save();
+
     res.json({ success: true, message: "Payment recorded successfully", data: payment });
 
   } catch (err) {
