@@ -52,6 +52,10 @@
   .badge.balance { background: #ffc107; color:#000; }
   .badge.full { background: var(--danger); }
 
+.badge.level {
+  background: #343a40;
+  color: #fff;
+}
   /* Responsive */
   @media (max-width: 600px) {
     .flex { flex-direction:column; }
@@ -265,12 +269,14 @@
           <div class="card-body">
             ${s.payments.map(p => `
               <p>
-                <span class="badge ${p.paymentType === 'Part Payment' ? 'part' : p.paymentType === 'Balance Payment' ? 'balance' : 'full'} type">${p.paymentType}</span>
-                <span class="badge semester">${p.semester}</span>
-                <strong>Receipt:</strong> ${p.receiptNo} |
-                <strong>Amount:</strong> ₦${p.amount} |
-                <strong>ID:</strong> ${p.systemPaymentId}
-              </p>
+  <span class="badge ${p.paymentType === 'Part Payment' ? 'part' : p.paymentType === 'Balance Payment' ? 'balance' : 'full'} type">${p.paymentType}</span>
+  <span class="badge semester">${p.semester}</span>
+  <span class="badge level" style="background:#343a40;">Level: ${p.level}</span>
+  <br>
+  <strong>Receipt:</strong> ${p.receiptNo} |
+  <strong>Amount:</strong> ₦${p.amount} |
+  <strong>ID:</strong> ${p.systemPaymentId}
+</p>
             `).join("")}
           </div>
         </div>
