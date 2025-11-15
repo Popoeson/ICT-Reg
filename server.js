@@ -272,15 +272,22 @@ const PaymentSchema = new mongoose.Schema({
   matricNumber: { type: String, required: true },
   studentName: { type: String, required: true },
   department: { type: String, required: true },
+  level: { type: String, required: true }, // added level
   receiptNo: { type: String, required: true },
   amount: { type: Number, required: true },
-  paymentType: { type: String, enum: ["Part Payment", "Balance Payment", "Full Payment"], required: true },
-Semester", "First Semester", "Second Semester"], required: true },
+  paymentType: { 
+    type: String, 
+    enum: ["Part Payment", "Balance Payment", "Full Payment"], 
+    required: true 
+  },
+  semester: { 
+    type: String, 
+    enum: ["First Semester", "Second Semester"], 
+    required: true 
+  },
   systemPaymentId: { type: String, required: true, unique: true },
   createdAt: { type: Date, default: Date.now }
 });
-
-const Payment = mongoose.model("Payment", PaymentSchema);
 
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
