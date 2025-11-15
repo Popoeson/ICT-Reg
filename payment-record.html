@@ -134,7 +134,7 @@
     departmentInput.value = "";
 
     try {
-      const res = await fetch(`https://ict-reg.onrender.com/api/students/${encodeURIComponent(matric)}`);
+      const res = await fetch(`https://ict-reg.onrender.com/api/students/matric/${encodeURIComponent(matric)}`);
       if (!res.ok) throw new Error("Student not found");
       const data = await res.json();
 
