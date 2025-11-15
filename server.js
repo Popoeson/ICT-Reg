@@ -275,6 +275,7 @@ const PaymentSchema = new mongoose.Schema({
   receiptNo: { type: String, required: true },
   amount: { type: Number, required: true },
   paymentType: { type: String, enum: ["Part Payment", "Balance Payment", "Full Payment"], required: true },
+Semester", "First Semester", "Second Semester"], required: true },
   systemPaymentId: { type: String, required: true, unique: true },
   createdAt: { type: Date, default: Date.now }
 });
