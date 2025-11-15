@@ -267,6 +267,20 @@ const CourseRegistrationSchema = new mongoose.Schema({
 
 const CourseRegistration = mongoose.model("CourseRegistration", CourseRegistrationSchema);
 
+//======= Payment Schema ========
+const PaymentSchema = new mongoose.Schema({
+  matricNumber: { type: String, required: true },
+  studentName: { type: String, required: true },
+  department: { type: String, required: true },
+  receiptNo: { type: String, required: true },
+  amount: { type: Number, required: true },
+  paymentType: { type: String, enum: ["Part Payment", "Balance Payment", "Full Payment"], required: true },
+  systemPaymentId: { type: String, required: true, unique: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const Payment = mongoose.model("Payment", PaymentSchema);
+
 // ====== Utility Functions ======
 function normalizeEmail(email = "") {
   return String(email || "").trim().toLowerCase();
@@ -1437,6 +1451,67 @@ app.delete("/api/course-registrations/:id", async (req, res) => {
     });
   }
 });
+
+// ==================== PAYMENT ROUTES ====================
+
+// Create a new payment
+app.post("/api/payments", async (req, res) => {
+  try {
+    const { matricNumber, studentName, department, receiptNo, amount, paymentType, systemPaymentId } = req.body;
+
+    if (!matricNumber || !studentName || !department || !receiptNo || !amount || !paymentType || !systemPaymentId) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
+    const existing = await Payment.findOne({ systemPaymentId });
+    if (existing) return res.status(400).json({ success: false, message: "Payment ID already exists" });
+
+    const payment = new Payment({ matricNumber, studentName, department, receiptNo, amount, paymentType, systemPaymentId });
+    await payment.save();
+
+    res.json({ success: true, message: "Payment recorded successfully", data: payment });
+
+  } catch (err) {
+    console.error("CREATE PAYMENT ERROR:", err);
+    res.status(500).json({ success: false, message: "Failed to save payment", error: err.message });
+  }
+});
+
+// Get all payments
+app.get("/api/payments", async (req, res) => {
+  try {
+    const payments = await Payment.find().sort({ createdAt: -1 }).lean();
+    res.json({ success: true, data: payments });
+  } catch (err) {
+    console.error("GET PAYMENTS ERROR:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch payments", error: err.message });
+  }
+});
+
+// Get payments by matric number
+app.get("/api/payments/:matricNumber", async (req, res) => {
+  try {
+    const payments = await Payment.find({ matricNumber: req.params.matricNumber }).sort({ createdAt: -1 });
+    if (!payments.length) return res.status(404).json({ success: false, message: "No payments found" });
+    res.json({ success: true, data: payments });
+  } catch (err) {
+    console.error("GET PAYMENT BY MATRIC ERROR:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch payments", error: err.message });
+  }
+});
+
+// Fetch student info by matric number
+app.get("/api/students/:matricNumber", async (req, res) => {
+  try {
+    const student = await Student.findOne({ matricNumber: req.params.matricNumber }).lean();
+    if (!student) return res.status(404).json({ success: false, message: "Student not found" });
+    res.json({ success: true, studentName: student.studentName, department: student.department });
+  } catch (err) {
+    console.error("GET STUDENT ERROR:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch student", error: err.message });
+  }
+});
+
 
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
