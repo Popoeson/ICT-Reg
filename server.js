@@ -1507,7 +1507,13 @@ app.get("/api/students/matric/:matricNumber", async (req, res) => {
     if (!student) return res.status(404).json({ success: false, message: "Student not found" });
 
     const studentName = `${student.firstname || ''} ${student.middlename || ''} ${student.surname || ''}`.trim();
-    res.json({ success: true, studentName, department: student.department });
+    
+    res.json({ 
+      success: true, 
+      studentName, 
+      department: student.department,
+      level: student.level || "" // <-- add this
+    });
   } catch (err) {
     console.error("GET STUDENT + PROFILE ERROR:", err);
     res.status(500).json({ success: false, message: "Failed to fetch student", error: err.message });
