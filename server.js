@@ -1491,7 +1491,7 @@ app.get("/api/payments", async (req, res) => {
 // Get payments by matric number
 app.get("/api/payments/:matricNumber", async (req, res) => {
   try {
-    const payments = await Payment.find({ matricNumber: req.params.matricNumber }).sort({ createdAt: -1 });
+    const payments = await Payment.find({ matricNumber: req.params.matricNumber }).sort({ createdAt: -1 }).lean();
     if (!payments.length) return res.status(404).json({ success: false, message: "No payments found" });
     res.json({ success: true, data: payments });
   } catch (err) {
@@ -1503,15 +1503,19 @@ app.get("/api/payments/:matricNumber", async (req, res) => {
 // Fetch student info by matric number
 app.get("/api/students/:matricNumber", async (req, res) => {
   try {
-    const student = await Student.findOne({ matricNumber: req.params.matricNumber }).lean();
+    // Correct field: matricNo
+    const student = await Student.findOne({ matricNo: req.params.matricNumber }).lean();
     if (!student) return res.status(404).json({ success: false, message: "Student not found" });
-    res.json({ success: true, studentName: student.studentName, department: student.department });
+
+    // Combine first, middle, surname to form full name
+    const studentName = `${student.firstname || ''} ${student.middlename || ''} ${student.surname || ''}`.trim();
+
+    res.json({ success: true, studentName, department: student.department });
   } catch (err) {
     console.error("GET STUDENT ERROR:", err);
     res.status(500).json({ success: false, message: "Failed to fetch student", error: err.message });
   }
 });
-
 
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
