@@ -1467,7 +1467,7 @@ app.delete("/api/course-registrations/:id", async (req, res) => {
 // Create a new payment
 app.post("/api/payments", async (req, res) => {
   try {
-    const { matricNumber, studentName, department, receiptNo, amount, paymentType, systemPaymentId } = req.body;
+    const { matricNumber, studentName, department, level, receiptNo, amount, paymentType, semester, systemPaymentId } = req.body;
 
     if (!matricNumber || !studentName || !department || !receiptNo || !amount || !paymentType || !systemPaymentId) {
       return res.status(400).json({ success: false, message: "All fields are required" });
@@ -1476,8 +1476,7 @@ app.post("/api/payments", async (req, res) => {
     const existing = await Payment.findOne({ systemPaymentId });
     if (existing) return res.status(400).json({ success: false, message: "Payment ID already exists" });
 
-    const payment = new Payment({ matricNumber, studentName, department, receiptNo, amount, paymentType, systemPaymentId });
-    await payment.save();
+ const payment = new Payment({ matricNumber, studentName, department, level, receiptNo, amount, paymentType, semester, systemPaymentId });
 
     res.json({ success: true, message: "Payment recorded successfully", data: payment });
 
