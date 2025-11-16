@@ -1371,6 +1371,7 @@ app.post("/api/course-register", async (req, res) => {
       level,
       courseCode,
       courseTitle,
+      semester,
       pinUsed: pin
     });
 
