@@ -63,7 +63,7 @@
           <th>S/N</th>
           <th>Course Code</th>
           <th>Course Title</th>
-          <th>Unit</th>
+          
         </tr>
       </thead>
       <tbody id="coursesTable">
@@ -131,35 +131,35 @@
   }
 
   // ===== FETCH REGISTERED COURSES =====
-  try {
-    if (student && student.matricNo) {
-      const coursesRes = await fetch(`${backendURL}/api/registered-courses?matric=${encodeURIComponent(student.matricNo)}`);
-      const coursesData = await coursesRes.json();
-      coursesTableEl.innerHTML = "";
+try {
+  if (student && student.matricNo) {
+    const coursesRes = await fetch(`${backendURL}/api/registered-courses?matric=${encodeURIComponent(student.matricNo)}`);
+    const coursesData = await coursesRes.json();
+    coursesTableEl.innerHTML = "";
 
-      if (!coursesRes.ok || !coursesData.success || !coursesData.data || coursesData.data.length === 0) {
-        coursesTableEl.innerHTML = "<tr><td colspan='4'>No courses registered</td></tr>";
-        coursesWarningEl.textContent = "Courses to be registered for are not complete";
-      } else {
-        const courses = coursesData.data;
-        courses.forEach((c, i) => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${i + 1}</td>
-            <td>${c.courseCode}</td>
-            <td>${c.courseTitle}</td>
-            <td>${c.unit || "N/A"}</td>
-          `;
-          coursesTableEl.appendChild(row);
-        });
-        coursesComplete = true;
-      }
+    if (!coursesRes.ok || !coursesData.success || !coursesData.data || coursesData.data.length === 0) {
+      coursesTableEl.innerHTML = "<tr><td colspan='3'>No courses registered</td></tr>";
+      coursesWarningEl.textContent = "Courses to be registered for are not complete";
+    } else {
+      const courses = coursesData.data;
+      courses.forEach((c, i) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${c.courseCode}</td>
+          <td>${c.courseTitle}</td>
+        `;
+        coursesTableEl.appendChild(row);
+      });
+      coursesComplete = true;
     }
-  } catch (err) {
-    console.error("Error fetching courses:", err);
-    coursesTableEl.innerHTML = "<tr><td colspan='4'>Error loading courses</td></tr>";
-    coursesWarningEl.textContent = "Could not load registered courses";
   }
+} catch (err) {
+  console.error("Error fetching courses:", err);
+  coursesTableEl.innerHTML = "<tr><td colspan='3'>Error loading courses</td></tr>";
+  coursesWarningEl.textContent = "Could not load registered courses";
+}
+  
 
   // ===== FETCH PAYMENT RECORDS =====
   try {
