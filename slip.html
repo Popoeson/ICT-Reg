@@ -109,6 +109,9 @@
   </footer>
 </div>
 
+<!-- jsPDF library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <script>
 (async () => {
   const backendURL = "https://ict-reg.onrender.com";
@@ -231,14 +234,16 @@ if (semesterNumber !== null) courses = courses.filter(c => c.semester === semest
 
   // DOWNLOAD PDF
   downloadBtn.addEventListener("click", () => {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.html(document.querySelector(".container"), {
-      callback: pdf => pdf.save(`Exam_Slip_${matricEl.textContent}.pdf`),
-      x:10, y:10, html2canvas: { scale:0.8 }
-    });
+  // For jsPDF 2.x, you access it via window.jspdf.jsPDF
+  const doc = new window.jspdf.jsPDF();
+
+  doc.html(document.querySelector(".container"), {
+    callback: pdf => pdf.save(`Exam_Slip_${matricEl.textContent}.pdf`),
+    x: 10,
+    y: 10,
+    html2canvas: { scale: 0.8 }
   });
-})();
+});
 </script>
 
 </body>
