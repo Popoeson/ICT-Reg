@@ -466,6 +466,8 @@ if (s.verified === true) {
 document.getElementById("verifyBtn").addEventListener("click", async () => {
   if (!confirm("Are you sure you want to verify this student?")) return;
 
+console.log("VERIFY URL:", `${backendURL}/api/students/verify/${studentId}`);
+
   try {
     const response = await fetch(`${backendURL}/api/students/verify/${studentId}`, {
       method: "PUT",
