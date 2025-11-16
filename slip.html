@@ -159,7 +159,12 @@
       matricEl.textContent = student.matricNo || "N/A";
       deptEl.textContent = student.department || "N/A";
       levelEl.textContent = student.level || "N/A";
-      // Update displayed semester based on filter
+
+// GET FILTER VALUES FIRST
+const selectedLevel = filterLevelEl.value;
+const selectedSemester = filterSemesterEl.value;
+
+// UPDATE DISPLAYED SEMESTER
 if (!selectedSemester) {
   semesterEl.textContent = "All Semesters";
 } else {
