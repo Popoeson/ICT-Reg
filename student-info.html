@@ -468,31 +468,31 @@ if (!studentIdFromURL) {
       }  
 
       // ===== Verify Logic =====
-      document.getElementById("verifyBtn").addEventListener("click", async () => {  
-        if (!confirm("Are you sure you want to verify this student?")) return;  
+document.getElementById("verifyBtn").addEventListener("click", async () => {  
+  if (!confirm("Are you sure you want to verify this student?")) return;  
 
-        try {  
-          console.log("VERIFY URL:", `${backendURL}/api/students/verify/${correctId}`);  
+  try {  
+    console.log("VERIFY URL:", `${backendURL}/api/students/verify/matric/${student.matricNo}`);  
 
-          const response = await fetch(`${backendURL}/api/students/verify/${correctId}`, {  
-            method: "PUT",  
-            headers: { "Content-Type": "application/json" }  
-          });  
+    const response = await fetch(`${backendURL}/api/students/verify/matric/${encodeURIComponent(student.matricNo)}`, {  
+      method: "PUT",  
+      headers: { "Content-Type": "application/json" }  
+    });  
 
-          const result = await response.json();  
+    const result = await response.json();  
 
-          if (result.success) {  
-            document.getElementById("verifyBtn").style.display = "none";  
-            document.getElementById("verifiedBadge").style.display = "flex";  
-            alert("Student verified successfully!");
-          } else {  
-            alert("Failed to verify: " + result.message);  
-          }  
-        } catch (err) {  
-          console.error(err);  
-          alert("Server error verifying student.");  
-        }  
-      });  
+    if (result.success) {  
+      document.getElementById("verifyBtn").style.display = "none";  
+      document.getElementById("verifiedBadge").style.display = "flex";  
+      alert("Student verified successfully!");
+    } else {  
+      alert("Failed to verify: " + result.message);  
+    }  
+  } catch (err) {  
+    console.error(err);  
+    alert("Server error verifying student.");  
+  }  
+}); 
 
       // ===== Personal info =====
       const nokFullName = [student.nokSurname, student.nokFirstname].filter(Boolean).join(" ") || "N/A";
