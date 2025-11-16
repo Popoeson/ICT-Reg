@@ -471,12 +471,16 @@ if (!canVerify) {
 }
 
       // ===== Show/Hide Verify Button =====
-      if (student.verified === true) {  
-        document.getElementById("verifyBtn").style.display = "none";  
-        document.getElementById("verifiedBadge").style.display = "flex";  
-      } else {  
-        document.getElementById("verifyBtn").style.display = "block";  
-      }  
+      if (student.verified === true) {
+  document.getElementById("verifyBtn").style.display = "none";
+  document.getElementById("verifiedBadge").style.display = "flex";
+} else {
+  if (canVerify) {
+    document.getElementById("verifyBtn").style.display = "block";
+  } else {
+    document.getElementById("verifyBtn").style.display = "none";
+  }
+}
 
       // ===== Verify Logic =====
 document.getElementById("verifyBtn").addEventListener("click", async () => {  
