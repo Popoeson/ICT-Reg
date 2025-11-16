@@ -167,7 +167,12 @@
       if (coursesRes.ok && coursesData.success && coursesData.data && coursesData.data.length > 0) {
         courses = coursesData.data;
         if (selectedLevel) courses = courses.filter(c => c.level === selectedLevel);
-        if (selectedSemester) courses = courses.filter(c => c.semester === selectedSemester);
+        let semesterNumber = null;
+if (selectedSemester === "First Semester") semesterNumber = 1;
+else if (selectedSemester === "Second Semester") semesterNumber = 2;
+
+if (selectedLevel) courses = courses.filter(c => c.level === selectedLevel);
+if (semesterNumber !== null) courses = courses.filter(c => c.semester === semesterNumber);
 
         if (courses.length > 0) {
   courses.forEach((c, i) => {
