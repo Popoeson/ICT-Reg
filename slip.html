@@ -173,9 +173,10 @@
       if (coursesRes.ok && coursesData.success && coursesData.data && coursesData.data.length > 0) {
         courses = coursesData.data;
 
-        // FILTERS
+        // FILTER LEVEL
         if (selectedLevel) courses = courses.filter(c => c.level === selectedLevel);
 
+        // FILTER SEMESTER
         let semesterNumber = null;
         if (selectedSemester === "First Semester") semesterNumber = 1;
         else if (selectedSemester === "Second Semester") semesterNumber = 2;
@@ -202,27 +203,26 @@
       }
 
       // PAYMENTS
-const paymentsRes = await fetch(`${backendURL}/api/payments/${encodeURIComponent(student.matricNo)}`);
-const paymentsData = await paymentsRes.json();
+      const paymentsRes = await fetch(`${backendURL}/api/payments/${encodeURIComponent(student.matricNo)}`);
+      const paymentsData = await paymentsRes.json();
 
-let payments = [];
-if (paymentsRes.ok && paymentsData.success && paymentsData.data && paymentsData.data.length > 0) {
-  payments = paymentsData.data;
-  
-  if (selectedLevel) payments = payments.filter(p => p.level === selectedLevel);
-  
-  if (selectedSemester) payments = payments.filter(p => p.semester === selectedSemester);
-}
+      let payments = [];
+      if (paymentsRes.ok && paymentsData.success && paymentsData.data && paymentsData.data.length > 0) {
+        payments = paymentsData.data;
 
-const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-amountPaidEl.textContent = totalPaid;
-paymentStatusEl.textContent = totalPaid >= 40000 ? "PAID" : "NOT PAID";
-paymentTypeEl.textContent = payments.map(p => p.paymentType).join(", ") || "N/A";
-receiptNosEl.textContent = payments.map(p => p.receiptNo).join(", ") || "N/A";
-paymentDatesEl.textContent = payments.map(p => new Date(p.createdAt).toLocaleDateString()).join(", ") || "N/A";
+        if (selectedLevel) payments = payments.filter(p => p.level === selectedLevel);
+        if (selectedSemester) payments = payments.filter(p => p.semester === selectedSemester);
+      }
 
-paymentComplete = totalPaid >= 40000;
-paymentStatusEl.classList.toggle("warning", !paymentComplete);
+      const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      amountPaidEl.textContent = totalPaid;
+      paymentStatusEl.textContent = totalPaid >= 40000 ? "PAID" : "NOT PAID";
+      paymentTypeEl.textContent = payments.map(p => p.paymentType).join(", ") || "N/A";
+      receiptNosEl.textContent = payments.map(p => p.receiptNo).join(", ") || "N/A";
+      paymentDatesEl.textContent = payments.map(p => new Date(p.createdAt).toLocaleDateString()).join(", ") || "N/A";
+
+      paymentComplete = totalPaid >= 40000;
+      paymentStatusEl.classList.toggle("warning", !paymentComplete);
 
       downloadBtn.disabled = !(coursesComplete && paymentComplete);
 
@@ -240,24 +240,40 @@ paymentStatusEl.classList.toggle("warning", !paymentComplete);
 
   // DOWNLOAD PDF
   downloadBtn.addEventListener("click", () => {
-  const container = document.querySelector(".container");
-  const doc = new window.jspdf.jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4"
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      alert("jsPDF library not loaded.");
+      return;
+    }
+
+    const container = document.querySelector(".container");
+
+    const doc = new window.jspdf.jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4"
+    });
+
+    const pageWidth = 190; // page width with margins
+    const pageHeight = 277; // A4 height minus margins
+    const contentWidth = container.scrollWidth;
+    const contentHeight = container.scrollHeight;
+    const scaleX = pageWidth / contentWidth;
+    const scaleY = pageHeight / contentHeight;
+    const scale = Math.min(scaleX, scaleY) * 0.95; // slightly reduce to fit nicely
+
+    doc.html(container, {
+      callback: pdf => pdf.save(`Exam_Slip_${matricEl.textContent}.pdf`),
+      x: 10,
+      y: 10,
+      html2canvas: {
+        scale: scale,
+        logging: false,
+        useCORS: true
+      }
+    });
   });
 
-  const pageWidth = 190; // leave margins
-  const scale = pageWidth / container.scrollWidth;
-
-  doc.html(container, {
-    callback: pdf => pdf.save(`Exam_Slip_${matricEl.textContent}.pdf`),
-    x: 10,
-    y: 10,
-    html2canvas: { scale: scale }
-  });
-});
+})();
 </script>
-
 </body>
 </html>
