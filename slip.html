@@ -7,43 +7,34 @@
 <style>
   body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin:0; background:#f5f7fa; color:#222; padding:20px; }
   .container { max-width:900px; margin:auto; background:#fff; padding:20px; border-radius:12px; box-shadow:0 3px 10px rgba(0,0,0,0.1); }
-
   header { text-align:center; margin-bottom:20px; }
   header img { height:60px; vertical-align:middle; }
   header h1 { display:inline-block; margin:0 0 0 10px; font-size:1.8rem; vertical-align:middle; }
   header h2 { margin-top:5px; font-size:1.4rem; font-weight:400; }
-
   .student-info, .payment-info, .courses-info { border:1px solid #ddd; border-radius:10px; padding:15px; margin-bottom:20px; }
   .student-info { display:flex; gap:20px; align-items:center; }
   .student-info img { width:100px; height:100px; border-radius:50%; object-fit:cover; border:2px solid #007bff; }
   .student-info div { flex:1; }
   .student-info div p { margin:4px 0; }
-
   .payment-info p { margin:6px 0; }
   .payment-info .status { font-weight:600; }
-
   table { width:100%; border-collapse:collapse; margin-top:10px; }
   th, td { border:1px solid #ddd; padding:8px; text-align:center; }
   th { background:#007bff; color:#fff; }
-
   .warning { color:#dc3545; font-weight:600; }
-
   #downloadBtn { display:block; margin:auto; padding:10px 20px; border:none; border-radius:8px; background:#28a745; color:#fff; font-weight:600; cursor:pointer; transition:0.3s; }
   #downloadBtn:disabled { background:#ccc; cursor:not-allowed; }
-
   footer { text-align:right; font-size:0.9rem; margin-top:10px; }
 </style>
 </head>
 <body>
 <div class="container">
-  <!-- HEADER -->
   <header>
     <img src="upload/logo.jpg" alt="Logo">
     <h1>OWU COLLEGE OF MANAGEMENT TECHNOLOGY</h1>
     <h2>EXAMINATION SLIP — 2024/2025</h2>
   </header>
 
-  <!-- STUDENT INFO -->
   <div class="student-info">
     <img id="passport" src="https://via.placeholder.com/100" alt="Passport">
     <div>
@@ -55,7 +46,6 @@
     </div>
   </div>
 
-  <!-- PAYMENT INFO -->
   <div class="payment-info">
     <h3>EXAM FEE PAYMENT</h3>
     <p><strong>Payment Status:</strong> <span id="paymentStatus" class="status"></span></p>
@@ -65,7 +55,6 @@
     <p><strong>Date:</strong> <span id="paymentDates"></span></p>
   </div>
 
-  <!-- REGISTERED COURSES -->
   <div class="courses-info">
     <h3>REGISTERED COURSES</h3>
     <table>
@@ -84,7 +73,6 @@
     <p id="coursesWarning" class="warning"></p>
   </div>
 
-  <!-- DOWNLOAD BUTTON -->
   <button id="downloadBtn" disabled>Download Exam Slip (PDF)</button>
 
   <footer>
@@ -137,8 +125,6 @@
     // ===== FETCH REGISTERED COURSES =====
     const coursesRes = await fetch(`${backendURL}/api/registered-courses/${studentId}`);
     const coursesData = await coursesRes.json();
-    if (!coursesRes.ok || !coursesData.success) throw new Error("Failed to fetch courses");
-
     const courses = coursesData.data || [];
     coursesTableEl.innerHTML = "";
     if (courses.length === 0) {
@@ -154,29 +140,37 @@
     }
 
     // ===== FETCH PAYMENT RECORDS =====
-let payments = [];
-try {
-  const paymentsRes = await fetch(`${backendURL}/api/payments/${student.matricNo}`);
-  const paymentsData = await paymentsRes.json();
-  if (paymentsRes.ok && paymentsData.success) {
-    payments = paymentsData.data || [];
-  } else {
-    console.warn("No payments found for this student");
+    let payments = [];
+    try {
+      const paymentsRes = await fetch(`${backendURL}/api/payments/${student.matricNo}`);
+      const paymentsData = await paymentsRes.json();
+      if (paymentsRes.ok && paymentsData.success) {
+        payments = paymentsData.data || [];
+      } else {
+        console.warn("No payments found for this student");
+      }
+    } catch(err) {
+      console.error("Error fetching payments:", err);
+    }
+
+    const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    amountPaidEl.textContent = totalPaid;
+    paymentStatusEl.textContent = totalPaid >= 40000 ? "PAID" : "NOT PAID";
+    paymentTypeEl.textContent = payments.map(p => p.paymentType).join(", ") || "N/A";
+    receiptNosEl.textContent = payments.map(p => p.receiptNo).join(", ") || "N/A";
+    paymentDatesEl.textContent = payments.map(p => new Date(p.date).toLocaleDateString()).join(", ") || "N/A";
+
+    paymentComplete = totalPaid >= 40000;
+    if (!paymentComplete) paymentStatusEl.classList.add("warning");
+
+    // ===== ENABLE DOWNLOAD IF BOTH COMPLETE =====
+    downloadBtn.disabled = !(coursesComplete && paymentComplete);
+
+  } catch(err) {
+    console.error("Error loading exam slip data:", err);
+    coursesTableEl.innerHTML = "<tr><td colspan='4'>Error loading data</td></tr>";
+    paymentStatusEl.textContent = "ERROR";
   }
-} catch(err) {
-  console.error("Error fetching payments:", err);
-}
-
-// Calculate total paid
-const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-amountPaidEl.textContent = totalPaid;
-paymentStatusEl.textContent = totalPaid >= 40000 ? "PAID" : "NOT PAID";
-paymentTypeEl.textContent = payments.map(p => p.paymentType).join(", ") || "N/A";
-receiptNosEl.textContent = payments.map(p => p.receiptNo).join(", ") || "N/A";
-paymentDatesEl.textContent = payments.map(p => new Date(p.date).toLocaleDateString()).join(", ") || "N/A";
-
-paymentComplete = totalPaid >= 40000;
-if (!paymentComplete) paymentStatusEl.classList.add("warning");
 
   // ===== DOWNLOAD PDF =====
   downloadBtn.addEventListener("click", () => {
@@ -191,6 +185,7 @@ if (!paymentComplete) paymentStatusEl.classList.add("warning");
       html2canvas: { scale: 0.8 }
     });
   });
+
 })();
 </script>
 </body>
