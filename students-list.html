@@ -70,7 +70,7 @@
     }
 
     .filter-body.open {
-      max-height: 400px;
+      max-height: 500px;
       opacity: 1;
     }
 
@@ -167,90 +167,89 @@
     }
 
     @media (max-width: 600px) {
-  .student-grid {
-    grid-template-columns: repeat(2, 1fr); /* two cards per row */
-    gap: 10px;
-  }
+      .student-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
 
-  .student-card {
-    padding: 10px; /* slightly smaller padding */
-  }
+      .student-card {
+        padding: 10px;
+      }
 
-  .passport {
-    width: 60px;
-    height: 60px;
-  }
+      .passport {
+        width: 60px;
+        height: 60px;
+      }
 
-  .fullname {
-    font-size: 0.9rem;
-  }
+      .fullname {
+        font-size: 0.9rem;
+      }
 
-  .serial {
-    font-size: 11px;
-    padding: 2px 6px;
-  }
+      .serial {
+        font-size: 11px;
+        padding: 2px 6px;
+      }
 
-  .delete-btn {
-    font-size: 0.75rem;
-    padding: 4px 8px;
-  }
-}
+      .delete-btn {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+      }
+    }
   </style>
 </head>
 <body>
 
-  <header>📊 Admin Dashboard</header>
+<header>📊 Admin Dashboard</header>
 
-  <div class="container">
-    <!-- Collapsible Filter Section -->
-    <div class="filter-card">
-      <div class="filter-header" id="filterToggle">
-        <span>🔍 Filter & Search Students</span>
-        <span id="toggleIcon">▾</span>
-      </div>
-
-      <div class="filter-body" id="filterBody">
-        <input type="text" id="searchInput" placeholder="Search by name or matric number">
-
-        <select id="departmentFilter">
-          <option value="">All Departments</option>
-          <option value="Computer Science">Computer Science</option>
-          <option value="Computer Engineering">Computer Engineering</option>
-          <option value="Business Admin">Business Admin</option>
-          <option value="Science Lab Tech">Science Lab Tech</option>
-          <option value="Estate Management">Estate Management</option>
-          <option value="Accountancy">Accountancy</option>
-          <option value="Mass Communication">Mass Communication</option>
-          <option value="Electrical Engineering">Electrical Engineering</option>
-          <option value="Medical Lab Tech">Medical Lab Tech</option>
-        </select>
-
-        <select id="levelFilter">
-          <option value="">All Levels</option>
-          <option value="ND1">ND 1</option>
-          <option value="ND2">ND 2</option>
-          <option value="HND1">HND 1</option>
-          <option value="HND2">HND 2</option>
-        </select>
-        
-         
-<select id="verifiedFilter">
-  <option value="">All Students</option>
-  <option value="true">Verified</option>
-  <option value="false">Not Verified</option>
-</select>
-
-        <button id="clearFilters">Clear Filters</button>
-      </div>
+<div class="container">
+  <!-- Collapsible Filter Section -->
+  <div class="filter-card">
+    <div class="filter-header" id="filterToggle">
+      <span>🔍 Filter & Search Students</span>
+      <span id="toggleIcon">▾</span>
     </div>
 
-    <!-- Student Cards -->
-    <div id="studentGrid" class="student-grid">
-      <p style="text-align:center;">Loading students...</p>
+    <div class="filter-body" id="filterBody">
+      <input type="text" id="searchInput" placeholder="Search by name or matric number">
+
+      <select id="departmentFilter">
+        <option value="">All Departments</option>
+        <option value="Computer Science">Computer Science</option>
+        <option value="Computer Engineering">Computer Engineering</option>
+        <option value="Business Admin">Business Admin</option>
+        <option value="Science Lab Tech">Science Lab Tech</option>
+        <option value="Estate Management">Estate Management</option>
+        <option value="Accountancy">Accountancy</option>
+        <option value="Mass Communication">Mass Communication</option>
+        <option value="Electrical Engineering">Electrical Engineering</option>
+        <option value="Medical Lab Tech">Medical Lab Tech</option>
+      </select>
+
+      <select id="levelFilter">
+        <option value="">All Levels</option>
+        <option value="ND1">ND 1</option>
+        <option value="ND2">ND 2</option>
+        <option value="HND1">HND 1</option>
+        <option value="HND2">HND 2</option>
+      </select>
+
+      <select id="verifiedFilter">
+        <option value="">All Students</option>
+        <option value="true">Verified</option>
+        <option value="false">Not Verified</option>
+      </select>
+
+      <button id="clearFilters">Clear Filters</button>
     </div>
   </div>
 
-  <script>
+  <!-- Student Cards -->
+  <div id="studentGrid" class="student-grid">
+    <p style="text-align:center;">Loading students...</p>
+  </div>
+</div>
+
+<script>
 const backendBaseUrl = "https://ict-reg.onrender.com";
 const studentGrid = document.getElementById("studentGrid");
 const filterToggle = document.getElementById("filterToggle");
@@ -276,6 +275,8 @@ if (!isSuperAdmin && adminDepartment) {
   departmentSelect.disabled = true;
 }
 
+const verifiedSelect = document.getElementById("verifiedFilter");
+
 // Toggle filter animation
 filterToggle.addEventListener("click", () => {
   filterBody.classList.toggle("open");
@@ -286,8 +287,9 @@ async function fetchStudents() {
   const q = document.getElementById("searchInput").value.trim();
   const department = isSuperAdmin
     ? document.getElementById("departmentFilter").value
-    : adminDepartment; // force admin's department
+    : adminDepartment;
   const level = document.getElementById("levelFilter").value;
+  const verifiedFilter = verifiedSelect.value;
 
   const queryParams = new URLSearchParams({ q, department, level });
 
@@ -300,28 +302,29 @@ async function fetchStudents() {
       return;
     }
 
-    // 🔹 Apply client-side department filter for safety
     let filteredStudents = data.data;
     if (!isSuperAdmin && adminDepartment) {
       filteredStudents = filteredStudents.filter(
-        (s) =>
-          s.department?.toLowerCase().trim() ===
-          adminDepartment.toLowerCase().trim()
+        (s) => s.department?.toLowerCase().trim() === adminDepartment.toLowerCase().trim()
       );
     }
 
+    // Apply verified filter
+    if (verifiedFilter === "true") {
+      filteredStudents = filteredStudents.filter((s) => s.verified === true);
+    } else if (verifiedFilter === "false") {
+      filteredStudents = filteredStudents.filter((s) => !s.verified);
+    }
+
     if (filteredStudents.length === 0) {
-      studentGrid.innerHTML = `<p style="text-align:center;">No students found for your department.</p>`;
+      studentGrid.innerHTML = `<p style="text-align:center;">No students found for these filters.</p>`;
       return;
     }
 
     studentGrid.innerHTML = filteredStudents
       .map((s, index) => {
-        const fullName = [s.surname, s.firstname, s.middlename]
-          .filter(Boolean)
-          .join(" ");
+        const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ");
 
-        // Add verified tick badge if student is verified
         const verifiedBadge = s.verified
           ? `<span style="
                position: absolute;
@@ -386,12 +389,13 @@ async function deleteStudent(id) {
 document.getElementById("searchInput").addEventListener("input", fetchStudents);
 document.getElementById("departmentFilter").addEventListener("change", fetchStudents);
 document.getElementById("levelFilter").addEventListener("change", fetchStudents);
+verifiedSelect.addEventListener("change", fetchStudents);
+
 document.getElementById("clearFilters").addEventListener("click", () => {
   document.getElementById("searchInput").value = "";
-  if (isSuperAdmin) {
-    document.getElementById("departmentFilter").value = "";
-  }
+  if (isSuperAdmin) document.getElementById("departmentFilter").value = "";
   document.getElementById("levelFilter").value = "";
+  verifiedSelect.value = "";
   fetchStudents();
 });
 
