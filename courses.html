@@ -224,41 +224,53 @@ if (localStorage.getItem("studentData")) {
   userDept = (student.department || "").toLowerCase().trim();
   userLevel = (student.level || "").toUpperCase().replace(/\s+/g, '');
 }
-// Admin
+
+// Admin login
 else if (localStorage.getItem("adminRole")) {
   userRole = (localStorage.getItem("adminRole") || "").trim();
   userDept = (localStorage.getItem("adminDepartment") || "").toLowerCase().trim();
-} else {
+} 
+
+else {
   userRole = "guest";
   console.warn("No user info found!");
 }
 
-// Normalize role for logic
 const normalizedRole = userRole.toLowerCase().replace(/\s+/g, "");
 
-// ========== ROLE POWERS ==========
-const canManage = (normalizedRole === "admin" || normalizedRole === "superadmin");
-const canDelete = (normalizedRole === "admin" || normalizedRole === "superadmin");
-const canSeeAllCourses = (normalizedRole === "superadmin" || normalizedRole === "headadmin");
+// ===== ROLE POWERS =====
+const isSuperAdmin = normalizedRole === "superadmin";
+const isHeadAdmin = normalizedRole === "headadmin";
+const isAdmin = normalizedRole === "admin";
 
-// ===== Show / Hide Manage Button =====
-if (canManage) {
-  document.getElementById("manageBtn").style.display = "inline-block";
-} else {
-  document.getElementById("manageBtn").style.display = "none";
+// Only Super Admin & Admin can manage
+const canManage = isSuperAdmin || isAdmin;
+const canDelete = isSuperAdmin || isAdmin;
+
+// Super Admin & Head Admin can see ALL courses
+const canSeeAllCourses = isSuperAdmin || isHeadAdmin;
+
+// ===== Manage Button Visibility =====
+document.getElementById("manageBtn").style.display = canManage ? "inline-block" : "none";
+
+// ===== Hide Department Filter for:
+// - Students
+// - Admin (because they only see their department anyway)
+if (normalizedRole === "student" || normalizedRole === "admin") {
+  document.getElementById("filterDepartment").style.display = "none";
 }
 
-// Students → Hide dept & level filters
+// Students also hide level filter
 if (normalizedRole === "student") {
-  document.getElementById("filterDepartment").style.display = "none";
   document.getElementById("filterLevel").style.display = "none";
 }
 
-// ===== Fetch All Courses =====
+// ===== Fetch Courses =====
 async function fetchCourses() {
   try {
     const res = await fetch(`${backendURL}/api/courses`);
     const data = await res.json();
+
     if (!data.success) throw new Error("Failed to fetch courses");
 
     allCourses = [];
@@ -289,7 +301,7 @@ async function fetchCourses() {
   }
 }
 
-// ===== Filter & Role-based Restrictions =====
+// ===== Filtering Logic =====
 function renderFilteredDashboard() {
   const semesterFilter = document.getElementById("filterSemester").value;
   const departmentFilter = (document.getElementById("filterDepartment").value || "").toLowerCase().trim();
@@ -301,20 +313,15 @@ function renderFilteredDashboard() {
            (!levelFilter || c.level === levelFilter);
   });
 
-  // ===== ROLE FILTER LOGIC =====
-
-  // Admin → only their department
-  if (normalizedRole === "admin") {
+  // Admin restriction → only see their department
+  if (isAdmin) {
     filtered = filtered.filter(c => c.department === userDept);
   }
 
-  // Student → department + level
-  else if (normalizedRole === "student") {
+  // Student restriction → dept + level
+  if (normalizedRole === "student") {
     filtered = filtered.filter(c => c.department === userDept && c.level === userLevel);
   }
-
-  // Head Admin → sees ALL courses (no restriction)
-  // Super Admin → sees ALL courses (no restriction)
 
   renderDashboard(filtered);
 }
@@ -380,11 +387,10 @@ function renderDashboard(courses) {
   }
 }
 
-// ===== Delete Course =====
+// ===== Delete Course Logic =====
 async function deleteCourse(docId, courseId, courseDept) {
-
-  // Admins can delete only their department
-  if (normalizedRole === "admin" && courseDept !== userDept) {
+  // Admins cannot delete outside their department
+  if (isAdmin && courseDept !== userDept) {
     alert("You can only delete courses inside your department!");
     return;
   }
@@ -399,7 +405,7 @@ async function deleteCourse(docId, courseId, courseDept) {
     const data = await res.json();
     if (!data.success) throw new Error(data.message);
 
-    alert("Course deleted!");
+    alert("Course deleted successfully!");
     fetchCourses();
 
   } catch (err) {
