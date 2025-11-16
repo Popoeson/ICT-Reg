@@ -158,6 +158,19 @@
     <div id="loadingBar"></div>
   </header>
 
+  
+  <!-- Logout Button -->
+  <button id="logoutBtn" style="
+    background: #ff4d4f;
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+  ">Logout</button>
+
   <!-- HERO SECTION -->
   <section class="hero">
     <img id="studentPassport" src="student-pic.jpg" alt="Student Photo">
@@ -251,6 +264,15 @@
         console.error("❌ Error fetching student data:", err);
       });
   }
+
+// LOGOUT BUTTON
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  if (confirm("Are you sure you want to logout?")) {
+    localStorage.removeItem("studentData");
+    localStorage.removeItem("studentId");
+    window.location.href = "login.html";
+  }
+});
   </script>
 </body>
 </html>
