@@ -266,11 +266,22 @@ if (!adminName || !adminRole) {
   window.location.href = "login.html";
 }
 
-const isSuperAdmin = adminRole.toLowerCase().includes("super");
+// Normalize role
+const role = adminRole.toLowerCase().replace(/\s/g, "");
+const isSuperAdmin = role === "superadmin";
+const isHeadAdmin = role === "headadmin";
+const isAdmin = role === "admin";
+const isCashier = role === "cashier";
+
+// Redirect cashier if they somehow land here
+if (isCashier) {
+  alert("Access denied");
+  window.location.href = "admin-dashboard.html";
+}
 
 // 🔹 If ordinary admin → lock department filter
 const departmentSelect = document.getElementById("departmentFilter");
-if (!isSuperAdmin && adminDepartment) {
+if (!isSuperAdmin && !isHeadAdmin && adminDepartment) {
   departmentSelect.value = adminDepartment;
   departmentSelect.disabled = true;
 }
@@ -285,7 +296,7 @@ filterToggle.addEventListener("click", () => {
 
 async function fetchStudents() {
   const q = document.getElementById("searchInput").value.trim();
-  const department = isSuperAdmin
+  const department = (isSuperAdmin || isHeadAdmin)
     ? document.getElementById("departmentFilter").value
     : adminDepartment;
   const level = document.getElementById("levelFilter").value;
@@ -303,7 +314,9 @@ async function fetchStudents() {
     }
 
     let filteredStudents = data.data;
-    if (!isSuperAdmin && adminDepartment) {
+
+    // Ordinary admin sees only their department students
+    if (!isSuperAdmin && !isHeadAdmin && adminDepartment) {
       filteredStudents = filteredStudents.filter(
         (s) => s.department?.toLowerCase().trim() === adminDepartment.toLowerCase().trim()
       );
@@ -393,7 +406,7 @@ verifiedSelect.addEventListener("change", fetchStudents);
 
 document.getElementById("clearFilters").addEventListener("click", () => {
   document.getElementById("searchInput").value = "";
-  if (isSuperAdmin) document.getElementById("departmentFilter").value = "";
+  if (isSuperAdmin || isHeadAdmin) document.getElementById("departmentFilter").value = "";
   document.getElementById("levelFilter").value = "";
   verifiedSelect.value = "";
   fetchStudents();
