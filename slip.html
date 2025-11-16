@@ -154,32 +154,29 @@
     }
 
     // ===== FETCH PAYMENT RECORDS =====
-    const paymentsRes = await fetch(`${backendURL}/api/payments/${student.matricNo}`);
-    const paymentsData = await paymentsRes.json();
-    if (!paymentsRes.ok || !paymentsData.success) throw new Error("Failed to fetch payments");
-
-    const payments = paymentsData.data || [];
-    const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    amountPaidEl.textContent = totalPaid;
-    paymentStatusEl.textContent = totalPaid >= 40000 ? "PAID" : "NOT PAID";
-    paymentTypeEl.textContent = payments.map(p => p.paymentType).join(", ") || "N/A";
-    receiptNosEl.textContent = payments.map(p => p.receiptNo).join(", ") || "N/A";
-    paymentDatesEl.textContent = payments.map(p => new Date(p.date).toLocaleDateString()).join(", ") || "N/A";
-
-    paymentComplete = totalPaid >= 40000;
-
-    if (!coursesComplete) coursesWarningEl.textContent = "Courses to be registered for are not complete";
-    if (!paymentComplete) paymentStatusEl.classList.add("warning");
-
-    if (coursesComplete && paymentComplete) {
-      downloadBtn.disabled = false;
-    }
-
-  } catch (err) {
-    console.error(err);
-    coursesTableEl.innerHTML = "<tr><td colspan='4'>Error loading data</td></tr>";
-    paymentStatusEl.textContent = "ERROR";
+let payments = [];
+try {
+  const paymentsRes = await fetch(`${backendURL}/api/payments/${student.matricNo}`);
+  const paymentsData = await paymentsRes.json();
+  if (paymentsRes.ok && paymentsData.success) {
+    payments = paymentsData.data || [];
+  } else {
+    console.warn("No payments found for this student");
   }
+} catch(err) {
+  console.error("Error fetching payments:", err);
+}
+
+// Calculate total paid
+const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+amountPaidEl.textContent = totalPaid;
+paymentStatusEl.textContent = totalPaid >= 40000 ? "PAID" : "NOT PAID";
+paymentTypeEl.textContent = payments.map(p => p.paymentType).join(", ") || "N/A";
+receiptNosEl.textContent = payments.map(p => p.receiptNo).join(", ") || "N/A";
+paymentDatesEl.textContent = payments.map(p => new Date(p.date).toLocaleDateString()).join(", ") || "N/A";
+
+paymentComplete = totalPaid >= 40000;
+if (!paymentComplete) paymentStatusEl.classList.add("warning");
 
   // ===== DOWNLOAD PDF =====
   downloadBtn.addEventListener("click", () => {
