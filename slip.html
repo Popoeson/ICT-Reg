@@ -106,56 +106,75 @@
 
   let coursesComplete = false;
   let paymentComplete = false;
+  let student = null;
 
+  // ===== FETCH STUDENT INFO =====
   try {
-    // ===== FETCH STUDENT INFO =====
     const studentRes = await fetch(`${backendURL}/api/students/${studentId}`);
     const studentData = await studentRes.json();
     if (!studentRes.ok || !studentData.success || !studentData.student) throw new Error("Failed to fetch student info");
 
-    const student = studentData.student;
+    student = studentData.student;
     passportEl.src = student.passport || "https://via.placeholder.com/100";
     fullNameEl.textContent = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ");
     matricEl.textContent = student.matricNo || "N/A";
     deptEl.textContent = student.department || "N/A";
     levelEl.textContent = student.level || "N/A";
     semesterEl.textContent = student.semester || "N/A";
+  } catch (err) {
+    console.error("Error fetching student info:", err);
+    fullNameEl.textContent = "N/A";
+    matricEl.textContent = "N/A";
+    deptEl.textContent = "N/A";
+    levelEl.textContent = "N/A";
+    semesterEl.textContent = "N/A";
+  }
 
-    // ===== FETCH REGISTERED COURSES =====
-const coursesRes = await fetch(`${backendURL}/api/registered-courses?matric=${encodeURIComponent(student.matricNo)}`);
-const coursesData = await coursesRes.json();
-coursesTableEl.innerHTML = "";
+  // ===== FETCH REGISTERED COURSES =====
+  try {
+    if (student && student.matricNo) {
+      const coursesRes = await fetch(`${backendURL}/api/registered-courses?matric=${encodeURIComponent(student.matricNo)}`);
+      const coursesData = await coursesRes.json();
+      coursesTableEl.innerHTML = "";
 
-if (!coursesRes.ok || !coursesData.success || !coursesData.data || coursesData.data.length === 0) {
-  coursesTableEl.innerHTML = "<tr><td colspan='4'>No courses registered</td></tr>";
-  coursesWarningEl.textContent = "Courses to be registered for are not complete";
-} else {
-  const courses = coursesData.data;
-  courses.forEach((c, i) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${c.courseCode}</td>
-      <td>${c.courseTitle}</td>
-      <td>${c.unit || "N/A"}</td>
-    `;
-    coursesTableEl.appendChild(row);
-  });
-  coursesComplete = true;
-}
+      if (!coursesRes.ok || !coursesData.success || !coursesData.data || coursesData.data.length === 0) {
+        coursesTableEl.innerHTML = "<tr><td colspan='4'>No courses registered</td></tr>";
+        coursesWarningEl.textContent = "Courses to be registered for are not complete";
+      } else {
+        const courses = coursesData.data;
+        courses.forEach((c, i) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${c.courseCode}</td>
+            <td>${c.courseTitle}</td>
+            <td>${c.unit || "N/A"}</td>
+          `;
+          coursesTableEl.appendChild(row);
+        });
+        coursesComplete = true;
+      }
+    }
+  } catch (err) {
+    console.error("Error fetching courses:", err);
+    coursesTableEl.innerHTML = "<tr><td colspan='4'>Error loading courses</td></tr>";
+    coursesWarningEl.textContent = "Could not load registered courses";
+  }
 
-    // ===== FETCH PAYMENT RECORDS =====
-    const paymentsRes = await fetch(`${backendURL}/api/payments/${student.matricNo}`);
-    const paymentsData = await paymentsRes.json();
-
+  // ===== FETCH PAYMENT RECORDS =====
+  try {
     let payments = [];
-    if (paymentsRes.ok && paymentsData.success && paymentsData.data && paymentsData.data.length > 0) {
-      payments = paymentsData.data;
-    } else {
-      console.warn("No payments found for this student");
+    if (student && student.matricNo) {
+      const paymentsRes = await fetch(`${backendURL}/api/payments/${encodeURIComponent(student.matricNo)}`);
+      const paymentsData = await paymentsRes.json();
+
+      if (paymentsRes.ok && paymentsData.success && paymentsData.data && paymentsData.data.length > 0) {
+        payments = paymentsData.data;
+      } else {
+        console.warn("No payments found for this student");
+      }
     }
 
-    // Calculate total paid
     const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
     amountPaidEl.textContent = totalPaid;
     paymentStatusEl.textContent = totalPaid >= 40000 ? "PAID" : "NOT PAID";
@@ -165,18 +184,14 @@ if (!coursesRes.ok || !coursesData.success || !coursesData.data || coursesData.d
 
     paymentComplete = totalPaid >= 40000;
     if (!paymentComplete) paymentStatusEl.classList.add("warning");
-
-    // ===== ENABLE DOWNLOAD IF BOTH COMPLETE =====
-    if (coursesComplete && paymentComplete) {
-      downloadBtn.disabled = false;
-    }
-
   } catch (err) {
-    console.error("Error loading exam slip data:", err);
-    coursesTableEl.innerHTML = "<tr><td colspan='4'>Error loading courses</td></tr>";
-    paymentStatusEl.textContent = "ERROR";
+    console.error("Error fetching payments:", err);
     amountPaidEl.textContent = "0";
+    paymentStatusEl.textContent = "ERROR";
   }
+
+  // ===== ENABLE DOWNLOAD IF BOTH COMPLETE =====
+  if (coursesComplete && paymentComplete) downloadBtn.disabled = false;
 
   // ===== DOWNLOAD PDF =====
   downloadBtn.addEventListener("click", () => {
