@@ -34,10 +34,6 @@
     .muted{color:var(--muted)}
     .table-wrap{overflow:auto;max-height:60vh;border-radius:8px}
     .empty{padding:28px;text-align:center;color:var(--muted)}
-    @media(max-width:900px){
-      .controls{flex-direction:column;align-items:stretch}
-      th, td{font-size:0.9rem}
-    }
   </style>
 </head>
 <body>
@@ -47,6 +43,8 @@
     <div class="controls">
       <div class="left">
         <input id="searchBox" type="text" placeholder="Search by matric, name, course code or title..." style="min-width:320px" />
+
+        <!-- Department filter will be hidden for Admin automatically -->
         <select id="filterDept">
           <option value="">All Departments</option>
           <option>Accountancy</option>
@@ -77,27 +75,31 @@
       </div>
 
       <div class="right" style="margin-left:auto">
-        <div class="meta"><span class="muted">Showing</span> <span id="visibleCount" class="badge">0</span> <span class="muted">of</span> <span id="totalCount" class="muted">0</span></div>
+        <div class="meta">
+          <span class="muted">Showing</span> <span id="visibleCount" class="badge">0</span>
+          <span class="muted">of</span> <span id="totalCount" class="muted">0</span>
+        </div>
+
         <button id="exportCsv" class="ghost small">Export CSV</button>
         <button id="refreshBtn" class="ghost small">Refresh</button>
-<button id="deleteAllBtn" class="danger small">Delete All</button>
+        <button id="deleteAllBtn" class="danger small">Delete All</button>
       </div>
     </div>
 
     <div class="card">
       <div class="table-wrap">
-        <table id="regTable" role="grid" aria-busy="false">
+        <table id="regTable">
           <thead>
             <tr>
-              <th style="min-width:130px">Course Code</th>
-              <th style="min-width:220px">Course Title</th>
-              <th style="min-width:140px">Matric No.</th>
-              <th style="min-width:200px">Student Name</th>
-              <th style="min-width:80px">Level</th>
-              <th style="min-width:160px">Department</th>
-              <th style="min-width:80px">Semester</th>
-              <th style="min-width:150px">Registered At</th>
-              <th style="min-width:120px">Action</th>
+              <th>Course Code</th>
+              <th>Course Title</th>
+              <th>Matric No.</th>
+              <th>Student Name</th>
+              <th>Level</th>
+              <th>Department</th>
+              <th>Semester</th>
+              <th>Registered At</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="regTbody">
@@ -108,21 +110,27 @@
     </div>
   </div>
 
+
 <script>
 (() => {
   const backendBase = "https://ict-reg.onrender.com";
   const endpoint = "/api/admin/all-registered-courses";
 
-  // ============================
-  //   GET LOGGED-IN ADMIN DATA
-  // ============================
-  const adminData = JSON.parse(localStorage.getItem("adminData") || "{}");
-  const adminRole = adminData.role || "";
-  const adminDept = adminData.department || "";
+  // Get admin data the CORRECT way based on your login page
+  const adminRole = (localStorage.getItem("adminRole") || "").trim();
+  const adminDept = (localStorage.getItem("adminDepartment") || "").trim();
 
-  // ============================
-  //   UI ELEMENTS
-  // ============================
+  // Hide Department filter if Admin (NOT Super Admin, NOT Head Admin)
+  if (["Admin", "Cashier"].includes(adminRole)) {
+    document.getElementById("filterDept").style.display = "none";
+  }
+
+  // Hide delete-all button for Head Admin
+  if (adminRole === "Head Admin") {
+    document.getElementById("deleteAllBtn").style.display = "none";
+  }
+
+  // UI elements
   const searchBox = document.getElementById("searchBox");
   const filterDept = document.getElementById("filterDept");
   const filterLevel = document.getElementById("filterLevel");
@@ -138,102 +146,73 @@
   let allRegs = [];
   let filtered = [];
 
-  // Hide delete-all button for Head Admin
-  if (adminRole === "Head Admin") {
-    deleteAllBtn.style.display = "none";
-  }
-
-  // Debounce
-  function debounce(fn, wait = 250) {
-    let t;
-    return (...args) => {
-      clearTimeout(t);
-      t = setTimeout(() => fn(...args), wait);
-    };
-  }
-
-  // Normalize server response
+  // Normalize data
   function normalize(item) {
     return {
-      id: item.id || item._id,
-      matric: item.matricNumber || "",
-      studentName: item.studentName || "",
-      courseCode: item.courseCode || "",
-      courseTitle: item.courseTitle || "",
-      level: item.level || "",
-      department: item.department || "",
-      semester: item.semester || "",
-      createdAt: item.registeredAt || item.createdAt || ""
+      id: item._id,
+      matric: item.matricNumber,
+      studentName: item.studentName,
+      courseCode: item.courseCode,
+      courseTitle: item.courseTitle,
+      level: item.level,
+      department: item.department,
+      semester: item.semester,
+      createdAt: item.registeredAt
     };
   }
 
-  // ============================
-  //   FETCH DATA
-  // ============================
+  // Fetch registered courses
   async function fetchRegistrations() {
     regTbody.innerHTML =
       `<tr><td colspan="9" class="empty">Loading registered courses…</td></tr>`;
 
     try {
       const res = await fetch(backendBase + endpoint);
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-
       const payload = await res.json();
-      if (!payload.success) throw new Error(payload.message);
 
-      let data = (payload.data || []).map(normalize);
+      let data = payload.data.map(normalize);
 
-      // =============== ROLE-BASED FILTERING ===============
-      if (adminRole === "Admin") {
-        data = data.filter(item =>
-          (item.department || "").toLowerCase() === adminDept.toLowerCase()
-        );
+      // Admin must ONLY see their department
+      if (["Admin", "Cashier"].includes(adminRole)) {
+        data = data.filter(r => r.department.toLowerCase() === adminDept.toLowerCase());
       }
-      // Super Admin & Head Admin see all
+
+      // Head Admin & Super Admin see all
 
       allRegs = data;
       totalCountEl.textContent = allRegs.length;
 
       applyFilters();
     } catch (err) {
-      console.error("Fetch error:", err);
       regTbody.innerHTML =
-        `<tr><td colspan="9" class="empty">Error: ${err.message}</td></tr>`;
-      visibleCountEl.textContent = 0;
-      totalCountEl.textContent = 0;
+        `<tr><td colspan="9" class="empty">Error loading data</td></tr>`;
     }
   }
 
-  // ============================
-  //   APPLY FILTERS
-  // ============================
+  // Filters
   function applyFilters() {
-    const q = (searchBox.value || "").trim().toLowerCase();
-    const dept = (filterDept.value || "").trim().toLowerCase();
-    const level = (filterLevel.value || "").trim().toUpperCase();
-    const sem = (filterSemester.value || "").trim();
+    const q = searchBox.value.toLowerCase();
+    const dept = filterDept.value.toLowerCase();
+    const level = filterLevel.value;
+    const sem = filterSemester.value;
 
     filtered = allRegs.filter(r => {
-      if (dept && (r.department || "").toLowerCase() !== dept) return false;
-      if (level && (r.level || "").toUpperCase() !== level) return false;
+      if (dept && r.department.toLowerCase() !== dept) return false;
+      if (level && r.level !== level) return false;
       if (sem && String(r.semester) !== sem) return false;
 
-      if (!q) return true;
-
       return (
-        (r.matric || "").toLowerCase().includes(q) ||
-        (r.studentName || "").toLowerCase().includes(q) ||
-        (r.courseCode || "").toLowerCase().includes(q) ||
-        (r.courseTitle || "").toLowerCase().includes(q)
+        r.matric.toLowerCase().includes(q) ||
+        r.studentName.toLowerCase().includes(q) ||
+        r.courseCode.toLowerCase().includes(q) ||
+        r.courseTitle.toLowerCase().includes(q)
       );
     });
 
     renderTable();
   }
 
-  // ============================
-  //   RENDER TABLE
-  // ============================
+  // Render table
   function renderTable() {
     if (!filtered.length) {
       regTbody.innerHTML =
@@ -245,27 +224,24 @@
     visibleCountEl.textContent = filtered.length;
 
     regTbody.innerHTML = filtered
-      .map(item => {
-        const created = item.createdAt
-          ? new Date(item.createdAt).toLocaleString()
-          : "-";
-
+      .map(r => {
         return `
-        <tr data-id="${item.id}">
-          <td>${escapeHtml(item.courseCode)}</td>
-          <td>${escapeHtml(item.courseTitle)}</td>
-          <td>${escapeHtml(item.matric)}</td>
-          <td>${escapeHtml(item.studentName)}</td>
-          <td>${escapeHtml(item.level)}</td>
-          <td>${escapeHtml(item.department)}</td>
-          <td>${escapeHtml(item.semester)}</td>
-          <td>${escapeHtml(created)}</td>
+        <tr data-id="${r.id}">
+          <td>${r.courseCode}</td>
+          <td>${r.courseTitle}</td>
+          <td>${r.matric}</td>
+          <td>${r.studentName}</td>
+          <td>${r.level}</td>
+          <td>${r.department}</td>
+          <td>${r.semester}</td>
+          <td>${new Date(r.createdAt).toLocaleString()}</td>
+
           <td>
-            <button class="ghost small" data-action="view" data-id="${item.id}">View</button>
+            <button class="ghost small" data-action="view" data-id="${r.id}">View</button>
 
             ${
               adminRole !== "Head Admin"
-                ? `<button class="danger small" data-action="delete" data-id="${item.id}">Delete</button>`
+                ? `<button class="danger small" data-action="delete" data-id="${r.id}">Delete</button>`
                 : ""
             }
           </td>
@@ -274,122 +250,39 @@
       .join("");
   }
 
-  function escapeHtml(s = "") {
-    return String(s).replace(/[&<>"]/g, c => {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
-    });
-  }
-
-  // ============================
-  //   DELETE ONE
-  // ============================
-  async function deleteRegistration(id) {
+  // Delete One
+  async function deleteReg(id) {
     if (!confirm("Delete this registration?")) return;
 
-    try {
-      const res = await fetch(`${backendBase}/api/course-registrations/${id}`, {
-        method: "DELETE"
-      });
+    const res = await fetch(`${backendBase}/api/course-registrations/${id}`, {
+      method: "DELETE"
+    });
 
-      const payload = await res.json();
-      if (!payload.success) throw new Error(payload.message);
-
+    const json = await res.json();
+    if (json.success) {
       allRegs = allRegs.filter(r => r.id !== id);
       applyFilters();
-      alert("Deleted.");
-    } catch (err) {
-      alert("Error deleting: " + err.message);
+      alert("Deleted!");
     }
   }
 
-  // ============================
-  //   VIEW RECORD
-  // ============================
-  function viewRegistration(id) {
-    const item = allRegs.find(r => r.id === id);
-    if (!item) return;
-
-    alert(
-      `${item.courseCode} - ${item.courseTitle}\n` +
-      `Student: ${item.studentName}\nMatric: ${item.matric}\n` +
-      `Dept: ${item.department}\nLevel: ${item.level}\nSemester: ${item.semester}`
-    );
-  }
-
-  // ============================
-  //   EXPORT CSV
-  // ============================
-  function exportCSV() {
-    if (!filtered.length) return alert("No rows to export.");
-
-    const headers = [
-      "Course Code",
-      "Course Title",
-      "Matric",
-      "Student Name",
-      "Level",
-      "Department",
-      "Semester",
-      "Registered At"
-    ];
-
-    const rows = filtered.map(r => [
-      r.courseCode,
-      r.courseTitle,
-      r.matric,
-      r.studentName,
-      r.level,
-      r.department,
-      r.semester,
-      r.createdAt ? new Date(r.createdAt).toLocaleString() : ""
-    ]);
-
-    const csv =
-      [headers, ...rows]
-        .map(r =>
-          r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
-        )
-        .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-
-    a.href = url;
-    a.download = `registered-courses-${new Date()
-      .toISOString()
-      .slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  // ============================
-  //   DELETE ALL
-  // ============================
+  // Delete All
   deleteAllBtn.addEventListener("click", async () => {
     if (!confirm("Delete ALL registrations?")) return;
 
-    try {
-      const res = await fetch(`${backendBase}/api/course-registrations`, {
-        method: "DELETE"
-      });
+    const res = await fetch(`${backendBase}/api/course-registrations`, {
+      method: "DELETE"
+    });
 
-      const payload = await res.json();
-      if (!payload.success) throw new Error(payload.message);
-
-      alert(payload.message);
+    const json = await res.json();
+    if (json.success) {
+      alert("All deleted!");
       fetchRegistrations();
-    } catch (err) {
-      alert("Error deleting all: " + err.message);
     }
   });
 
-  // ============================
-  //   EVENTS
-  // ============================
-  const debouncedApply = debounce(applyFilters, 200);
-
-  searchBox.addEventListener("input", debouncedApply);
+  // Events
+  searchBox.addEventListener("input", applyFilters);
   filterDept.addEventListener("change", applyFilters);
   filterLevel.addEventListener("change", applyFilters);
   filterSemester.addEventListener("change", applyFilters);
@@ -402,23 +295,15 @@
     applyFilters();
   });
 
-  refreshBtn.addEventListener("click", fetchRegistrations);
-  exportCsvBtn.addEventListener("click", exportCSV);
-
-  document.addEventListener("click", ev => {
-    const btn = ev.target.closest("button");
+  document.addEventListener("click", e => {
+    const btn = e.target.closest("button");
     if (!btn) return;
 
-    const action = btn.dataset.action;
     const id = btn.dataset.id;
-
-    if (action === "delete") deleteRegistration(id);
-    if (action === "view") viewRegistration(id);
+    if (btn.dataset.action === "delete") deleteReg(id);
   });
 
-  // ============================
-  //   INITIAL LOAD
-  // ============================
+  // Load data
   fetchRegistrations();
 })();
 </script>
