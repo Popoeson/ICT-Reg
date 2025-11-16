@@ -428,6 +428,8 @@ if (!studentId) {
       document.getElementById("studentMatric").textContent = s.matricNo || "N/A";
       document.getElementById("studentLevel").textContent = s.level || "N/A";
 
+document.getElementById("verifyBtn").style.display = "block";
+
       // ===== Personal info =====
       const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ") || "N/A";
       document.getElementById("studentEmail").textContent = s.email || "N/A";
