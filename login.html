@@ -148,7 +148,6 @@ form.addEventListener("submit", async (e) => {
     });
 
     const result = await res.json();
-
     console.log("Login response:", result);
 
     if (!res.ok) {
@@ -158,24 +157,29 @@ form.addEventListener("submit", async (e) => {
     }
 
     const { role, user } = result;
+    const normalizedRole = role?.toLowerCase().replace(/\s/g, "");
 
-    if (role?.toLowerCase() === "student") {
-  localStorage.setItem("studentData", JSON.stringify(user));
-  localStorage.setItem("studentId", user._id);
-  window.location.href = "dashboard.html";
-} else if (
-  role?.toLowerCase().replace(/\s/g, "") === "admin" ||
-  role?.toLowerCase().replace(/\s/g, "") === "superadmin"
-) {
-  localStorage.setItem("adminName", user.fullname);
-  localStorage.setItem("adminRole", role);
-  localStorage.setItem("adminDepartment", user.department ||"");
-localStorage.setItem("adminId", user._id);
-localStorage.setItem("adminPassport", user.passport);
-  window.location.href = "admin-dashboard.html";
-} else {
-  console.log("Unexpected role:", role);
-}
+    // Student login
+    if (normalizedRole === "student") {
+      localStorage.setItem("studentData", JSON.stringify(user));
+      localStorage.setItem("studentId", user._id);
+      window.location.href = "dashboard.html";
+
+    // Admin logins: Super Admin, Head Admin, Cashier
+    } else if (["superadmin", "headadmin", "cashier"].includes(normalizedRole)) {
+      localStorage.setItem("adminName", user.fullname);
+      localStorage.setItem("adminRole", role);
+      localStorage.setItem("adminDepartment", user.department || "");
+      localStorage.setItem("adminId", user._id);
+      localStorage.setItem("adminPassport", user.passport);
+      window.location.href = "admin-dashboard.html";
+
+    } else {
+      console.warn("Unexpected role:", role);
+      errorBox.style.display = "block";
+      errorBox.textContent = "Your account role is not recognized.";
+    }
+
   } catch (error) {
     console.error("Login error:", error);
     errorBox.style.display = "block";
