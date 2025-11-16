@@ -195,7 +195,7 @@ const adminSchema = new mongoose.Schema({
   passport: { type: String, required: true },
   role: {
     type: String,
-    enum: ["Super Admin", "Admin"],
+    enum: ["Super Admin", "Head Admin", "Admin", Cashier],
     default: "Admin"
   },
   dateRegistered: { type: Date, default: Date.now },
