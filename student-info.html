@@ -430,69 +430,71 @@ th {
 <script>
 const backendURL = "https://ict-reg.onrender.com";
 const urlParams = new URLSearchParams(window.location.search);
-const studentId = urlParams.get("id");
+const studentIdFromURL = urlParams.get("id");
 
-if (!studentId) {
-  alert("No student selected!");
-  window.location.href = "students-list.html";
+if (!studentIdFromURL) {
+alert("No student selected!");
+window.location.href = "students-list.html";
 } else {
-  (async () => {
-    try {
-      // ===== Fetch student info =====
-      const res = await fetch(`${backendURL}/api/students/${studentId}`);
-      const data = await res.json();
-      if (!data.success || !data.student) return;
-      const s = data.student;
+(async () => {
+try {
+// ===== Fetch student info first =====
+const res = await fetch(${backendURL}/api/students/${studentIdFromURL});
+const data = await res.json();
 
-      // ===== Populate top info =====
-      const fullName = [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ") || "N/A";
-      document.getElementById("studentPassport").src = s.passport || "https://via.placeholder.com/120";
-      document.getElementById("studentName").textContent = fullName;
-      document.getElementById("studentDept").textContent = s.department || "N/A";
-      document.getElementById("studentMatric").textContent = s.matricNo || "N/A";
-      document.getElementById("studentLevel").textContent = s.level || "N/A";
+if (!data.success || !data.student) {  
+    alert("Student not found!");  
+    window.location.href = "students-list.html";  
+    return;  
+  }  
 
-document.getElementById("verifyBtn").style.display = "block";
+  const student = data.student; // Use this object everywhere  
+  const correctId = student._id; // THIS is the real ID from DB  
 
-// SHOW VERIFIED BADGE IF ALREADY VERIFIED
-if (s.verified === true) {
-  document.getElementById("verifyBtn").style.display = "none";
-  document.getElementById("verifiedBadge").style.display = "flex";
-} else {
-  document.getElementById("verifyBtn").style.display = "block";
-}
+  // ===== Populate top info =====  
+  const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ") || "N/A";  
+  document.getElementById("studentPassport").src = student.passport || "https://via.placeholder.com/120";  
+  document.getElementById("studentName").textContent = fullName;  
+  document.getElementById("studentDept").textContent = student.department || "N/A";  
+  document.getElementById("studentMatric").textContent = student.matricNo || "N/A";  
+  document.getElementById("studentLevel").textContent = student.level || "N/A";  
 
-// Verify Logic 
-document.getElementById("verifyBtn").addEventListener("click", async () => {
-  if (!confirm("Are you sure you want to verify this student?")) return;
+  // ===== Show/Hide Verify Button =====  
+  if (student.verified === true) {  
+    document.getElementById("verifyBtn").style.display = "none";  
+    document.getElementById("verifiedBadge").style.display = "flex";  
+  } else {  
+    document.getElementById("verifyBtn").style.display = "block";  
+  }  
 
-  console.log("VERIFY URL:", `${backendURL}/api/students/verify/${s._id}`);
-console.log("Student ID used for verify:", s._id);
-  try {
-    const response = await fetch(`${backendURL}/api/students/verify/${s._id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" }
-    });
+  // ===== Verify Logic =====  
+  document.getElementById("verifyBtn").addEventListener("click", async () => {  
+    if (!confirm("Are you sure you want to verify this student?")) return;  
 
-    const result = await response.json();
+    try {  
+      console.log("VERIFY URL:", `${backendURL}/api/students/verify/${correctId}`);  
 
-    if (result.success) {
-      // Hide button
-      document.getElementById("verifyBtn").style.display = "none";
+      const response = await fetch(`${backendURL}/api/students/verify/${correctId}`, {  
+        method: "PUT",  
+        headers: { "Content-Type": "application/json" }  
+      });  
 
-      // Show verified badge
-      document.getElementById("verifiedBadge").style.display = "flex";
+      const result = await response.json();  
 
-      alert("Student verified successfully!");
-    } else {
-      alert("Failed to verify: " + result.message);
-    }
-  } catch (err) {
-    console.error(err);
-    alert("Server error verifying student.");
-  }
-});
+      if (result.success) {  
+        document.getElementById("verifyBtn").style.display = "none";  
+        document.getElementById("verifiedBadge").style.display = "flex";  
+        alert("Student verified successfully!");  
+      } else {  
+        alert("Failed to verify: " + result.message);  
+      }  
+    } catch (err) {  
+      console.error(err);  
+      alert("Server error verifying student.");  
+    }  
+  });  
 
+  
       // ===== Personal info =====
       const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ") || "N/A";
       document.getElementById("studentEmail").textContent = s.email || "N/A";
