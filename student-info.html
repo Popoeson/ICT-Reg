@@ -334,24 +334,48 @@ th {
   background: gray;
   cursor: not-allowed;
 }
+
+/* Verified Badge */
+.verified-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #1da1f2; /* Blue like Twitter/Instagram Verified */
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
 </style>
 
 </head>  
 <body>  
   <header>Admin Dashboard | Student Info</header>    <main>  
-    <!-- Hero Card -->  
-    <div class="hero-card">  
-      <img id="studentPassport" src="https://via.placeholder.com/120" alt="Student Passport" />  
+    <!-- Hero Card -->
+<div class="hero-card">
+  <img id="studentPassport" src="https://via.placeholder.com/120" alt="Student Passport" />
 
-     <button class="verify-btn" id="verifyBtn" style="display:none;">Verify Student</button>
+  <!-- Verify Button -->
+  <button class="verify-btn" id="verifyBtn" style="display:none;">Verify Student</button>
 
-      <div class="hero-details">  
-        <h2 id="studentName">N/A</h2>  
-        <span id="studentDept">N/A</span>  
-        <span id="studentMatric">N/A</span>  
-        <span id="studentLevel">N/A</span>  
-      </div>  
-    </div>  
+  <!-- Verified Badge -->
+  <div id="verifiedBadge" class="verified-badge" style="display:none;">
+    ✔
+  </div>
+
+  <div class="hero-details">
+    <h2 id="studentName">N/A</h2>
+    <span id="studentDept">N/A</span>
+    <span id="studentMatric">N/A</span>
+    <span id="studentLevel">N/A</span>
+  </div>
+</div>
 
 <!-- Personal Information Section -->  
 <div class="card-section">  
