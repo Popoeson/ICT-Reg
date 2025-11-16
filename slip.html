@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam Slip Preview</title>
+<style>
+  body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin:0; background:#f5f7fa; color:#222; padding:20px; }
+  .container { max-width:900px; margin:auto; background:#fff; padding:20px; border-radius:12px; box-shadow:0 3px 10px rgba(0,0,0,0.1); }
+  
+  header { text-align:center; margin-bottom:20px; }
+  header img { height:60px; vertical-align:middle; }
+  header h1 { display:inline-block; margin:0 0 0 10px; font-size:1.8rem; vertical-align:middle; }
+  header h2 { margin-top:5px; font-size:1.4rem; font-weight:400; }
+
+  .student-info, .payment-info, .courses-info { border:1px solid #ddd; border-radius:10px; padding:15px; margin-bottom:20px; }
+  .student-info { display:flex; gap:20px; align-items:center; }
+  .student-info img { width:100px; height:100px; border-radius:50%; object-fit:cover; border:2px solid #007bff; }
+  .student-info div { flex:1; }
+  .student-info div p { margin:4px 0; }
+
+  .payment-info p { margin:6px 0; }
+  .payment-info .status { font-weight:600; }
+
+  table { width:100%; border-collapse:collapse; margin-top:10px; }
+  th, td { border:1px solid #ddd; padding:8px; text-align:center; }
+  th { background:#007bff; color:#fff; }
+
+  .warning { color:#dc3545; font-weight:600; }
+
+  #downloadBtn { display:block; margin:auto; padding:10px 20px; border:none; border-radius:8px; background:#28a745; color:#fff; font-weight:600; cursor:pointer; transition:0.3s; }
+  #downloadBtn:disabled { background:#ccc; cursor:not-allowed; }
+
+  footer { text-align:right; font-size:0.9rem; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- HEADER -->
+  <header>
+    <img src="upload/logo.jpg" alt="Logo">
+    <h1>OWU COLLEGE OF MANAGEMENT TECHNOLOGY</h1>
+    <h2>EXAMINATION SLIP — 2024/2025</h2>
+  </header>
+
+  <!-- STUDENT INFO -->
+  <div class="student-info">
+    <img id="passport" src="https://via.placeholder.com/100" alt="Passport">
+    <div>
+      <p><strong>Full Name:</strong> <span id="fullName"></span></p>
+      <p><strong>Matric No:</strong> <span id="matric"></span></p>
+      <p><strong>Department:</strong> <span id="department"></span></p>
+      <p><strong>Level:</strong> <span id="level"></span></p>
+      <p><strong>Semester:</strong> <span id="semester"></span></p>
+    </div>
+  </div>
+
+  <!-- PAYMENT INFO -->
+  <div class="payment-info">
+    <h3>EXAM FEE PAYMENT</h3>
+    <p><strong>Payment Status:</strong> <span id="paymentStatus" class="status"></span></p>
+    <p><strong>Amount Paid:</strong> ₦<span id="amountPaid">0</span></p>
+    <p><strong>Payment Type:</strong> <span id="paymentType"></span></p>
+    <p><strong>Receipt No:</strong> <span id="receiptNos"></span></p>
+    <p><strong>Date:</strong> <span id="paymentDates"></span></p>
+  </div>
+
+  <!-- REGISTERED COURSES -->
+  <div class="courses-info">
+    <h3>REGISTERED COURSES</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>S/N</th>
+          <th>Course Code</th>
+          <th>Course Title</th>
+          <th>Unit</th>
+        </tr>
+      </thead>
+      <tbody id="coursesTable">
+        <tr><td colspan="4">Loading courses...</td></tr>
+      </tbody>
+    </table>
+    <p id="coursesWarning" class="warning"></p>
+  </div>
+
+  <!-- DOWNLOAD BUTTON -->
+  <button id="downloadBtn" disabled>Download Exam Slip (PDF)</button>
+
+  <footer>
+    Printed on: <span id="printDate"></span>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(async () => {
+  const backendURL = "https://ict-reg.onrender.com";
+  const studentId = localStorage.getItem("studentId"); // assume studentId stored on login
+
+  // ===== ELEMENTS =====
+  const passportEl = document.getElementById("passport");
+  const fullNameEl = document.getElementById("fullName");
+  const matricEl = document.getElementById("matric");
+  const deptEl = document.getElementById("department");
+  const levelEl = document.getElementById("level");
+  const semesterEl = document.getElementById("semester");
+  const paymentStatusEl = document.getElementById("paymentStatus");
+  const amountPaidEl = document.getElementById("amountPaid");
+  const paymentTypeEl = document.getElementById("paymentType");
+  const receiptNosEl = document.getElementById("receiptNos");
+  const paymentDatesEl = document.getElementById("paymentDates");
+  const coursesTableEl = document.getElementById("coursesTable");
+  const coursesWarningEl = document.getElementById("coursesWarning");
+  const downloadBtn = document.getElementById("downloadBtn");
+  const printDateEl = document.getElementById("printDate");
+
+  printDateEl.textContent = new Date().toLocaleDateString();
+
+  let coursesComplete = false;
+  let paymentComplete = false;
+
+  try {
+    // ===== FETCH STUDENT INFO =====
+    const studentRes = await fetch(`${backendURL}/api/students/${studentId}`);
+    const studentData = await studentRes.json();
+    if (!studentRes.ok || !studentData.success) throw new Error("Failed to fetch student info");
+
+    const student = studentData.data;
+    passportEl.src = student.passport || "https://via.placeholder.com/100";
+    fullNameEl.textContent = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ");
+    matricEl.textContent = student.matricNo;
+    deptEl.textContent = student.department;
+    levelEl.textContent = student.level;
+    semesterEl.textContent = student.semester || "N/A";
+
+    // ===== FETCH COURSES =====
+    const coursesRes = await fetch(`${backendURL}/api/registered-courses/${studentId}`);
+    const coursesData = await coursesRes.json();
+    if (!coursesRes.ok || !coursesData.success) throw new Error("Failed to fetch courses");
+
+    const courses = coursesData.data; // array of courses uploaded by admin for this student
+
+    coursesTableEl.innerHTML = "";
+    if (!courses || courses.length === 0) {
+      coursesTableEl.innerHTML = "<tr><td colspan='4'>No courses registered</td></tr>";
+      coursesWarningEl.textContent = "Courses to be registered for are not complete";
+    } else {
+      courses.forEach((c, i) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${i+1}</td><td>${c.courseCode}</td><td>${c.courseTitle}</td><td>${c.unit}</td>`;
+        coursesTableEl.appendChild(row);
+      });
+      coursesComplete = true;
+    }
+
+    // ===== FETCH PAYMENTS =====
+    const paymentsRes = await fetch(`${backendURL}/api/payments/${student.matricNo}`);
+    const paymentsData = await paymentsRes.json();
+    if (!paymentsRes.ok || !paymentsData.success) throw new Error("Failed to fetch payments");
+
+    const payments = paymentsData.data || [];
+    const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    amountPaidEl.textContent = totalPaid;
+    paymentStatusEl.textContent = totalPaid >= 40000 ? "PAID" : "NOT PAID";
+    paymentTypeEl.textContent = payments.map(p => p.paymentType).join(", ") || "N/A";
+    receiptNosEl.textContent = payments.map(p => p.receiptNo).join(", ") || "N/A";
+    paymentDatesEl.textContent = payments.map(p => new Date(p.date).toLocaleDateString()).join(", ") || "N/A";
+
+    paymentComplete = totalPaid >= 40000;
+
+    if (!coursesComplete) coursesWarningEl.textContent = "Courses to be registered for are not complete";
+    if (!paymentComplete) paymentStatusEl.classList.add("warning");
+
+    // ===== ENABLE DOWNLOAD IF BOTH COMPLETE =====
+    if (coursesComplete && paymentComplete) {
+      downloadBtn.disabled = false;
+    }
+
+  } catch (err) {
+    console.error(err);
+    coursesTableEl.innerHTML = "<tr><td colspan='4'>Error loading data</td></tr>";
+    paymentStatusEl.textContent = "ERROR";
+  }
+
+  // ===== DOWNLOAD PDF =====
+  downloadBtn.addEventListener("click", () => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.html(document.querySelector(".container"), {
+      callback: function (pdf) {
+        pdf.save(`Exam_Slip_${matricEl.textContent}.pdf`);
+      },
+      x: 10,
+      y: 10,
+      html2canvas: { scale: 0.8 }
+    });
+  });
+})();
+</script>
+</body>
+</html>
