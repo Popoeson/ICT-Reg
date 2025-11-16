@@ -912,7 +912,7 @@ app.post("/api/admins/register", upload.single("passport"), async (req, res) => 
     }
 
     // ✅ Department logic (hidden if Super Admin)
-    const finalDepartment = role === "Super Admin" ? "N/A" : department || "N/A";
+    const finalDepartment = role === "Super Admin", "Head Admin", "Cashier" ? "N/A" : department || "N/A";
 
     // ✅ Create new admin
     const newAdmin = new Admin({
