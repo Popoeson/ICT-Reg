@@ -122,26 +122,27 @@
     semesterEl.textContent = student.semester || "N/A";
 
     // ===== FETCH REGISTERED COURSES =====
-    const coursesRes = await fetch(`${backendURL}/api/registered-courses/${student.matricNo}`);
-    const coursesData = await coursesRes.json();
-    coursesTableEl.innerHTML = "";
-    if (!coursesRes.ok || !coursesData.success || !coursesData.data || coursesData.data.length === 0) {
-      coursesTableEl.innerHTML = "<tr><td colspan='4'>No courses registered</td></tr>";
-      coursesWarningEl.textContent = "Courses to be registered for are not complete";
-    } else {
-      const courses = coursesData.data;
-      courses.forEach((c, i) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${i + 1}</td>
-          <td>${c.courseCode}</td>
-          <td>${c.courseTitle}</td>
-          <td>${c.unit || "N/A"}</td>
-        `;
-        coursesTableEl.appendChild(row);
-      });
-      coursesComplete = true;
-    }
+const coursesRes = await fetch(`${backendURL}/api/registered-courses?matric=${encodeURIComponent(student.matricNo)}`);
+const coursesData = await coursesRes.json();
+coursesTableEl.innerHTML = "";
+
+if (!coursesRes.ok || !coursesData.success || !coursesData.data || coursesData.data.length === 0) {
+  coursesTableEl.innerHTML = "<tr><td colspan='4'>No courses registered</td></tr>";
+  coursesWarningEl.textContent = "Courses to be registered for are not complete";
+} else {
+  const courses = coursesData.data;
+  courses.forEach((c, i) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${c.courseCode}</td>
+      <td>${c.courseTitle}</td>
+      <td>${c.unit || "N/A"}</td>
+    `;
+    coursesTableEl.appendChild(row);
+  });
+  coursesComplete = true;
+}
 
     // ===== FETCH PAYMENT RECORDS =====
     const paymentsRes = await fetch(`${backendURL}/api/payments/${student.matricNo}`);
