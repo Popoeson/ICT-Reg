@@ -460,14 +460,28 @@ if (!studentIdFromURL) {
       document.getElementById("studentLevel").textContent = student.level || "N/A";  
 
 // ==== Admin Role Permissions ====
-const adminRole = localStorage.getItem("adminRole")?.toLowerCase() || "";
+const adminRole = (localStorage.getItem("adminRole") || "").toLowerCase();
 
-// Roles allowed to verify student
-const canVerify = adminRole.includes("super") || adminRole.includes("admin");
+// Allow only Super Admin and Admin
+const canVerify =
+  adminRole === "super admin" ||
+  adminRole === "admin";
 
-// Hide verify button for Head Admin
+// Hide verify button for Head Admin and others
 if (!canVerify) {
   document.getElementById("verifyBtn").style.display = "none";
+}
+
+// ===== Show/Hide Verify Button if student not yet verified =====
+if (student.verified === true) {
+  document.getElementById("verifyBtn").style.display = "none";
+  document.getElementById("verifiedBadge").style.display = "flex";
+} else {
+  if (canVerify) {
+    document.getElementById("verifyBtn").style.display = "block";
+  } else {
+    document.getElementById("verifyBtn").style.display = "none";
+  }
 }
 
       // ===== Show/Hide Verify Button =====
