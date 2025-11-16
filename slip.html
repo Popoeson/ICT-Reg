@@ -245,42 +245,96 @@ if (!selectedSemester) {
   filterLevelEl.addEventListener("change", loadSlip);
   filterSemesterEl.addEventListener("change", loadSlip);
 
-  // DOWNLOAD PDF
-  downloadBtn.addEventListener("click", () => {
-    if (!window.jspdf || !window.jspdf.jsPDF) {
-      alert("jsPDF library not loaded.");
-      return;
-    }
+  // DOWNLOAD PDF (Standard A4 Print Layout)
+downloadBtn.addEventListener("click", async () => {
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert("jsPDF library not loaded.");
+    return;
+  }
 
-    const container = document.querySelector(".container");
+  // 1️⃣ Create a hidden A4 print container
+  const printArea = document.createElement("div");
+  printArea.style.width = "794px";     // A4 width in px @ 96dpi
+  printArea.style.minHeight = "1123px"; // A4 height
+  printArea.style.padding = "40px";
+  printArea.style.fontFamily = "Segoe UI";
+  printArea.style.background = "#fff";
+  printArea.style.color = "#000";
+  printArea.style.position = "absolute";
+  printArea.style.top = "-9999px";  // hide off-screen
 
-    const doc = new window.jspdf.jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4"
-    });
+  // 2️⃣ Fill it with CLEAN A4 content (copied from your slip)
+  printArea.innerHTML = `
+    <div style="text-align:center;">
+      <img src="upload/logo.jpg" style="height:70px;">
+      <h2 style="margin:5px 0;">OWU COLLEGE OF MANAGEMENT TECHNOLOGY</h2>
+      <h3>EXAMINATION SLIP — 2024/2025</h3>
+    </div>
 
-    const pageWidth = 190; // page width with margins
-    const pageHeight = 277; // A4 height minus margins
-    const contentWidth = container.scrollWidth;
-    const contentHeight = container.scrollHeight;
-    const scaleX = pageWidth / contentWidth;
-    const scaleY = pageHeight / contentHeight;
-    const scale = Math.min(scaleX, scaleY) * 0.95; // slightly reduce to fit nicely
+    <hr style="margin:20px 0;">
 
-    doc.html(container, {
-      callback: pdf => pdf.save(`Exam_Slip_${matricEl.textContent}.pdf`),
-      x: 10,
-      y: 10,
-      html2canvas: {
-        scale: scale,
-        logging: false,
-        useCORS: true
-      }
-    });
+    <div style="display:flex; gap:20px;">
+      <img src="${passportEl.src}" style="width:120px;height:120px;border-radius:50%;border:2px solid #007bff;">
+      <div>
+        <p><strong>Full Name:</strong> ${fullNameEl.textContent}</p>
+        <p><strong>Matric No:</strong> ${matricEl.textContent}</p>
+        <p><strong>Department:</strong> ${deptEl.textContent}</p>
+        <p><strong>Level:</strong> ${levelEl.textContent}</p>
+        <p><strong>Semester:</strong> ${semesterEl.textContent}</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:25px;">EXAM FEE PAYMENT</h3>
+    <p><strong>Status:</strong> ${paymentStatusEl.textContent}</p>
+    <p><strong>Amount Paid:</strong> ₦${amountPaidEl.textContent}</p>
+    <p><strong>Payment Type:</strong> ${paymentTypeEl.textContent}</p>
+    <p><strong>Receipt No:</strong> ${receiptNosEl.textContent}</p>
+    <p><strong>Date:</strong> ${paymentDatesEl.textContent}</p>
+
+    <h3 style="margin-top:25px;">REGISTERED COURSES</h3>
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="border:1px solid #666;padding:6px;">S/N</th>
+          <th style="border:1px solid #666;padding:6px;">Course Code</th>
+          <th style="border:1px solid #666;padding:6px;">Course Title</th>
+          <th style="border:1px solid #666;padding:6px;">Semester</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${Array.from(coursesTableEl.children).map(row => `
+          <tr>
+            ${Array.from(row.children).map(td => `
+              <td style="border:1px solid #666;padding:6px;">${td.textContent}</td>
+            `).join("")}
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+
+    <p style="margin-top:40px;text-align:right;font-size:12px;">
+      Printed on: ${printDateEl.textContent}
+    </p>
+  `;
+
+  document.body.appendChild(printArea);
+
+  // 3️⃣ Convert this clean print layout → PDF
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF("p", "pt", "a4");
+
+  await html2canvas(printArea, { scale: 2 }).then(canvas => {
+    const imgData = canvas.toDataURL("image/png");
+    const imgWidth = 595.28; // A4 pt width
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
   });
 
-})();
+  pdf.save(`Exam_Slip_${matricEl.textContent}.pdf`);
+
+  // 4️⃣ Remove hidden area after rendering
+  document.body.removeChild(printArea);
+});
 </script>
 </body>
 </html>
