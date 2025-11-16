@@ -7,7 +7,7 @@
 <style>
   body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin:0; background:#f5f7fa; color:#222; padding:20px; }
   .container { max-width:900px; margin:auto; background:#fff; padding:20px; border-radius:12px; box-shadow:0 3px 10px rgba(0,0,0,0.1); }
-  
+
   header { text-align:center; margin-bottom:20px; }
   header img { height:60px; vertical-align:middle; }
   header h1 { display:inline-block; margin:0 0 0 10px; font-size:1.8rem; vertical-align:middle; }
@@ -96,9 +96,9 @@
 <script>
 (async () => {
   const backendURL = "https://ict-reg.onrender.com";
-  const studentId = localStorage.getItem("studentId"); // assume studentId stored on login
+  const studentId = localStorage.getItem("studentId");
 
-  // ===== ELEMENTS =====
+  // Elements
   const passportEl = document.getElementById("passport");
   const fullNameEl = document.getElementById("fullName");
   const matricEl = document.getElementById("matric");
@@ -124,25 +124,24 @@
     // ===== FETCH STUDENT INFO =====
     const studentRes = await fetch(`${backendURL}/api/students/${studentId}`);
     const studentData = await studentRes.json();
-    if (!studentRes.ok || !studentData.success) throw new Error("Failed to fetch student info");
+    if (!studentRes.ok || !studentData.success || !studentData.student) throw new Error("Failed to fetch student info");
 
-    const student = studentData.data;
+    const student = studentData.student;
     passportEl.src = student.passport || "https://via.placeholder.com/100";
     fullNameEl.textContent = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ");
-    matricEl.textContent = student.matricNo;
-    deptEl.textContent = student.department;
-    levelEl.textContent = student.level;
+    matricEl.textContent = student.matricNo || "N/A";
+    deptEl.textContent = student.department || "N/A";
+    levelEl.textContent = student.level || "N/A";
     semesterEl.textContent = student.semester || "N/A";
 
-    // ===== FETCH COURSES =====
+    // ===== FETCH REGISTERED COURSES =====
     const coursesRes = await fetch(`${backendURL}/api/registered-courses/${studentId}`);
     const coursesData = await coursesRes.json();
     if (!coursesRes.ok || !coursesData.success) throw new Error("Failed to fetch courses");
 
-    const courses = coursesData.data; // array of courses uploaded by admin for this student
-
+    const courses = coursesData.data || [];
     coursesTableEl.innerHTML = "";
-    if (!courses || courses.length === 0) {
+    if (courses.length === 0) {
       coursesTableEl.innerHTML = "<tr><td colspan='4'>No courses registered</td></tr>";
       coursesWarningEl.textContent = "Courses to be registered for are not complete";
     } else {
@@ -154,7 +153,7 @@
       coursesComplete = true;
     }
 
-    // ===== FETCH PAYMENTS =====
+    // ===== FETCH PAYMENT RECORDS =====
     const paymentsRes = await fetch(`${backendURL}/api/payments/${student.matricNo}`);
     const paymentsData = await paymentsRes.json();
     if (!paymentsRes.ok || !paymentsData.success) throw new Error("Failed to fetch payments");
@@ -172,7 +171,6 @@
     if (!coursesComplete) coursesWarningEl.textContent = "Courses to be registered for are not complete";
     if (!paymentComplete) paymentStatusEl.classList.add("warning");
 
-    // ===== ENABLE DOWNLOAD IF BOTH COMPLETE =====
     if (coursesComplete && paymentComplete) {
       downloadBtn.disabled = false;
     }
@@ -187,7 +185,6 @@
   downloadBtn.addEventListener("click", () => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-
     doc.html(document.querySelector(".container"), {
       callback: function (pdf) {
         pdf.save(`Exam_Slip_${matricEl.textContent}.pdf`);
