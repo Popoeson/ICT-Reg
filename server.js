@@ -262,6 +262,7 @@ const CourseRegistrationSchema = new mongoose.Schema({
   level: { type: String, required: true },
   courseCode: { type: String, required: true },
   courseTitle: { type: String, required: true },
+  semester: { type: Number, required: true },
   pinUsed: { type: String, required: true },
   registeredAt: { type: Date, default: Date.now }
 });
