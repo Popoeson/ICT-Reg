@@ -22,7 +22,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow-x: hidden; /* Prevent horizontal scrolling */
+      overflow-x: hidden;
     }
 
     header {
@@ -74,7 +74,7 @@
       cursor: pointer;
       transition: all 0.3s ease;
       text-align: center;
-      max-width: 90vw; /* Ensures it fits mobile width */
+      max-width: 90vw;
     }
 
     .card:hover {
@@ -141,8 +141,11 @@
   <div class="main">
     <div class="container">
       <h1>Student Results Portal</h1>
+
       <div class="cards">
-        <div class="card" onclick="navigateTo('upload-result.html')">
+        
+        <!-- Upload Results Card (Shown ONLY to Super Admin & Admin) -->
+        <div class="card" id="uploadCard" onclick="navigateTo('upload-result.html')">
           <div class="icon upload-icon">
             <span class="material-icons-outlined">cloud_upload</span>
           </div>
@@ -150,6 +153,7 @@
           <p>Upload student results individually or in bulk</p>
         </div>
 
+        <!-- View Results Card (Visible to all allowed roles) -->
         <div class="card" onclick="navigateTo('view-result.html')">
           <div class="icon view-icon">
             <span class="material-icons-outlined">list_alt</span>
@@ -157,14 +161,36 @@
           <h2>View Results</h2>
           <p>Search and filter all student results</p>
         </div>
+
       </div>
     </div>
   </div>
 
   <script>
+    // ========== ROLE VALIDATION ==========
+    const role = (localStorage.getItem("adminRole") || "").toLowerCase().replace(/\s+/g, "");
+
+    const allowed = ["superadmin", "headadmin", "admin"];
+    const isSuperAdmin = role === "superadmin";
+    const isAdmin = role === "admin";
+    const isHeadAdmin = role === "headadmin";
+
+    // If role is NOT allowed → block access
+    if (!allowed.includes(role)) {
+      alert("Access Denied: You are not authorized to view this page.");
+      window.location.href = "login.html";
+    }
+
+    // Upload card: Only super admin and admin can see it
+    const uploadCard = document.getElementById("uploadCard");
+    if (!(isSuperAdmin || isAdmin)) {
+      uploadCard.style.display = "none";
+    }
+
     function navigateTo(page) {
       window.location.href = page;
     }
   </script>
+
 </body>
 </html>
