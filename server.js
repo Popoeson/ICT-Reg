@@ -99,6 +99,7 @@ const studentProfileSchema = new mongoose.Schema({
   nokRelation: String,
   passport: String, // Cloudinary image URL
 }, { timestamps: true });
+  verified: { type: Boolean, default: false };
 
 const StudentProfile = mongoose.model("StudentProfile", studentProfileSchema);
 
@@ -1528,6 +1529,26 @@ app.get("/api/students/matric/:matricNumber", async (req, res) => {
   } catch (err) {
     console.error("GET STUDENT + PROFILE ERROR:", err);
     res.status(500).json({ success: false, message: "Failed to fetch student", error: err.message });
+  }
+});
+
+// VERIFY STUDENT PROFILE
+app.put("/api/students/verify/:id", async (req, res) => {
+  try {
+    const student = await StudentProfile.findByIdAndUpdate(
+      req.params.id,
+      { verified: true },
+      { new: true }
+    );
+
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
+
+    res.json({ success: true, message: "Student verified successfully", student });
+  } catch (err) {
+    console.error("VERIFY STUDENT ERROR:", err);
+    res.status(500).json({ success: false, message: "Failed to verify student" });
   }
 });
 
