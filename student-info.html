@@ -433,75 +433,74 @@ const urlParams = new URLSearchParams(window.location.search);
 const studentIdFromURL = urlParams.get("id");
 
 if (!studentIdFromURL) {
-alert("No student selected!");
-window.location.href = "students-list.html";
+  alert("No student selected!");
+  window.location.href = "students-list.html";
 } else {
-(async () => {
-try {
-// ===== Fetch student info first =====
-const res = await fetch(${backendURL}/api/students/${studentIdFromURL});
-const data = await res.json();
+  (async () => {
+    try {
+      // ===== Fetch student info first =====
+      const res = await fetch(`${backendURL}/api/students/${studentIdFromURL}`);
+      const data = await res.json();
 
-if (!data.success || !data.student) {  
-    alert("Student not found!");  
-    window.location.href = "students-list.html";  
-    return;  
-  }  
+      if (!data.success || !data.student) {  
+        alert("Student not found!");  
+        window.location.href = "students-list.html";  
+        return;  
+      }  
 
-  const student = data.student; // Use this object everywhere  
-  const correctId = student._id; // THIS is the real ID from DB  
+      const student = data.student; // Use this object everywhere
+      const correctId = student._id; // Real ID from DB
 
-  // ===== Populate top info =====  
-  const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ") || "N/A";  
-  document.getElementById("studentPassport").src = student.passport || "https://via.placeholder.com/120";  
-  document.getElementById("studentName").textContent = fullName;  
-  document.getElementById("studentDept").textContent = student.department || "N/A";  
-  document.getElementById("studentMatric").textContent = student.matricNo || "N/A";  
-  document.getElementById("studentLevel").textContent = student.level || "N/A";  
+      // ===== Populate top info =====
+      const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ") || "N/A";  
+      document.getElementById("studentPassport").src = student.passport || "https://via.placeholder.com/120";  
+      document.getElementById("studentName").textContent = fullName;  
+      document.getElementById("studentDept").textContent = student.department || "N/A";  
+      document.getElementById("studentMatric").textContent = student.matricNo || "N/A";  
+      document.getElementById("studentLevel").textContent = student.level || "N/A";  
 
-  // ===== Show/Hide Verify Button =====  
-  if (student.verified === true) {  
-    document.getElementById("verifyBtn").style.display = "none";  
-    document.getElementById("verifiedBadge").style.display = "flex";  
-  } else {  
-    document.getElementById("verifyBtn").style.display = "block";  
-  }  
-
-  // ===== Verify Logic =====  
-  document.getElementById("verifyBtn").addEventListener("click", async () => {  
-    if (!confirm("Are you sure you want to verify this student?")) return;  
-
-    try {  
-      console.log("VERIFY URL:", `${backendURL}/api/students/verify/${correctId}`);  
-
-      const response = await fetch(`${backendURL}/api/students/verify/${correctId}`, {  
-        method: "PUT",  
-        headers: { "Content-Type": "application/json" }  
-      });  
-
-      const result = await response.json();  
-
-      if (result.success) {  
+      // ===== Show/Hide Verify Button =====
+      if (student.verified === true) {  
         document.getElementById("verifyBtn").style.display = "none";  
         document.getElementById("verifiedBadge").style.display = "flex";  
-        alert("Student verified successfully!");  
       } else {  
-        alert("Failed to verify: " + result.message);  
+        document.getElementById("verifyBtn").style.display = "block";  
       }  
-    } catch (err) {  
-      console.error(err);  
-      alert("Server error verifying student.");  
-    }  
-  });  
 
-  
+      // ===== Verify Logic =====
+      document.getElementById("verifyBtn").addEventListener("click", async () => {  
+        if (!confirm("Are you sure you want to verify this student?")) return;  
+
+        try {  
+          console.log("VERIFY URL:", `${backendURL}/api/students/verify/${correctId}`);  
+
+          const response = await fetch(`${backendURL}/api/students/verify/${correctId}`, {  
+            method: "PUT",  
+            headers: { "Content-Type": "application/json" }  
+          });  
+
+          const result = await response.json();  
+
+          if (result.success) {  
+            document.getElementById("verifyBtn").style.display = "none";  
+            document.getElementById("verifiedBadge").style.display = "flex";  
+            alert("Student verified successfully!");
+          } else {  
+            alert("Failed to verify: " + result.message);  
+          }  
+        } catch (err) {  
+          console.error(err);  
+          alert("Server error verifying student.");  
+        }  
+      });  
+
       // ===== Personal info =====
-      const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ") || "N/A";
+      const nokFullName = [student.nokSurname, student.nokFirstname].filter(Boolean).join(" ") || "N/A";
       document.getElementById("studentEmail").textContent = student.email || "N/A";
       document.getElementById("studentPhone").textContent = student.phone || "N/A";
       document.getElementById("dob").textContent = student.dob || "N/A";
       document.getElementById("regNo").textContent = student.regNo || "N/A";
-      document.getElementById("studentState").textContent = s.stateOrigin || "N/A";
+      document.getElementById("studentState").textContent = student.stateOrigin || "N/A";
       document.getElementById("studentLga").textContent = student.lgaOrigin || "N/A";
       document.getElementById("studentAddress").textContent = student.address || "N/A";
       document.getElementById("studentNokName").textContent = nokFullName;
@@ -530,12 +529,12 @@ if (!data.success || !data.student) {
       const docBody = document.getElementById("documentsBody");
       docBody.innerHTML = "Loading documents...";
 
-      const docRes = await fetch(`${backendURL}/api/documents/${studentId}`);
+      const docRes = await fetch(`${backendURL}/api/documents/${correctId}`);
       const docData = await docRes.json();
       let doc = docData.data || { files: {}, oLevelData: [] };
       const files = doc.files || {};
 
-      // ===== Fetch O’Level images from Olevel collection =====
+      // ===== Fetch O’Level images =====
       async function fetchOlevelImages(matricNumber) {
         let olevelImages = [];
         if (!matricNumber) return olevelImages;
@@ -554,7 +553,7 @@ if (!data.success || !data.student) {
         return olevelImages;
       }
 
-      const oLevelImages = await fetchOlevelImages(s.matricNo);
+      const oLevelImages = await fetchOlevelImages(student.matricNo);
 
       // ===== O'Level input fields =====
       const oLevelInputs = doc.oLevelData?.length
@@ -573,7 +572,6 @@ if (!data.success || !data.student) {
             .join("")
         : `<div class="no-file">No O'Level record found</div>`;
 
-      // ===== O'Level images thumbnails =====
       const oLevelThumbnails = oLevelImages.length
         ? `<div class="thumbnail-grid" style="margin-top: 15px;">
             ${oLevelImages.map((url, i) => `
@@ -641,7 +639,7 @@ if (!data.success || !data.student) {
       resultsBody.innerHTML = "Loading results...";  
 
       async function loadResults(semesterFilter = "") {  
-        const url = `${backendURL}/api/results?matricNo=${encodeURIComponent(s.matricNo)}`;  
+        const url = `${backendURL}/api/results?matricNo=${encodeURIComponent(student.matricNo)}`;  
         const res = await fetch(url);  
         const data = await res.json();  
         const results = data.results || [];  
