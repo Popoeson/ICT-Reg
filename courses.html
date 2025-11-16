@@ -217,46 +217,55 @@ let userRole = "";
 let userDept = "";
 let userLevel = "";
 
-// Student
+// Student login
 if (localStorage.getItem("studentData")) {
   const student = JSON.parse(localStorage.getItem("studentData"));
   userRole = "student";
   userDept = (student.department || "").toLowerCase().trim();
   userLevel = (student.level || "").toUpperCase().replace(/\s+/g, '');
 }
-// Admin / Superadmin
+// Admin
 else if (localStorage.getItem("adminRole")) {
   userRole = (localStorage.getItem("adminRole") || "").trim();
   userDept = (localStorage.getItem("adminDepartment") || "").toLowerCase().trim();
 } else {
-  console.warn("No user info found in localStorage!");
   userRole = "guest";
+  console.warn("No user info found!");
 }
 
-// Normalize role name
-const normalizedRole = userRole.replace(/\s+/g, '').toLowerCase();
+// Normalize role for logic
+const normalizedRole = userRole.toLowerCase().replace(/\s+/g, "");
 
-// ===== Manage Button Visibility =====
-if (["admin", "superadmin"].includes(normalizedRole)) {
+// ========== ROLE POWERS ==========
+const canManage = (normalizedRole === "admin" || normalizedRole === "superadmin");
+const canDelete = (normalizedRole === "admin" || normalizedRole === "superadmin");
+const canSeeAllCourses = (normalizedRole === "superadmin" || normalizedRole === "headadmin");
+
+// ===== Show / Hide Manage Button =====
+if (canManage) {
   document.getElementById("manageBtn").style.display = "inline-block";
+} else {
+  document.getElementById("manageBtn").style.display = "none";
 }
 
-// Hide department & level filters for students
+// Students → Hide dept & level filters
 if (normalizedRole === "student") {
   document.getElementById("filterDepartment").style.display = "none";
   document.getElementById("filterLevel").style.display = "none";
 }
 
-// ===== Fetch Courses =====
+// ===== Fetch All Courses =====
 async function fetchCourses() {
   try {
     const res = await fetch(`${backendURL}/api/courses`);
     const data = await res.json();
-    if (!data.success) throw new Error(data.message || "Failed to fetch courses");
+    if (!data.success) throw new Error("Failed to fetch courses");
 
     allCourses = [];
+
     (data.data || []).forEach(doc => {
       const { level, department, semester, _id: docId, courses } = doc;
+
       (courses || []).forEach(course => {
         allCourses.push({
           level: level.toUpperCase().replace(/\s+/g, ''),
@@ -280,7 +289,7 @@ async function fetchCourses() {
   }
 }
 
-// ===== Apply Filters =====
+// ===== Filter & Role-based Restrictions =====
 function renderFilteredDashboard() {
   const semesterFilter = document.getElementById("filterSemester").value;
   const departmentFilter = (document.getElementById("filterDepartment").value || "").toLowerCase().trim();
@@ -292,22 +301,31 @@ function renderFilteredDashboard() {
            (!levelFilter || c.level === levelFilter);
   });
 
-  // Role-based filters
+  // ===== ROLE FILTER LOGIC =====
+
+  // Admin → only their department
   if (normalizedRole === "admin") {
     filtered = filtered.filter(c => c.department === userDept);
-  } else if (normalizedRole === "student") {
+  }
+
+  // Student → department + level
+  else if (normalizedRole === "student") {
     filtered = filtered.filter(c => c.department === userDept && c.level === userLevel);
   }
+
+  // Head Admin → sees ALL courses (no restriction)
+  // Super Admin → sees ALL courses (no restriction)
 
   renderDashboard(filtered);
 }
 
-// ===== Render Dashboard =====
+// ===== Render UI =====
 function renderDashboard(courses) {
   const container = document.getElementById("dashboardContainer");
   container.innerHTML = "";
 
   const grouped = {};
+
   courses.forEach(c => {
     const key = `${c.semester} - ${c.department.toUpperCase()} - ${c.level}`;
     if (!grouped[key]) grouped[key] = [];
@@ -332,29 +350,25 @@ function renderDashboard(courses) {
           <th>Title</th>
           <th>Unit</th>
           <th>Lecturer</th>
-          ${["admin", "superadmin"].includes(normalizedRole) ? "<th>Actions</th>" : ""}
+          ${canDelete ? "<th>Actions</th>" : ""}
         </tr>
       </thead>
       <tbody>
-        ${grouped[group]
-          .map(
-            (c, i) => `
-            <tr>
-              <td data-label="#">${i + 1}</td>
-              <td data-label="Code">${c.code}</td>
-              <td data-label="Title">${c.title}</td>
-              <td data-label="Unit">${c.unit}</td>
-              <td data-label="Lecturer">${c.lecturer}</td>
-              ${
-                ["admin", "superadmin"].includes(normalizedRole)
-                  ? `<td data-label="Actions">
-                      <button class="delete-btn" onclick="deleteCourse('${c.docId}','${c.courseId}','${c.department}')">Delete</button>
-                    </td>`
-                  : ""
-              }
-            </tr>`
-          )
-          .join("")}
+        ${grouped[group].map((c, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${c.code}</td>
+            <td>${c.title}</td>
+            <td>${c.unit}</td>
+            <td>${c.lecturer}</td>
+
+            ${canDelete
+              ? `<td>
+                   <button class="delete-btn" onclick="deleteCourse('${c.docId}', '${c.courseId}', '${c.department}')">Delete</button>
+                 </td>`
+              : ""}
+          </tr>
+        `).join("")}
       </tbody>
     `;
     section.appendChild(table);
@@ -362,15 +376,16 @@ function renderDashboard(courses) {
   });
 
   if (courses.length === 0) {
-    container.innerHTML = `<p style="text-align:center;color:#555;">No courses found for your filters or role.</p>`;
+    container.innerHTML = `<p style="text-align:center;color:#555;">No courses found.</p>`;
   }
 }
 
 // ===== Delete Course =====
 async function deleteCourse(docId, courseId, courseDept) {
-  // Restrict Admins to their own department
+
+  // Admins can delete only their department
   if (normalizedRole === "admin" && courseDept !== userDept) {
-    alert("You can only delete courses in your department!");
+    alert("You can only delete courses inside your department!");
     return;
   }
 
@@ -380,14 +395,15 @@ async function deleteCourse(docId, courseId, courseDept) {
     const res = await fetch(`${backendURL}/api/courses/${docId}/${courseId}`, {
       method: "DELETE"
     });
+
     const data = await res.json();
     if (!data.success) throw new Error(data.message);
 
-    alert("Course deleted successfully!");
-    fetchCourses(); // Refresh dashboard
+    alert("Course deleted!");
+    fetchCourses();
+
   } catch (err) {
     alert("Error deleting course: " + err.message);
-    console.error(err);
   }
 }
 
