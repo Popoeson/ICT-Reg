@@ -911,8 +911,9 @@ app.post("/api/admins/register", upload.single("passport"), async (req, res) => 
       return res.status(400).json({ message: "Passport image is required." });
     }
 
-    // ✅ Department logic (hidden if Super Admin)
-    const finalDepartment = role === "Super Admin", "Head Admin", "Cashier" ? "N/A" : department || "N/A";
+    // ✅ Department logic: hide for Super Admin, Head Admin, Cashier
+    const rolesWithoutDepartment = ["Super Admin", "Head Admin", "Cashier"];
+    const finalDepartment = rolesWithoutDepartment.includes(role) ? "N/A" : department || "N/A";
 
     // ✅ Create new admin
     const newAdmin = new Admin({
