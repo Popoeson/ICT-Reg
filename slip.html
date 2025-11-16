@@ -6,6 +6,12 @@
 <title>Exam Slip Preview</title>
 <style>
   body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin:0; background:#f5f7fa; color:#222; padding:20px; }
+  
+  /* Filters above container */
+  .filters { display:flex; gap:20px; justify-content:center; margin-bottom:15px; }
+  .filters label { font-weight:600; margin-right:5px; }
+  .filters select { padding:6px 10px; border-radius:6px; border:1px solid #ccc; font-size:0.95rem; }
+
   .container { max-width:900px; margin:auto; background:#fff; padding:20px; border-radius:12px; box-shadow:0 3px 10px rgba(0,0,0,0.1); }
   header { text-align:center; margin-bottom:20px; }
   header img { height:60px; vertical-align:middle; }
@@ -22,17 +28,17 @@
   th, td { border:1px solid #ddd; padding:8px; text-align:center; }
   th { background:#007bff; color:#fff; }
   .warning { color:#dc3545; font-weight:600; }
-  #downloadBtn { display:block; margin:auto; padding:10px 20px; border:none; border-radius:8px; background:#28a745; color:#fff; font-weight:600; cursor:pointer; transition:0.3s; }
+  #downloadBtn { display:block; margin:auto; padding:10px 20px; border:none; border-radius:8px; background:#007bff; color:#fff; font-weight:600; cursor:pointer; transition:0.3s; }
   #downloadBtn:disabled { background:#ccc; cursor:not-allowed; }
   footer { text-align:right; font-size:0.9rem; margin-top:10px; }
 </style>
 </head>
 <body>
 
-<!-- Add these above the student-info section -->
-<div style="display:flex; gap:20px; margin-bottom:15px; justify-content:center;">
+<!-- FILTERS ABOVE PDF AREA -->
+<div class="filters">
   <div>
-    <label for="filterLevel"><strong>Filter by Level:</strong></label>
+    <label for="filterLevel">Filter by Level:</label>
     <select id="filterLevel">
       <option value="">All Levels</option>
       <option value="ND1">ND1</option>
@@ -42,7 +48,7 @@
     </select>
   </div>
   <div>
-    <label for="filterSemester"><strong>Filter by Semester:</strong></label>
+    <label for="filterSemester">Filter by Semester:</label>
     <select id="filterSemester">
       <option value="">All Semesters</option>
       <option value="First Semester">First Semester</option>
@@ -50,6 +56,7 @@
     </select>
   </div>
 </div>
+
 <div class="container">
   <header>
     <img src="upload/logo.jpg" alt="Logo">
@@ -85,11 +92,10 @@
           <th>S/N</th>
           <th>Course Code</th>
           <th>Course Title</th>
-          
         </tr>
       </thead>
       <tbody id="coursesTable">
-        <tr><td colspan="4">Loading courses...</td></tr>
+        <tr><td colspan="3">Loading courses...</td></tr>
       </tbody>
     </table>
     <p id="coursesWarning" class="warning"></p>
@@ -107,7 +113,6 @@
   const backendURL = "https://ict-reg.onrender.com";
   const studentId = localStorage.getItem("studentId");
 
-  // Elements
   const passportEl = document.getElementById("passport");
   const fullNameEl = document.getElementById("fullName");
   const matricEl = document.getElementById("matric");
@@ -124,114 +129,106 @@
   const downloadBtn = document.getElementById("downloadBtn");
   const printDateEl = document.getElementById("printDate");
 
+  const filterLevelEl = document.getElementById("filterLevel");
+  const filterSemesterEl = document.getElementById("filterSemester");
+
   printDateEl.textContent = new Date().toLocaleDateString();
 
-  let coursesComplete = false;
-  let paymentComplete = false;
   let student = null;
 
-  const filterLevelEl = document.getElementById("filterLevel");
-const filterSemesterEl = document.getElementById("filterSemester");
+  async function loadSlip() {
+    let coursesComplete = false;
+    let paymentComplete = false;
 
-async function loadSlip() {
-  let coursesComplete = false;
-  let paymentComplete = false;
+    try {
+      // STUDENT INFO
+      const studentRes = await fetch(`${backendURL}/api/students/${studentId}`);
+      const studentData = await studentRes.json();
+      if (!studentRes.ok || !studentData.success || !studentData.student) throw new Error("Failed to fetch student info");
 
-  try {
-    // ===== FETCH STUDENT INFO =====
-    const studentRes = await fetch(`${backendURL}/api/students/${studentId}`);
-    const studentData = await studentRes.json();
-    if (!studentRes.ok || !studentData.success || !studentData.student) throw new Error("Failed to fetch student info");
+      student = studentData.student;
+      passportEl.src = student.passport || "https://via.placeholder.com/100";
+      fullNameEl.textContent = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ");
+      matricEl.textContent = student.matricNo || "N/A";
+      deptEl.textContent = student.department || "N/A";
+      levelEl.textContent = student.level || "N/A";
+      semesterEl.textContent = student.semester || "N/A";
 
-    student = studentData.student;
-    passportEl.src = student.passport || "https://via.placeholder.com/100";
-    fullNameEl.textContent = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ");
-    matricEl.textContent = student.matricNo || "N/A";
-    deptEl.textContent = student.department || "N/A";
-    levelEl.textContent = student.level || "N/A";
-    semesterEl.textContent = student.semester || "N/A";
+      const selectedLevel = filterLevelEl.value;
+      const selectedSemester = filterSemesterEl.value;
 
-    const selectedLevel = filterLevelEl.value;
-    const selectedSemester = filterSemesterEl.value;
+      // COURSES
+      const coursesRes = await fetch(`${backendURL}/api/registered-courses?matric=${encodeURIComponent(student.matricNo)}`);
+      const coursesData = await coursesRes.json();
+      coursesTableEl.innerHTML = "";
 
-    // ===== FETCH COURSES =====
-    const coursesRes = await fetch(`${backendURL}/api/registered-courses?matric=${encodeURIComponent(student.matricNo)}`);
-    const coursesData = await coursesRes.json();
-    coursesTableEl.innerHTML = "";
+      let courses = [];
+      if (coursesRes.ok && coursesData.success && coursesData.data && coursesData.data.length > 0) {
+        courses = coursesData.data;
+        if (selectedLevel) courses = courses.filter(c => c.level === selectedLevel);
+        if (selectedSemester) courses = courses.filter(c => c.semester === selectedSemester);
 
-    let courses = [];
-    if (coursesRes.ok && coursesData.success && coursesData.data && coursesData.data.length > 0) {
-      courses = coursesData.data;
-      // Apply filter
-      if (selectedLevel) courses = courses.filter(c => c.level === selectedLevel);
-      if (selectedSemester) courses = courses.filter(c => c.semester === selectedSemester);
-
-      if (courses.length > 0) {
-        courses.forEach((c, i) => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${i + 1}</td>
-            <td>${c.courseCode}</td>
-            <td>${c.courseTitle}</td>
-          `;
-          coursesTableEl.appendChild(row);
-        });
-        coursesComplete = true;
+        if (courses.length > 0) {
+          courses.forEach((c, i) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${i+1}</td><td>${c.courseCode}</td><td>${c.courseTitle}</td>`;
+            coursesTableEl.appendChild(row);
+          });
+          coursesComplete = true;
+        } else {
+          coursesTableEl.innerHTML = "<tr><td colspan='3'>No courses match the filter</td></tr>";
+        }
       } else {
-        coursesTableEl.innerHTML = "<tr><td colspan='3'>No courses match the filter</td></tr>";
+        coursesTableEl.innerHTML = "<tr><td colspan='3'>No courses registered</td></tr>";
+        coursesWarningEl.textContent = "Courses to be registered for are not complete";
       }
-    } else {
-      coursesTableEl.innerHTML = "<tr><td colspan='3'>No courses registered</td></tr>";
-      coursesWarningEl.textContent = "Courses to be registered for are not complete";
+
+      // PAYMENTS
+      const paymentsRes = await fetch(`${backendURL}/api/payments/${encodeURIComponent(student.matricNo)}`);
+      const paymentsData = await paymentsRes.json();
+
+      let payments = [];
+      if (paymentsRes.ok && paymentsData.success && paymentsData.data && paymentsData.data.length > 0) {
+        payments = paymentsData.data;
+        if (selectedLevel) payments = payments.filter(p => p.level === selectedLevel);
+        if (selectedSemester) payments = payments.filter(p => p.semester === selectedSemester);
+      }
+
+      const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      amountPaidEl.textContent = totalPaid;
+      paymentStatusEl.textContent = totalPaid >= 40000 ? "PAID" : "NOT PAID";
+      paymentTypeEl.textContent = payments.map(p => p.paymentType).join(", ") || "N/A";
+      receiptNosEl.textContent = payments.map(p => p.receiptNo).join(", ") || "N/A";
+      paymentDatesEl.textContent = payments.map(p => new Date(p.createdAt).toLocaleDateString()).join(", ") || "N/A";
+
+      paymentComplete = totalPaid >= 40000;
+      if (!paymentComplete) paymentStatusEl.classList.add("warning");
+
+      downloadBtn.disabled = !(coursesComplete && paymentComplete);
+
+    } catch (err) {
+      console.error("Error loading exam slip:", err);
     }
-
-    // ===== FETCH PAYMENTS =====
-    const paymentsRes = await fetch(`${backendURL}/api/payments/${encodeURIComponent(student.matricNo)}`);
-    const paymentsData = await paymentsRes.json();
-
-    let payments = [];
-    if (paymentsRes.ok && paymentsData.success && paymentsData.data && paymentsData.data.length > 0) {
-      payments = paymentsData.data;
-      // Apply filter
-      if (selectedLevel) payments = payments.filter(p => p.level === selectedLevel);
-      if (selectedSemester) payments = payments.filter(p => p.semester === selectedSemester);
-    }
-
-    const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    amountPaidEl.textContent = totalPaid;
-    paymentStatusEl.textContent = totalPaid >= 40000 ? "PAID" : "NOT PAID";
-    paymentTypeEl.textContent = payments.map(p => p.paymentType).join(", ") || "N/A";
-    receiptNosEl.textContent = payments.map(p => p.receiptNo).join(", ") || "N/A";
-    paymentDatesEl.textContent = payments.map(p => new Date(p.createdAt).toLocaleDateString()).join(", ") || "N/A";
-
-    paymentComplete = totalPaid >= 40000;
-    if (!paymentComplete) paymentStatusEl.classList.add("warning");
-
-    downloadBtn.disabled = !(coursesComplete && paymentComplete);
-  } catch (err) {
-    console.error("Error loading exam slip data:", err);
   }
-}
 
-// Initial load
-loadSlip();
+  // Initial load
+  loadSlip();
 
-// Re-load when filters change
-filterLevelEl.addEventListener("change", loadSlip);
-filterSemesterEl.addEventListener("change", loadSlip);
+  // Filters change
+  filterLevelEl.addEventListener("change", loadSlip);
+  filterSemesterEl.addEventListener("change", loadSlip);
 
-// ===== DOWNLOAD PDF =====
-downloadBtn.addEventListener("click", () => {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.html(document.querySelector(".container"), {
-    callback: function (pdf) {
-      pdf.save(`Exam_Slip_${matricEl.textContent}.pdf`);
-    },
-    x: 10,
-    y: 10,
-    html2canvas: { scale: 0.8 }
+  // DOWNLOAD PDF
+  downloadBtn.addEventListener("click", () => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.html(document.querySelector(".container"), {
+      callback: pdf => pdf.save(`Exam_Slip_${matricEl.textContent}.pdf`),
+      x:10, y:10, html2canvas: { scale:0.8 }
+    });
   });
-});
+})();
+</script>
+
 </body>
 </html>
