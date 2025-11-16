@@ -25,26 +25,54 @@
 
     /* ===== HEADER ===== */
     header {
-      background-color: #1e73be;
-      color: #fff;
-      padding: 15px 30px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      position: relative;
-    }
+  background-color: #1e73be;
+  color: #fff;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  position: relative;
+}
 
-    header img {
-      height: 50px;
-      border-radius: 20px;
-    }
+header img {
+  height: 50px;
+  border-radius: 20px;
+  flex-shrink: 0; /* never shrink */
+}
 
-    header h1 {
-      font-size: 19px;
-      font-weight: 500;
-    }
+header h1 {
+  font-size: 18px;
+  font-weight: 500;
+  flex: 1;               /* take remaining space */
+  text-align: center;    /* centered */
+  white-space: nowrap;   /* prevent line break */
+  overflow: hidden;      /* cut overflow */
+  text-overflow: ellipsis; /* show ... if too long */
+  margin: 0 10px;
+}
 
+#logoutBtn {
+  background: #1e73be;
+  color: #fff;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  flex-shrink: 0; /* never shrink */
+}
+
+@media (max-width: 500px) {
+  header h1 {
+    font-size: 16px; /* smaller heading */
+  }
+  #logoutBtn {
+    padding: 4px 8px; /* smaller button */
+    font-size: 13px;
+  }
+}
     /* ===== LOADING BAR ===== */
     #loadingBar {
       position: absolute;
@@ -154,23 +182,13 @@
   <div class="logo">
     <img src="upload/logo.jpg" alt="School Logo">
   </div>
-  
+
   <h1>Student Portal Dashboard</h1>
-  
-  <!-- Logout Button inside header -->
-  <button id="logoutBtn" style="
-  background: #1e73be; /* Blue background */
-  color: #fff;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 14px;
-  margin-left: auto; /* pushes it to the far right */
-">
-  Logout
-</button>
+
+  <button id="logoutBtn">Logout</button>
+
+  <div id="loadingBar"></div>
+</header>
 
   <div id="loadingBar"></div>
 </header>
