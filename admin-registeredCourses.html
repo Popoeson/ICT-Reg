@@ -111,9 +111,18 @@
 <script>
 (() => {
   const backendBase = "https://ict-reg.onrender.com";
-  const endpoint = "/api/admin/all-registered-courses"; // admin route you chose
+  const endpoint = "/api/admin/all-registered-courses";
 
-  // UI
+  // ============================
+  //   GET LOGGED-IN ADMIN DATA
+  // ============================
+  const adminData = JSON.parse(localStorage.getItem("adminData") || "{}");
+  const adminRole = adminData.role || "";
+  const adminDept = adminData.department || "";
+
+  // ============================
+  //   UI ELEMENTS
+  // ============================
   const searchBox = document.getElementById("searchBox");
   const filterDept = document.getElementById("filterDept");
   const filterLevel = document.getElementById("filterLevel");
@@ -124,52 +133,80 @@
   const visibleCountEl = document.getElementById("visibleCount");
   const totalCountEl = document.getElementById("totalCount");
   const regTbody = document.getElementById("regTbody");
+  const deleteAllBtn = document.getElementById("deleteAllBtn");
 
-  let allRegs = [];  // raw data from server
-  let filtered = []; // filtered view
+  let allRegs = [];
+  let filtered = [];
 
-  // small debounce util
-  function debounce(fn, wait=250){
-    let t;
-    return (...args) => { clearTimeout(t); t = setTimeout(()=> fn(...args), wait); };
+  // Hide delete-all button for Head Admin
+  if (adminRole === "Head Admin") {
+    deleteAllBtn.style.display = "none";
   }
 
-  // normalize server item to expected shape
-  function normalize(item) {
-  return {
-    id: item.id || item._id,
-    matric: item.matricNumber || "",
-    studentName: item.studentName || "",
-    courseCode: item.courseCode || "",
-    courseTitle: item.courseTitle || "",
-    level: item.level || "",
-    department: item.department || "",
-    semester: item.semester || "",
-    createdAt: item.registeredAt || item.createdAt || ""
-  };
-}
+  // Debounce
+  function debounce(fn, wait = 250) {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), wait);
+    };
+  }
 
-  // Fetch all registrations from server
+  // Normalize server response
+  function normalize(item) {
+    return {
+      id: item.id || item._id,
+      matric: item.matricNumber || "",
+      studentName: item.studentName || "",
+      courseCode: item.courseCode || "",
+      courseTitle: item.courseTitle || "",
+      level: item.level || "",
+      department: item.department || "",
+      semester: item.semester || "",
+      createdAt: item.registeredAt || item.createdAt || ""
+    };
+  }
+
+  // ============================
+  //   FETCH DATA
+  // ============================
   async function fetchRegistrations() {
-    regTbody.innerHTML = `<tr><td colspan="9" class="empty">Loading registered courses…</td></tr>`;
+    regTbody.innerHTML =
+      `<tr><td colspan="9" class="empty">Loading registered courses…</td></tr>`;
+
     try {
       const res = await fetch(backendBase + endpoint);
       if (!res.ok) throw new Error(`Status ${res.status}`);
-      const payload = await res.json();
-      if (!payload || !payload.success) throw new Error(payload?.message || "Invalid response");
 
-      allRegs = (payload.data || []).map(normalize);
+      const payload = await res.json();
+      if (!payload.success) throw new Error(payload.message);
+
+      let data = (payload.data || []).map(normalize);
+
+      // =============== ROLE-BASED FILTERING ===============
+      if (adminRole === "Admin") {
+        data = data.filter(item =>
+          (item.department || "").toLowerCase() === adminDept.toLowerCase()
+        );
+      }
+      // Super Admin & Head Admin see all
+
+      allRegs = data;
       totalCountEl.textContent = allRegs.length;
+
       applyFilters();
     } catch (err) {
       console.error("Fetch error:", err);
-      regTbody.innerHTML = `<tr><td colspan="9" class="empty">Error loading registrations — ${err.message}</td></tr>`;
+      regTbody.innerHTML =
+        `<tr><td colspan="9" class="empty">Error: ${err.message}</td></tr>`;
       visibleCountEl.textContent = 0;
       totalCountEl.textContent = 0;
     }
   }
 
-  // Apply UI filters + search to allRegs -> filtered
+  // ============================
+  //   APPLY FILTERS
+  // ============================
   function applyFilters() {
     const q = (searchBox.value || "").trim().toLowerCase();
     const dept = (filterDept.value || "").trim().toLowerCase();
@@ -182,7 +219,7 @@
       if (sem && String(r.semester) !== sem) return false;
 
       if (!q) return true;
-      // search across multiple fields
+
       return (
         (r.matric || "").toLowerCase().includes(q) ||
         (r.studentName || "").toLowerCase().includes(q) ||
@@ -194,99 +231,169 @@
     renderTable();
   }
 
-  // Render visible filtered rows
+  // ============================
+  //   RENDER TABLE
+  // ============================
   function renderTable() {
-    if (!Array.isArray(filtered) || filtered.length === 0) {
-      regTbody.innerHTML = `<tr><td colspan="9" class="empty">No registrations found.</td></tr>`;
+    if (!filtered.length) {
+      regTbody.innerHTML =
+        `<tr><td colspan="9" class="empty">No registrations found.</td></tr>`;
       visibleCountEl.textContent = 0;
       return;
     }
 
     visibleCountEl.textContent = filtered.length;
-    regTbody.innerHTML = filtered.map(item => {
-      const created = item.createdAt ? (new Date(item.createdAt)).toLocaleString() : "-";
-      return `<tr data-id="${item.id}">
-        <td>${escapeHtml(item.courseCode)}</td>
-        <td>${escapeHtml(item.courseTitle)}</td>
-        <td>${escapeHtml(item.matric)}</td>
-        <td>${escapeHtml(item.studentName)}</td>
-        <td>${escapeHtml(item.level)}</td>
-        <td>${escapeHtml(item.department)}</td>
-        <td>${escapeHtml(item.semester)}</td>
-        <td>${escapeHtml(created)}</td>
-        <td>
-          <button class="ghost small" data-action="view" data-id="${item.id}">View</button>
-          <button class="danger small" data-action="delete" data-id="${item.id}">Delete</button>
-        </td>
-      </tr>`;
-    }).join("");
+
+    regTbody.innerHTML = filtered
+      .map(item => {
+        const created = item.createdAt
+          ? new Date(item.createdAt).toLocaleString()
+          : "-";
+
+        return `
+        <tr data-id="${item.id}">
+          <td>${escapeHtml(item.courseCode)}</td>
+          <td>${escapeHtml(item.courseTitle)}</td>
+          <td>${escapeHtml(item.matric)}</td>
+          <td>${escapeHtml(item.studentName)}</td>
+          <td>${escapeHtml(item.level)}</td>
+          <td>${escapeHtml(item.department)}</td>
+          <td>${escapeHtml(item.semester)}</td>
+          <td>${escapeHtml(created)}</td>
+          <td>
+            <button class="ghost small" data-action="view" data-id="${item.id}">View</button>
+
+            ${
+              adminRole !== "Head Admin"
+                ? `<button class="danger small" data-action="delete" data-id="${item.id}">Delete</button>`
+                : ""
+            }
+          </td>
+        </tr>`;
+      })
+      .join("");
   }
 
-  // Escape helper
-  function escapeHtml(s=''){ return String(s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function escapeHtml(s = "") {
+    return String(s).replace(/[&<>"]/g, c => {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
 
-  // delete single registration
-  async function deleteRegistration(id){
-    if (!confirm("Delete this registration? This cannot be undone.")) return;
+  // ============================
+  //   DELETE ONE
+  // ============================
+  async function deleteRegistration(id) {
+    if (!confirm("Delete this registration?")) return;
+
     try {
-      const res = await fetch(`${backendBase}/api/course-registrations/${id}`, { method: "DELETE" });
-      const payload = await res.json().catch(()=>({ success: false, message: 'No JSON' }));
-      if (!res.ok || !payload.success) {
-        throw new Error(payload.message || `Status ${res.status}`);
-      }
-      // remove from local state & re-render
+      const res = await fetch(`${backendBase}/api/course-registrations/${id}`, {
+        method: "DELETE"
+      });
+
+      const payload = await res.json();
+      if (!payload.success) throw new Error(payload.message);
+
       allRegs = allRegs.filter(r => r.id !== id);
       applyFilters();
-      alert("Registration deleted.");
+      alert("Deleted.");
     } catch (err) {
-      console.error("Delete error:", err);
-      alert("Error deleting registration: " + (err.message || "server error"));
+      alert("Error deleting: " + err.message);
     }
   }
 
-  // View row (simple modal/open new page) — currently opens a new window with details
-  function viewRegistration(id){
+  // ============================
+  //   VIEW RECORD
+  // ============================
+  function viewRegistration(id) {
     const item = allRegs.find(r => r.id === id);
-    if (!item) return alert("Not found");
-    // small detail view - open in new window or show modal (simple alert for now)
-    alert(`${item.courseCode} - ${item.courseTitle}\nStudent: ${item.studentName}\nMatric: ${item.matric}\nDept: ${item.department}\nLevel: ${item.level}\nSemester: ${item.semester}`);
+    if (!item) return;
+
+    alert(
+      `${item.courseCode} - ${item.courseTitle}\n` +
+      `Student: ${item.studentName}\nMatric: ${item.matric}\n` +
+      `Dept: ${item.department}\nLevel: ${item.level}\nSemester: ${item.semester}`
+    );
   }
 
-  // Export visible rows to CSV
-  function exportCSV(){
-    if (!filtered.length) return alert("No rows to export");
-    const headers = ["Course Code","Course Title","Matric","Student Name","Level","Department","Semester","Registered At"];
+  // ============================
+  //   EXPORT CSV
+  // ============================
+  function exportCSV() {
+    if (!filtered.length) return alert("No rows to export.");
+
+    const headers = [
+      "Course Code",
+      "Course Title",
+      "Matric",
+      "Student Name",
+      "Level",
+      "Department",
+      "Semester",
+      "Registered At"
+    ];
+
     const rows = filtered.map(r => [
-      r.courseCode, r.courseTitle, r.matric, r.studentName, r.level, r.department, r.semester, r.createdAt ? new Date(r.createdAt).toLocaleString() : ''
+      r.courseCode,
+      r.courseTitle,
+      r.matric,
+      r.studentName,
+      r.level,
+      r.department,
+      r.semester,
+      r.createdAt ? new Date(r.createdAt).toLocaleString() : ""
     ]);
-    const csv = [headers, ...rows].map(r => r.map(cell => `"${String(cell||'').replace(/"/g,'""')}"`).join(",")).join("\n");
+
+    const csv =
+      [headers, ...rows]
+        .map(r =>
+          r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        )
+        .join("\n");
+
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+
     a.href = url;
-    a.download = `registered-courses-${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a);
+    a.download = `registered-courses-${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
     a.click();
-    a.remove();
     URL.revokeObjectURL(url);
   }
 
-  // Event delegation for actions (view, delete)
-  document.addEventListener("click", (ev) => {
-    const btn = ev.target.closest("button");
-    if (!btn) return;
-    const action = btn.dataset.action;
-    const id = btn.dataset.id;
-    if (action === "delete") deleteRegistration(id);
-    if (action === "view") viewRegistration(id);
+  // ============================
+  //   DELETE ALL
+  // ============================
+  deleteAllBtn.addEventListener("click", async () => {
+    if (!confirm("Delete ALL registrations?")) return;
+
+    try {
+      const res = await fetch(`${backendBase}/api/course-registrations`, {
+        method: "DELETE"
+      });
+
+      const payload = await res.json();
+      if (!payload.success) throw new Error(payload.message);
+
+      alert(payload.message);
+      fetchRegistrations();
+    } catch (err) {
+      alert("Error deleting all: " + err.message);
+    }
   });
 
-  // Wire up controls
+  // ============================
+  //   EVENTS
+  // ============================
   const debouncedApply = debounce(applyFilters, 200);
+
   searchBox.addEventListener("input", debouncedApply);
   filterDept.addEventListener("change", applyFilters);
   filterLevel.addEventListener("change", applyFilters);
   filterSemester.addEventListener("change", applyFilters);
+
   clearFiltersBtn.addEventListener("click", () => {
     searchBox.value = "";
     filterDept.value = "";
@@ -294,29 +401,25 @@
     filterSemester.value = "";
     applyFilters();
   });
+
   refreshBtn.addEventListener("click", fetchRegistrations);
   exportCsvBtn.addEventListener("click", exportCSV);
 
-// Delete All button
-document.getElementById("deleteAllBtn").addEventListener("click", async () => {
-  if (!confirm("Are you sure you want to delete ALL registrations? This cannot be undone.")) return;
+  document.addEventListener("click", ev => {
+    const btn = ev.target.closest("button");
+    if (!btn) return;
 
-  try {
-    const res = await fetch(`${backendBase}/api/course-registrations`, { method: "DELETE" });
-    const payload = await res.json();
-    if (!res.ok || !payload.success) throw new Error(payload.message || "Server error");
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
 
-    alert(payload.message);
-    fetchRegistrations(); // refresh table
-  } catch (err) {
-    console.error("Delete all error:", err);
-    alert("Error deleting all registrations: " + (err.message || "server error"));
-  }
-});
+    if (action === "delete") deleteRegistration(id);
+    if (action === "view") viewRegistration(id);
+  });
 
-  // initial load
+  // ============================
+  //   INITIAL LOAD
+  // ============================
   fetchRegistrations();
-
 })();
 </script>
 </body>
