@@ -163,12 +163,12 @@
             title: (c.title || c.courseTitle || "").trim(),
             level: (level || "").trim(),
             department: (department || "").trim(),
-            semester: Number(semester) || Number(c.semester) || null
+            semester: Number(semester) || Number(c.semester) || 1
           });
         });
       });
 
-      // NOW FILTER by student department & level
+      // Filter by student department & level
       allCourses = flattened.filter(c =>
         c.department?.toLowerCase() === studentDepartment?.toLowerCase() &&
         c.level?.toLowerCase() === studentLevel?.toLowerCase()
@@ -180,7 +180,7 @@
     }
   }
 
-  // Load registered
+  // Load registered courses
   async function loadRegistered() {
     try {
       const res = await fetch(`${backendBaseUrl}/api/registered-courses?matric=${studentMatricEl.textContent.trim()}`);
@@ -210,7 +210,7 @@
     }
   }
 
-  // Compute available (unregistered)
+  // Compute available (unregistered) courses
   function computeAvailable() {
     const regCodes = new Set(registered.map(r => r.code.toUpperCase()));
     const semFilter = filterSemesterEl.value;
@@ -221,9 +221,9 @@
     });
   }
 
-  // Render
+  // Render courses
   function render() {
-    // Available
+    // Available courses
     if (!available.length) {
       availableContainer.innerHTML = `<div class="empty">No available courses</div>`;
       availCountEl.textContent = "";
@@ -244,7 +244,7 @@
       `).join("");
     }
 
-    // Registered
+    // Registered courses
     if (!registered.length) {
       registeredContainer.innerHTML = `<div class="empty">No courses registered yet</div>`;
       regCountEl.textContent = "";
@@ -263,51 +263,55 @@
   }
 
   // Register handler
-document.addEventListener("click", async ev => {
-  const btn = ev.target.closest(".registerBtn");
-  if (!btn) return;
+  document.addEventListener("click", async ev => {
+    const btn = ev.target.closest(".registerBtn");
+    if (!btn) return;
 
-  const code = btn.dataset.code;
-  const row = btn.closest(".course-row");
-  const pin = row.querySelector("input.pin").value.trim();
-  if (!pin) return showMessage("Enter pin before registering", "error");
+    const code = btn.dataset.code;
+    const row = btn.closest(".course-row");
+    const pin = row.querySelector("input.pin").value.trim();
+    if (!pin) return showMessage("Enter pin before registering", "error");
 
-  btn.disabled = true;
-  btn.textContent = "Checking...";
+    // Find course object to get semester
+    const courseObj = allCourses.find(c => c.code === code);
+    if (!courseObj) return showMessage("Course not found", "error");
 
-  try {
-    const response = await fetch(`${backendBaseUrl}/api/course-register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        matricNumber: studentMatricEl.textContent.trim(),
-        studentName: studentNameEl.textContent.trim(),
-        department: studentDepartment,
-        level: studentLevel,
-        courseCode: code,
-        courseTitle: row.querySelector(".course-title").textContent.trim(),
-        semester: <the course’s semester number>,
-        pin
-      })
-    });
+    btn.disabled = true;
+    btn.textContent = "Checking...";
 
-    const data = await response.json();
+    try {
+      const response = await fetch(`${backendBaseUrl}/api/course-register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          matricNumber: studentMatricEl.textContent.trim(),
+          studentName: studentNameEl.textContent.trim(),
+          department: studentDepartment,
+          level: studentLevel,
+          courseCode: code,
+          courseTitle: row.querySelector(".course-title").textContent.trim(),
+          semester: courseObj.semester, // ✅ include semester
+          pin
+        })
+      });
 
-    if (response.ok && data.success) {
-      showMessage(`Successfully registered ${code}`, "success");
-      await reloadAll();
-    } else {
-      showMessage(data.message || "Invalid or used pin", "error");
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        showMessage(`Successfully registered ${code}`, "success");
+        await reloadAll();
+      } else {
+        showMessage(data.message || "Invalid or used pin", "error");
+      }
+
+    } catch (err) {
+      console.error(err);
+      showMessage("Server error during registration", "error");
     }
 
-  } catch (err) {
-    console.error(err);
-    showMessage("Server error during registration", "error");
-  }
-
-  btn.disabled = false;
-  btn.textContent = "Register";
-});
+    btn.disabled = false;
+    btn.textContent = "Register";
+  });
 
   function showMessage(msg, type="success", timeout=3000) {
     feedback.innerHTML = `<div class="msg ${type === "success" ? "success":"error"}">${msg}</div>`;
