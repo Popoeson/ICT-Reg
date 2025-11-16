@@ -80,6 +80,7 @@ const Student = mongoose.model("Student", studentSchema);
 
 // Student Profile Setup
 const studentProfileSchema = new mongoose.Schema({
+  verified: { type: Boolean, default: false },
   surname: String,
   firstname: String,
   middlename: String,
@@ -98,8 +99,7 @@ const studentProfileSchema = new mongoose.Schema({
   nokPhone: String,
   nokRelation: String,
   passport: String, // Cloudinary image URL
-}, { timestamps: true }),
-  verified: { type: Boolean, default: false };
+}, { timestamps: true });
 
 const StudentProfile = mongoose.model("StudentProfile", studentProfileSchema);
 
