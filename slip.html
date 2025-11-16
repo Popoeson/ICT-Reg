@@ -80,7 +80,6 @@
   </footer>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (async () => {
   const backendURL = "https://ict-reg.onrender.com";
@@ -123,53 +122,59 @@
     semesterEl.textContent = student.semester || "N/A";
 
     // ===== FETCH REGISTERED COURSES =====
-    const coursesRes = await fetch(`${backendURL}/api/registered-courses/${studentId}`);
+    const coursesRes = await fetch(`${backendURL}/api/registered-courses/${student.matricNo}`);
     const coursesData = await coursesRes.json();
-    const courses = coursesData.data || [];
     coursesTableEl.innerHTML = "";
-    if (courses.length === 0) {
+    if (!coursesRes.ok || !coursesData.success || !coursesData.data || coursesData.data.length === 0) {
       coursesTableEl.innerHTML = "<tr><td colspan='4'>No courses registered</td></tr>";
       coursesWarningEl.textContent = "Courses to be registered for are not complete";
     } else {
+      const courses = coursesData.data;
       courses.forEach((c, i) => {
         const row = document.createElement("tr");
-        row.innerHTML = `<td>${i+1}</td><td>${c.courseCode}</td><td>${c.courseTitle}</td><td>${c.unit}</td>`;
+        row.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${c.courseCode}</td>
+          <td>${c.courseTitle}</td>
+          <td>${c.unit || "N/A"}</td>
+        `;
         coursesTableEl.appendChild(row);
       });
       coursesComplete = true;
     }
 
     // ===== FETCH PAYMENT RECORDS =====
+    const paymentsRes = await fetch(`${backendURL}/api/payments/${student.matricNo}`);
+    const paymentsData = await paymentsRes.json();
+
     let payments = [];
-    try {
-      const paymentsRes = await fetch(`${backendURL}/api/payments/${student.matricNo}`);
-      const paymentsData = await paymentsRes.json();
-      if (paymentsRes.ok && paymentsData.success) {
-        payments = paymentsData.data || [];
-      } else {
-        console.warn("No payments found for this student");
-      }
-    } catch(err) {
-      console.error("Error fetching payments:", err);
+    if (paymentsRes.ok && paymentsData.success && paymentsData.data && paymentsData.data.length > 0) {
+      payments = paymentsData.data;
+    } else {
+      console.warn("No payments found for this student");
     }
 
+    // Calculate total paid
     const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
     amountPaidEl.textContent = totalPaid;
     paymentStatusEl.textContent = totalPaid >= 40000 ? "PAID" : "NOT PAID";
     paymentTypeEl.textContent = payments.map(p => p.paymentType).join(", ") || "N/A";
     receiptNosEl.textContent = payments.map(p => p.receiptNo).join(", ") || "N/A";
-    paymentDatesEl.textContent = payments.map(p => new Date(p.date).toLocaleDateString()).join(", ") || "N/A";
+    paymentDatesEl.textContent = payments.map(p => new Date(p.createdAt).toLocaleDateString()).join(", ") || "N/A";
 
     paymentComplete = totalPaid >= 40000;
     if (!paymentComplete) paymentStatusEl.classList.add("warning");
 
     // ===== ENABLE DOWNLOAD IF BOTH COMPLETE =====
-    downloadBtn.disabled = !(coursesComplete && paymentComplete);
+    if (coursesComplete && paymentComplete) {
+      downloadBtn.disabled = false;
+    }
 
-  } catch(err) {
+  } catch (err) {
     console.error("Error loading exam slip data:", err);
-    coursesTableEl.innerHTML = "<tr><td colspan='4'>Error loading data</td></tr>";
+    coursesTableEl.innerHTML = "<tr><td colspan='4'>Error loading courses</td></tr>";
     paymentStatusEl.textContent = "ERROR";
+    amountPaidEl.textContent = "0";
   }
 
   // ===== DOWNLOAD PDF =====
@@ -185,7 +190,6 @@
       html2canvas: { scale: 0.8 }
     });
   });
-
 })();
 </script>
 </body>
