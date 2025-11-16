@@ -92,6 +92,7 @@
           <th>S/N</th>
           <th>Course Code</th>
           <th>Course Title</th>
+          <th>Semester</th>
         </tr>
       </thead>
       <tbody id="coursesTable">
@@ -169,15 +170,20 @@
         if (selectedSemester) courses = courses.filter(c => c.semester === selectedSemester);
 
         if (courses.length > 0) {
-          courses.forEach((c, i) => {
-            const row = document.createElement("tr");
-            row.innerHTML = `<td>${i+1}</td><td>${c.courseCode}</td><td>${c.courseTitle}</td>`;
-            coursesTableEl.appendChild(row);
-          });
-          coursesComplete = true;
-        } else {
-          coursesTableEl.innerHTML = "<tr><td colspan='3'>No courses match the filter</td></tr>";
-        }
+  courses.forEach((c, i) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${c.courseCode}</td>
+      <td>${c.courseTitle}</td>
+      <td>${c.semester === 1 ? 'First Semester' : c.semester === 2 ? 'Second Semester' : c.semester}</td>
+    `;
+    coursesTableEl.appendChild(row);
+  });
+  coursesComplete = true;
+} else {
+  coursesTableEl.innerHTML = "<tr><td colspan='4'>No courses match the filter</td></tr>";
+}
       } else {
         coursesTableEl.innerHTML = "<tr><td colspan='3'>No courses registered</td></tr>";
         coursesWarningEl.textContent = "Courses to be registered for are not complete";
