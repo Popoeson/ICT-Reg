@@ -454,6 +454,43 @@ if (!studentId) {
 
 document.getElementById("verifyBtn").style.display = "block";
 
+// SHOW VERIFIED BADGE IF ALREADY VERIFIED
+if (s.verified === true) {
+  document.getElementById("verifyBtn").style.display = "none";
+  document.getElementById("verifiedBadge").style.display = "flex";
+} else {
+  document.getElementById("verifyBtn").style.display = "block";
+}
+
+// Verify Logic 
+document.getElementById("verifyBtn").addEventListener("click", async () => {
+  if (!confirm("Are you sure you want to verify this student?")) return;
+
+  try {
+    const response = await fetch(`${backendURL}/api/students/verify/${studentId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Hide button
+      document.getElementById("verifyBtn").style.display = "none";
+
+      // Show verified badge
+      document.getElementById("verifiedBadge").style.display = "flex";
+
+      alert("Student verified successfully!");
+    } else {
+      alert("Failed to verify: " + result.message);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Server error verifying student.");
+  }
+});
+
       // ===== Personal info =====
       const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ") || "N/A";
       document.getElementById("studentEmail").textContent = s.email || "N/A";
