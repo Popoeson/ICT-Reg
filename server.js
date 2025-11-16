@@ -1345,9 +1345,9 @@ app.get("/api/registered-courses", async (req, res) => {
 // === REGISTER A COURSE ===
 app.post("/api/course-register", async (req, res) => {
   try {
-    const { matricNumber, studentName, department, level, courseCode, courseTitle, pin } = req.body;
+    const { matricNumber, studentName, department, level, courseCode, courseTitle, semester, pin } = req.body;
 
-    if (!matricNumber || !department || !level || !courseCode || !pin) {
+    if (!matricNumber || !department || !level || !courseCode || !semester || !pin) {
       return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
