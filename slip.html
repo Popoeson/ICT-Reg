@@ -149,18 +149,18 @@
 
     try {
       // STUDENT INFO
-      const studentRes = await fetch(`${backendURL}/api/students/${studentId}`);
-      const studentData = await studentRes.json();
-      if (!studentRes.ok || !studentData.success || !studentData.student) throw new Error("Failed to fetch student info");
+const studentRes = await fetch(`${backendURL}/api/students/${studentId}`);
+const studentData = await studentRes.json();
+if (!studentRes.ok || !studentData.success || !studentData.student) throw new Error("Failed to fetch student info");
 
-      student = studentData.student;
-      passportEl.src = student.passport || "https://via.placeholder.com/100";
-      fullNameEl.textContent = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ");
-      matricEl.textContent = student.matricNo || "N/A";
-      deptEl.textContent = student.department || "N/A";
-      levelEl.textContent = student.level || "N/A";
+student = studentData.student;
+passportEl.src = student.passport || "https://via.placeholder.com/100";
+fullNameEl.textContent = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ");
+matricEl.textContent = student.matricNo || "N/A";
+deptEl.textContent = student.department || "N/A";
+levelEl.textContent = student.level || "N/A";
 
-// GET FILTER VALUES FIRST
+// GET FILTER VALUES FIRST — ONLY ONCE
 const selectedLevel = filterLevelEl.value;
 const selectedSemester = filterSemesterEl.value;
 
@@ -170,9 +170,6 @@ if (!selectedSemester) {
 } else {
   semesterEl.textContent = selectedSemester;
 }
-
-      const selectedLevel = filterLevelEl.value;
-      const selectedSemester = filterSemesterEl.value;
 
       // COURSES
       const coursesRes = await fetch(`${backendURL}/api/registered-courses?matric=${encodeURIComponent(student.matricNo)}`);
