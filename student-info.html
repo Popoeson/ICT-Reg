@@ -497,16 +497,16 @@ if (!data.success || !data.student) {
   
       // ===== Personal info =====
       const nokFullName = [s.nokSurname, s.nokFirstname].filter(Boolean).join(" ") || "N/A";
-      document.getElementById("studentEmail").textContent = s.email || "N/A";
-      document.getElementById("studentPhone").textContent = s.phone || "N/A";
-      document.getElementById("dob").textContent = s.dob || "N/A";
-      document.getElementById("regNo").textContent = s.regNo || "N/A";
+      document.getElementById("studentEmail").textContent = student.email || "N/A";
+      document.getElementById("studentPhone").textContent = student.phone || "N/A";
+      document.getElementById("dob").textContent = student.dob || "N/A";
+      document.getElementById("regNo").textContent = student.regNo || "N/A";
       document.getElementById("studentState").textContent = s.stateOrigin || "N/A";
-      document.getElementById("studentLga").textContent = s.lgaOrigin || "N/A";
-      document.getElementById("studentAddress").textContent = s.address || "N/A";
+      document.getElementById("studentLga").textContent = student.lgaOrigin || "N/A";
+      document.getElementById("studentAddress").textContent = student.address || "N/A";
       document.getElementById("studentNokName").textContent = nokFullName;
-      document.getElementById("studentNokRelation").textContent = s.nokRelation || "N/A";
-      document.getElementById("studentNokPhone").textContent = s.nokPhone || "N/A";
+      document.getElementById("studentNokRelation").textContent = student.nokRelation || "N/A";
+      document.getElementById("studentNokPhone").textContent = student.nokPhone || "N/A";
 
       // ===== Helper functions =====
       const createThumbnail = (url, label) =>
