@@ -98,7 +98,7 @@ const studentProfileSchema = new mongoose.Schema({
   nokPhone: String,
   nokRelation: String,
   passport: String, // Cloudinary image URL
-}, { timestamps: true });
+}, { timestamps: true }),
   verified: { type: Boolean, default: false };
 
 const StudentProfile = mongoose.model("StudentProfile", studentProfileSchema);
