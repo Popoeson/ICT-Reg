@@ -246,13 +246,27 @@ if (!selectedSemester) {
   filterSemesterEl.addEventListener("change", loadSlip);
 
   // DOWNLOAD PDF (Standard A4 Print Layout)
+// Helper to convert image URL → Base64
+async function getBase64ImageFromUrl(url) {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
+
 downloadBtn.addEventListener("click", async () => {
   if (!window.jspdf || !window.jspdf.jsPDF) {
     alert("jsPDF library not loaded.");
     return;
   }
 
-  // 1️⃣ Create a hidden A4 print container
+  // Convert passport to Base64
+  const passportBase64 = await getBase64ImageFromUrl(passportEl.src);
+
+  // Create a hidden A4 print container
   const printArea = document.createElement("div");
   printArea.style.width = "794px";     // A4 width in px @ 96dpi
   printArea.style.minHeight = "1123px"; // A4 height
@@ -263,7 +277,7 @@ downloadBtn.addEventListener("click", async () => {
   printArea.style.position = "absolute";
   printArea.style.top = "-9999px";  // hide off-screen
 
-  // 2️⃣ Fill it with CLEAN A4 content (copied from your slip)
+  // Fill it with clean content
   printArea.innerHTML = `
     <div style="text-align:center;">
       <img src="upload/logo.jpg" style="height:70px;">
@@ -274,7 +288,7 @@ downloadBtn.addEventListener("click", async () => {
     <hr style="margin:20px 0;">
 
     <div style="display:flex; gap:20px;">
-      <img src="${passportEl.src}" style="width:120px;height:120px;border-radius:50%;border:2px solid #007bff;">
+      <img src="${passportBase64}" style="width:120px;height:120px;border-radius:50%;border:2px solid #007bff;">
       <div>
         <p><strong>Full Name:</strong> ${fullNameEl.textContent}</p>
         <p><strong>Matric No:</strong> ${matricEl.textContent}</p>
@@ -283,6 +297,8 @@ downloadBtn.addEventListener("click", async () => {
         <p><strong>Semester:</strong> ${semesterEl.textContent}</p>
       </div>
     </div>
+
+    <hr style="margin:20px 0;"> <!-- line after personal info -->
 
     <h3 style="margin-top:25px;">EXAM FEE PAYMENT</h3>
     <p><strong>Status:</strong> ${paymentStatusEl.textContent}</p>
@@ -319,7 +335,7 @@ downloadBtn.addEventListener("click", async () => {
 
   document.body.appendChild(printArea);
 
-  // 3️⃣ Convert this clean print layout → PDF
+  // Convert to PDF
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF("p", "pt", "a4");
 
@@ -332,10 +348,9 @@ downloadBtn.addEventListener("click", async () => {
 
   pdf.save(`Exam_Slip_${matricEl.textContent}.pdf`);
 
-  // 4️⃣ Remove hidden area after rendering
+  // Clean up
   document.body.removeChild(printArea);
 });
-
 })();
 </script>
 </body>
