@@ -459,6 +459,17 @@ if (!studentIdFromURL) {
       document.getElementById("studentMatric").textContent = student.matricNo || "N/A";  
       document.getElementById("studentLevel").textContent = student.level || "N/A";  
 
+// ==== Admin Role Permissions ====
+const adminRole = localStorage.getItem("adminRole")?.toLowerCase() || "";
+
+// Roles allowed to verify student
+const canVerify = adminRole.includes("super") || adminRole.includes("admin");
+
+// Hide verify button for Head Admin
+if (!canVerify) {
+  document.getElementById("verifyBtn").style.display = "none";
+}
+
       // ===== Show/Hide Verify Button =====
       if (student.verified === true) {  
         document.getElementById("verifyBtn").style.display = "none";  
