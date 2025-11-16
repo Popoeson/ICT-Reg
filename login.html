@@ -166,7 +166,7 @@ form.addEventListener("submit", async (e) => {
       window.location.href = "dashboard.html";
 
     // Admin logins: Super Admin, Head Admin, Cashier
-    } else if (["superadmin", "headadmin" "admin", "cashier"].includes(normalizedRole)) {
+    } else if (["superadmin", "headadmin", "admin", "cashier"].includes(normalizedRole)) {
       localStorage.setItem("adminName", user.fullname);
       localStorage.setItem("adminRole", role);
       localStorage.setItem("adminDepartment", user.department || "");
