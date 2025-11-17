@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Download Student Records</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+    }
+
+    header {
+      background: #222;
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .bulk-btn {
+      background: #28a745;
+      color: white;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      padding: 15px;
+      background: white;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .filters input,
+    .filters select {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .container {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 15px;
+      text-align: center;
+    }
+
+    .card img {
+      width: 80px;
+      height: 80px;
+      border-radius: 6px;
+      object-fit: cover;
+      margin-bottom: 10px;
+      border: 2px solid #ddd;
+    }
+
+    .card h3 {
+      margin: 5px 0;
+      font-size: 18px;
+    }
+
+    .card p {
+      margin: 3px 0;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .download-btn {
+      margin-top: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Download Student Records</h1>
+  <button class="bulk-btn" id="bulkDownloadBtn">Download All (ZIP)</button>
+</header>
+
+<div class="filters">
+  <input type="text" id="searchInput" placeholder="Search by name or matric..." />
+  
+  <select id="deptFilter">
+    <option value="">Filter by Department</option>
+    <option value="Computer Science">Computer Science</option>
+    <option value="Computer Engineering">Computer Engineering</option>
+    <option value="Electrical Engineering">Electrical Engineering</option>
+    <option value="Science Lab Tech">Science Lab Tech</option>
+    <option value="Business Admin">Business Admin</option>
+    <option value="Estate Management">Estate Management</option>
+    <option value="Accountancy">Accountancy</option>
+    <option value="Mass Communication">Mass Communication</option>
+    <option value="Medical Lab Tech">Medical Lab Tech</option>
+  </select>
+
+  <select id="levelFilter">
+    <option value="">Filter by Level</option>
+    <option value="ND 1">ND 1</option>
+    <option value="ND 2">ND 2</option>
+    <option value="HND 1">HND 1</option>
+    <option value="HND 2">HND 2</option>
+  </select>
+</div>
+
+<div class="container" id="studentsContainer">
+  <!-- Cards will be injected here -->
+</div>
+
+<script>
+const backendURL = "https://ict-reg.onrender.com";
+
+// --------- CHECK ADMIN SESSION ----------
+if (!localStorage.getItem("adminToken")) {
+  alert("Access denied. Admin login required.");
+  window.location.href = "admin-login.html";
+}
+
+// --------- FETCH ALL STUDENTS ----------
+let allStudents = [];
+
+async function loadStudents() {
+  try {
+    const res = await fetch(`${backendURL}/api/students`);
+    allStudents = await res.json();
+    renderCards(allStudents);
+  } catch (err) {
+    console.error(err);
+    alert("Could not load students.");
+  }
+}
+
+loadStudents();
+
+
+// --------- RENDER STUDENT CARDS ----------
+function renderCards(list) {
+  const container = document.getElementById("studentsContainer");
+  container.innerHTML = "";
+
+  if (list.length === 0) {
+    container.innerHTML = "<p>No students found.</p>";
+    return;
+  }
+
+  list.forEach(student => {
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <img src="${student.passport || 'default.png'}" alt="Passport" />
+      <h3>${student.name}</h3>
+      <p><strong>${student.matricNumber}</strong></p>
+      <p>Dept: ${student.department}</p>
+      <p>Level: ${student.level}</p>
+      
+      <button class="download-btn" onclick="downloadSingle('${student._id}', '${student.name}')">
+        Download Info
+      </button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+
+// --------- SEARCH + FILTER LOGIC ----------
+document.getElementById("searchInput").addEventListener("input", applyFilters);
+document.getElementById("deptFilter").addEventListener("change", applyFilters);
+document.getElementById("levelFilter").addEventListener("change", applyFilters);
+
+function applyFilters() {
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const dept = document.getElementById("deptFilter").value;
+  const level = document.getElementById("levelFilter").value;
+
+  const filtered = allStudents.filter(s => {
+    const matchesSearch =
+      s.name.toLowerCase().includes(search) ||
+      s.matricNumber.toLowerCase().includes(search);
+
+    const matchesDept = dept ? s.department === dept : true;
+    const matchesLevel = level ? s.level === level : true;
+
+    return matchesSearch && matchesDept && matchesLevel;
+  });
+
+  renderCards(filtered);
+}
+
+
+// --------- DOWNLOAD SINGLE STUDENT ZIP ----------
+async function downloadSingle(id, name) {
+  try {
+    const res = await fetch(`${backendURL}/api/pdf/student/${id}`);
+    if (!res.ok) return alert("Failed to generate PDF.");
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name.replace(/\s+/g, "_")}_Info.zip`;
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(err);
+    alert("Error downloading student info.");
+  }
+}
+
+
+// --------- BULK DOWNLOAD ZIP ----------
+document.getElementById("bulkDownloadBtn").addEventListener("click", async () => {
+  if (!confirm("Download all student records as ZIP?")) return;
+
+  try {
+    const res = await fetch(`${backendURL}/api/pdf/all-students`);
+    if (!res.ok) return alert("Failed to download bulk ZIP.");
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "All_Students_Records.zip";
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(err);
+    alert("Bulk download failed.");
+  }
+});
+</script>
+
+</body>
+</html>
