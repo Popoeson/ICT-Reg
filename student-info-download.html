@@ -1,268 +1,322 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Download Student Records</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Info Download | ICT Registration Portal</title>
   <style>
+    :root {
+      --primary-color: #007bff;
+      --bg-color: #f5f7fa;
+      --text-color: #333;
+      --card-bg: #fff;
+    }
+
     body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
       margin: 0;
       padding: 0;
-      font-family: Arial, sans-serif;
-      background: #f3f4f6;
     }
 
     header {
-      background: #222;
+      background-color: var(--primary-color);
       color: white;
-      padding: 20px;
+      padding: 15px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
     }
 
     header h1 {
       margin: 0;
-      font-size: 22px;
-    }
-
-    .bulk-btn {
-      background: #28a745;
-      color: white;
-      padding: 10px 18px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
+      font-size: 1.5rem;
     }
 
     .filters {
       display: flex;
       gap: 10px;
-      padding: 15px;
-      background: white;
-      border-bottom: 1px solid #ddd;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
-    .filters input,
-    .filters select {
-      padding: 10px;
+    .filters input, .filters select, .filters button {
+      padding: 6px 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 0.9rem;
+    }
+
+    .filters input, .filters select {
       border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
     }
 
-    .container {
+    .filters button {
+      background-color: white;
+      color: var(--primary-color);
+      cursor: pointer;
+      font-weight: 500;
+      transition: 0.3s;
+    }
+
+    .filters button:hover {
+      background-color: #e9ecef;
+    }
+
+    main {
       padding: 20px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 20px;
     }
 
-    .card {
-      background: white;
+    .students-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .student-card {
+      background-color: var(--card-bg);
       border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       padding: 15px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .student-card img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--primary-color);
+    }
+
+    .student-card h3 {
+      margin: 5px 0;
+      font-size: 1.1rem;
+      color: var(--text-color);
       text-align: center;
     }
 
-    .card img {
-      width: 80px;
-      height: 80px;
-      border-radius: 6px;
-      object-fit: cover;
-      margin-bottom: 10px;
-      border: 2px solid #ddd;
-    }
-
-    .card h3 {
-      margin: 5px 0;
-      font-size: 18px;
-    }
-
-    .card p {
-      margin: 3px 0;
-      font-size: 14px;
+    .student-card p {
+      margin: 2px 0;
+      font-size: 0.95rem;
       color: #555;
     }
 
     .download-btn {
-      margin-top: 10px;
-      background: #007bff;
-      color: white;
+      padding: 6px 12px;
       border: none;
-      padding: 8px 12px;
-      border-radius: 6px;
+      border-radius: 5px;
+      background-color: var(--primary-color);
+      color: white;
       cursor: pointer;
-      font-size: 14px;
+      transition: 0.3s;
+      font-weight: 500;
+    }
+
+    .download-btn:hover {
+      background-color: #0056b3;
+    }
+
+    footer {
+      text-align: center;
+      padding: 15px;
+      margin-top: 30px;
+      background-color: white;
+      border-top: 1px solid #ddd;
+      font-size: 0.9rem;
+      color: #555;
     }
   </style>
 </head>
-
 <body>
 
 <header>
-  <h1>Download Student Records</h1>
-  <button class="bulk-btn" id="bulkDownloadBtn">Download All (ZIP)</button>
+  <h1>Student Info Download</h1>
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="Search by name or matric number">
+    <select id="levelFilter">
+      <option value="">All Levels</option>
+      <option value="ND1">ND1</option>
+      <option value="ND2">ND2</option>
+      <option value="HND1">HND1</option>
+      <option value="HND2">HND2</option>
+    </select>
+    <select id="deptFilter">
+      <option value="">All Departments</option>
+      <option value="Computer Science">Computer Science</option>
+      <option value="Computer Engineering">Computer Engineering</option>
+      <option value="Accountancy">Accountancy</option>
+      <option value="Business Admin">Business Admin</option>
+      <option value="Electrical Engineering">Electrical Engineering</option>
+      <option value="Estate Management">Estate Management</option>
+      <option value="OTM">OTM</option>
+    </select>
+    <button id="bulkDownloadBtn">Bulk Download</button>
+  </div>
 </header>
 
-<div class="filters">
-  <input type="text" id="searchInput" placeholder="Search by name or matric..." />
-  
-  <select id="deptFilter">
-    <option value="">Filter by Department</option>
-    <option value="Computer Science">Computer Science</option>
-    <option value="Computer Engineering">Computer Engineering</option>
-    <option value="Electrical Engineering">Electrical Engineering</option>
-    <option value="Science Lab Tech">Science Lab Tech</option>
-    <option value="Business Admin">Business Admin</option>
-    <option value="Estate Management">Estate Management</option>
-    <option value="Accountancy">Accountancy</option>
-    <option value="Mass Communication">Mass Communication</option>
-    <option value="Medical Lab Tech">Medical Lab Tech</option>
-  </select>
+<main>
+  <div class="students-container" id="studentsContainer">
+    <!-- Student cards will be injected here -->
+  </div>
+</main>
 
-  <select id="levelFilter">
-    <option value="">Filter by Level</option>
-    <option value="ND 1">ND 1</option>
-    <option value="ND 2">ND 2</option>
-    <option value="HND 1">HND 1</option>
-    <option value="HND 2">HND 2</option>
-  </select>
-</div>
-
-<div class="container" id="studentsContainer">
-  <!-- Cards will be injected here -->
-</div>
+<footer>
+  © 2025 ICT Registration Portal – All Rights Reserved.
+</footer>
 
 <script>
 const backendURL = "https://ict-reg.onrender.com";
 
-// --------- CHECK ADMIN SESSION ----------
-if (!localStorage.getItem("adminToken")) {
-  alert("Access denied. Admin login required.");
-  window.location.href = "admin-login.html";
+// ===== Admin Access Control (like Admin Dashboard) =====
+const adminName = localStorage.getItem("adminName");
+const adminRole = localStorage.getItem("adminRole");
+const adminDepartment = localStorage.getItem("adminDepartment");
+
+if (!adminName || !adminRole) {
+  window.location.href = "login.html";
 }
 
-// --------- FETCH ALL STUDENTS ----------
-let allStudents = [];
+const role = adminRole.toLowerCase().replace(/\s/g, "");
+const isSuperAdmin = role === "superadmin";
+const isHeadAdmin = role === "headadmin";
+const isAdmin = role === "admin";
+const isCashier = role === "cashier";
 
-async function loadStudents() {
+if (isCashier) {
+  alert("Access Denied!");
+  window.location.href = "login.html";
+}
+
+// ===== Fetch Students =====
+let studentsList = [];
+
+async function fetchStudents() {
   try {
-    const res = await fetch(`${backendURL}/api/students`);
-    allStudents = await res.json();
-    renderCards(allStudents);
+    const res = await fetch(`${backendURL}/api/students?limit=10000`);
+    const data = await res.json();
+    studentsList = data.success ? data.data || [] : [];
+
+    // Filter by department if not super admin
+    if (!isSuperAdmin && !isHeadAdmin && adminDepartment) {
+      studentsList = studentsList.filter(s => s.department?.toLowerCase() === adminDepartment.toLowerCase());
+    }
+
+    renderStudents(studentsList);
   } catch (err) {
-    console.error(err);
-    alert("Could not load students.");
+    console.error("Error fetching students:", err);
   }
 }
 
-loadStudents();
+// ===== Render Students =====
+const studentsContainer = document.getElementById("studentsContainer");
 
-
-// --------- RENDER STUDENT CARDS ----------
-function renderCards(list) {
-  const container = document.getElementById("studentsContainer");
-  container.innerHTML = "";
-
+function renderStudents(list) {
+  studentsContainer.innerHTML = "";
   if (list.length === 0) {
-    container.innerHTML = "<p>No students found.</p>";
+    studentsContainer.innerHTML = "<p>No students found.</p>";
     return;
   }
 
   list.forEach(student => {
-    const div = document.createElement("div");
-    div.className = "card";
+    const card = document.createElement("div");
+    card.className = "student-card";
 
-    div.innerHTML = `
-      <img src="${student.passport || 'default.png'}" alt="Passport" />
-      <h3>${student.name}</h3>
-      <p><strong>${student.matricNumber}</strong></p>
-      <p>Dept: ${student.department}</p>
+    card.innerHTML = `
+      <img src="${student.passport || 'https://via.placeholder.com/80'}" alt="Passport">
+      <h3>${student.studentName}</h3>
+      <p>Department: ${student.department}</p>
       <p>Level: ${student.level}</p>
-      
-      <button class="download-btn" onclick="downloadSingle('${student._id}', '${student.name}')">
-        Download Info
-      </button>
+      <button class="download-btn" data-id="${student._id}">Download Info</button>
     `;
 
-    container.appendChild(div);
+    studentsContainer.appendChild(card);
+  });
+
+  // Add single download listeners
+  document.querySelectorAll(".download-btn").forEach(btn => {
+    btn.addEventListener("click", () => downloadSingleStudent(btn.dataset.id));
   });
 }
 
-
-// --------- SEARCH + FILTER LOGIC ----------
-document.getElementById("searchInput").addEventListener("input", applyFilters);
-document.getElementById("deptFilter").addEventListener("change", applyFilters);
-document.getElementById("levelFilter").addEventListener("change", applyFilters);
-
-function applyFilters() {
-  const search = document.getElementById("searchInput").value.toLowerCase();
-  const dept = document.getElementById("deptFilter").value;
-  const level = document.getElementById("levelFilter").value;
-
-  const filtered = allStudents.filter(s => {
-    const matchesSearch =
-      s.name.toLowerCase().includes(search) ||
-      s.matricNumber.toLowerCase().includes(search);
-
-    const matchesDept = dept ? s.department === dept : true;
-    const matchesLevel = level ? s.level === level : true;
-
-    return matchesSearch && matchesDept && matchesLevel;
-  });
-
-  renderCards(filtered);
-}
-
-
-// --------- DOWNLOAD SINGLE STUDENT ZIP ----------
-async function downloadSingle(id, name) {
+// ===== Single Student Download =====
+async function downloadSingleStudent(studentId) {
   try {
-    const res = await fetch(`${backendURL}/api/pdf/student/${id}`);
-    if (!res.ok) return alert("Failed to generate PDF.");
-
+    const res = await fetch(`${backendURL}/api/students/${studentId}/download`, {
+      method: "GET"
+    });
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
-
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${name.replace(/\s+/g, "_")}_Info.zip`;
+    a.download = `student_${studentId}.zip`;
+    document.body.appendChild(a);
     a.click();
-
+    a.remove();
     window.URL.revokeObjectURL(url);
   } catch (err) {
-    console.error(err);
-    alert("Error downloading student info.");
+    console.error("Error downloading student info:", err);
   }
 }
 
-
-// --------- BULK DOWNLOAD ZIP ----------
+// ===== Bulk Download =====
 document.getElementById("bulkDownloadBtn").addEventListener("click", async () => {
-  if (!confirm("Download all student records as ZIP?")) return;
-
   try {
-    const res = await fetch(`${backendURL}/api/pdf/all-students`);
-    if (!res.ok) return alert("Failed to download bulk ZIP.");
-
+    const res = await fetch(`${backendURL}/api/students/download/all`, {
+      method: "GET"
+    });
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
-
     const a = document.createElement("a");
     a.href = url;
-    a.download = "All_Students_Records.zip";
+    a.download = `all_students.zip`;
+    document.body.appendChild(a);
     a.click();
-
+    a.remove();
     window.URL.revokeObjectURL(url);
   } catch (err) {
-    console.error(err);
-    alert("Bulk download failed.");
+    console.error("Error downloading all students info:", err);
   }
 });
+
+// ===== Search & Filter =====
+const searchInput = document.getElementById("searchInput");
+const levelFilter = document.getElementById("levelFilter");
+const deptFilter = document.getElementById("deptFilter");
+
+function applyFilters() {
+  let filtered = studentsList;
+
+  const searchVal = searchInput.value.toLowerCase().trim();
+  if (searchVal) {
+    filtered = filtered.filter(s => 
+      s.studentName.toLowerCase().includes(searchVal) || 
+      s.matricNumber.toLowerCase().includes(searchVal)
+    );
+  }
+
+  const levelVal = levelFilter.value;
+  if (levelVal) filtered = filtered.filter(s => s.level === levelVal);
+
+  const deptVal = deptFilter.value;
+  if (deptVal) filtered = filtered.filter(s => s.department === deptVal);
+
+  renderStudents(filtered);
+}
+
+searchInput.addEventListener("input", applyFilters);
+levelFilter.addEventListener("change", applyFilters);
+deptFilter.addEventListener("change", applyFilters);
+
+// ===== Initial Fetch =====
+fetchStudents();
 </script>
 
 </body>
