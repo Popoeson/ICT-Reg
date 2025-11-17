@@ -25,55 +25,56 @@
 
     /* ===== HEADER ===== */
     header {
-  background-color: #1e73be;
-  color: #fff;
-  padding: 10px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  position: relative;
-}
+      background-color: #1e73be;
+      color: #fff;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      position: relative;
+    }
 
-header img {
-  height: 50px;
-  border-radius: 20px;
-  flex-shrink: 0; /* never shrink */
-}
+    header img {
+      height: 50px;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
 
-header h1 {
-  font-size: 18px;
-  font-weight: 500;
-  flex: 1;               /* take remaining space */
-  text-align: center;    /* centered */
-  white-space: nowrap;   /* prevent line break */
-  overflow: hidden;      /* cut overflow */
-  text-overflow: ellipsis; /* show ... if too long */
-  margin: 0 10px;
-}
+    header h1 {
+      font-size: 18px;
+      font-weight: 500;
+      flex: 1;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 0 10px;
+    }
 
-#logoutBtn {
-  background: #1e73be;
-  color: #fff;
-  border: none;
-  padding: 5px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 14px;
-  flex-shrink: 0; /* never shrink */
-}
+    #logoutBtn {
+      background: #1e73be;
+      color: #fff;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
 
-@media (max-width: 500px) {
-  header h1 {
-    font-size: 16px; /* smaller heading */
-  }
-  #logoutBtn {
-    padding: 4px 8px; /* smaller button */
-    font-size: 13px;
-  }
-}
-    /* ===== LOADING BAR ===== */
+    @media (max-width: 500px) {
+      header h1 {
+        font-size: 16px;
+      }
+      #logoutBtn {
+        padding: 4px 8px;
+        font-size: 13px;
+      }
+    }
+
+    /* Loading bar */
     #loadingBar {
       position: absolute;
       bottom: 0;
@@ -84,7 +85,7 @@ header h1 {
       transition: width 0.4s ease;
     }
 
-    /* ===== HERO CARD ===== */
+    /* HERO */
     .hero {
       max-width: 1000px;
       margin: 30px auto;
@@ -95,6 +96,20 @@ header h1 {
       display: flex;
       align-items: center;
       gap: 20px;
+      position: relative;
+    }
+
+    /* VERIFIED ICON */
+    .verified-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #00c853;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 50%;
+      font-size: 18px;
+      display: none; /* hidden by default */
     }
 
     .hero img {
@@ -116,7 +131,7 @@ header h1 {
       font-size: 15px;
     }
 
-    /* ===== CARDS SECTION ===== */
+    /* CARDS */
     .cards-section {
       max-width: 1000px;
       margin: 20px auto 50px;
@@ -159,7 +174,6 @@ header h1 {
       color: #555;
     }
 
-    /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
       .hero {
         flex-direction: column;
@@ -170,32 +184,39 @@ header h1 {
         margin-bottom: 10px;
       }
     }
- 
- .footer-bottom {
-  text-align: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+    .footer-bottom {
+      text-align: center;
+      margin-top: 30px;
+      padding: 10px;
+      color: #666;
+    }
   </style>
 </head>
+
 <body>
+
   <!-- HEADER -->
-<header>
-  <div class="logo">
-    <img src="upload/logo.jpg" alt="School Logo">
-  </div>
+  <header>
+    <div class="logo">
+      <img src="upload/logo.jpg" alt="School Logo">
+    </div>
 
-  <h1>Student Dashboard</h1>
+    <h1>Student Dashboard</h1>
 
-  <button id="logoutBtn">Logout</button>
+    <button id="logoutBtn">Logout</button>
 
-  <div id="loadingBar"></div>
-</header>
-
-  <div id="loadingBar"></div>
-</header>
+    <div id="loadingBar"></div>
+  </header>
 
   <!-- HERO SECTION -->
   <section class="hero">
+    <div id="verifiedIcon" class="verified-badge">
+      <i class="ri-verified-badge-fill"></i>
+    </div>
+
     <img id="studentPassport" src="student-pic.jpg" alt="Student Photo">
+
     <div class="hero-details">
       <h2 id="welcomeNote">Welcome, Student 👋</h2>
       <p><strong>Matric No:</strong> <span id="matricNumber"> </span></p>
@@ -231,70 +252,73 @@ header h1 {
     </a>
   </section>
 
-      <div class="footer-bottom">
+  <div class="footer-bottom">
     <p>© 2025 TechWise. All rights reserved.</p>
   </div>
 
   <script>
-  const loadingBar = document.getElementById("loadingBar");
-  const studentData = JSON.parse(localStorage.getItem("studentData"));
-  const studentId = localStorage.getItem("studentId");
+    const loadingBar = document.getElementById("loadingBar");
+    const studentData = JSON.parse(localStorage.getItem("studentData"));
+    const studentId = localStorage.getItem("studentId");
 
-  // Function to simulate progress bar animation
-  function startLoadingBar() {
-    loadingBar.style.width = "30%";
-    setTimeout(() => (loadingBar.style.width = "60%"), 300);
-    setTimeout(() => (loadingBar.style.width = "85%"), 800);
-  }
+    const verifiedIcon = document.getElementById("verifiedIcon");
 
-  function finishLoadingBar() {
-    loadingBar.style.width = "100%";
-    setTimeout(() => {
-      loadingBar.style.opacity = "0";
-    }, 400);
-  }
+    function startLoadingBar() {
+      loadingBar.style.width = "30%";
+      setTimeout(() => loadingBar.style.width = "60%", 300);
+      setTimeout(() => loadingBar.style.width = "85%", 800);
+    }
 
-  if (!studentData || !studentId) {
-    window.location.href = "login.html";
-  } else {
-    startLoadingBar();
-    const backendUrl = `https://ict-reg.onrender.com/api/students/${studentId}`;
+    function finishLoadingBar() {
+      loadingBar.style.width = "100%";
+      setTimeout(() => loadingBar.style.opacity = "0", 400);
+    }
 
-    fetch(backendUrl)
-      .then(res => res.json())
-      .then(data => {
-        finishLoadingBar();
-        if (data.success && data.student) {
-          const student = data.student;
-          localStorage.setItem("studentData", JSON.stringify(student));
+    if (!studentData || !studentId) {
+      window.location.href = "login.html";
+    } else {
+      startLoadingBar();
 
-          const fullName = [student.surname, student.firstname, student.middlename]
-            .filter(Boolean)
-            .join(" ");
+      fetch(`https://ict-reg.onrender.com/api/students/${studentId}`)
+        .then(res => res.json())
+        .then(data => {
+          finishLoadingBar();
 
-          document.getElementById("welcomeNote").textContent = `Welcome, ${fullName || "Student"} 👋`;
-          document.getElementById("matricNumber").textContent = student.matricNo || "N/A";
-          document.getElementById("level").textContent = student.level || "N/A";
-          document.getElementById("department").textContent = student.department || "N/A";
-          document.getElementById("studentPassport").src = student.passport || "student-pic.jpg";
-        } else {
-          console.error("⚠️ Failed to fetch full student info:", data);
-        }
-      })
-      .catch(err => {
-        finishLoadingBar();
-        console.error("❌ Error fetching student data:", err);
-      });
-  }
+          if (data.success && data.student) {
+            const student = data.student;
 
-// LOGOUT BUTTON
-document.getElementById("logoutBtn").addEventListener("click", () => {
-  if (confirm("Are you sure you want to logout?")) {
-    localStorage.removeItem("studentData");
-    localStorage.removeItem("studentId");
-    window.location.href = "login.html";
-  }
-});
+            localStorage.setItem("studentData", JSON.stringify(student));
+
+            const fullName = [student.surname, student.firstname, student.middlename]
+              .filter(Boolean)
+              .join(" ");
+
+            document.getElementById("welcomeNote").textContent = `Welcome, ${fullName || "Student"} 👋`;
+            document.getElementById("matricNumber").textContent = student.matricNo || "N/A";
+            document.getElementById("level").textContent = student.level || "N/A";
+            document.getElementById("department").textContent = student.department || "N/A";
+            document.getElementById("studentPassport").src = student.passport || "student-pic.jpg";
+
+            // 👉 SHOW VERIFIED BADGE IF VERIFIED
+            if (student.verified === true) {
+              verifiedIcon.style.display = "block";
+            }
+          }
+        })
+        .catch(err => {
+          finishLoadingBar();
+          console.error("❌ Error fetching student data:", err);
+        });
+    }
+
+    // LOGOUT
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      if (confirm("Are you sure you want to logout?")) {
+        localStorage.removeItem("studentData");
+        localStorage.removeItem("studentId");
+        window.location.href = "login.html";
+      }
+    });
   </script>
 </body>
 </html>
