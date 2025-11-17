@@ -11,71 +11,80 @@
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: "Poppins", sans-serif;
-    }
+    /* ===========================
+   GLOBAL STYLES
+=========================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
 
-    body {
-      background-color: #f5f8ff;
-      color: #333;
-    }
+body {
+  background-color: #f5f8ff;
+  color: #333;
+}
 
-    /* ===== HEADER ===== */
-    header {
-      background-color: #1e73be;
-      color: #fff;
-      padding: 10px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      position: relative;
-    }
+/* ===========================
+   HEADER
+=========================== */
+header {
+  background-color: #1e73be;
+  color: #fff;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
 
-    header img {
-      height: 50px;
-      border-radius: 20px;
-      flex-shrink: 0;
-    }
+header img {
+  height: 50px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
 
-    header h1 {
-      font-size: 18px;
-      font-weight: 500;
-      flex: 1;
-      text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin: 0 10px;
-    }
+header h1 {
+  font-size: 18px;
+  font-weight: 500;
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0 10px;
+}
 
-    #logoutBtn {
-      background: #1e73be;
-      color: #fff;
-      border: none;
-      padding: 5px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
+#logoutBtn {
+  background: #1e73be;
+  color: #fff;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  flex-shrink: 0;
+}
 
-    /* ===== LOADING BAR ===== */
-    #loadingBar {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      height: 3px;
-      width: 0%;
-      background-color: #00ff6a;
-      transition: width 0.4s ease;
-    }
+/* ===========================
+   LOADING BAR
+=========================== */
+#loadingBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background-color: #00ff6a;
+  transition: width 0.4s ease;
+}
 
-    /* ===== HERO ===== */
+/* ===========================
+   HERO SECTION
+=========================== */
 .hero {
   max-width: 1000px;
   margin: 30px auto;
@@ -87,10 +96,33 @@
   align-items: center;
   gap: 20px;
   position: relative;
-  flex-wrap: wrap; /* allow stacking on small screens */
+  flex-wrap: wrap;
 }
 
-/* VERIFIED / NOT VERIFIED BADGE (Fixed Version) */
+/* HERO IMAGE */
+.hero img {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #1e73be;
+}
+
+/* HERO DETAILS */
+.hero-details h2 {
+  color: #1e73be;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.hero-details p {
+  margin: 3px 0;
+  font-size: 15px;
+}
+
+/* ===========================
+   VERIFIED BADGE
+=========================== */
 .verify-wrapper {
   position: absolute;
   top: 12px;
@@ -98,7 +130,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  z-index: 50; /* keep it above everything */
+  z-index: 50;
   display: none; /* JS will show it */
 }
 
@@ -120,95 +152,71 @@
   font-weight: 600;
   text-align: center;
   color: #1e73be; /* BLUE TEXT */
-  background: rgba(30,115,190,0.1);
+  background: rgba(30, 115, 190, 0.1);
   padding: 2px 6px;
   border-radius: 6px;
 }
 
-/* MOBILE — keep top-right, do NOT center */
+/* ===========================
+   CARDS SECTION
+=========================== */
+.cards-section {
+  max-width: 1000px;
+  margin: 20px auto 50px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background-color: #fff;
+  border-radius: 15px;
+  padding: 30px 25px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  transition: 0.25s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* ===========================
+   FOOTER
+=========================== */
+.footer-bottom {
+  text-align: center;
+  margin-top: 30px;
+  padding: 10px;
+  color: #666;
+}
+
+/* ===========================
+   MOBILE RESPONSIVE
+=========================== */
 @media (max-width: 600px) {
-  .verify-wrapper {
-    top: 10px;
-    right: 10px;
-    transform: none !important;
-  }
 
-  .hero {
-    padding-top: 70px; /* create space so badge doesn't overlap */
-  }
-}
-
-.hero img {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #1e73be;
-}
-
-.hero-details h2 {
-  color: #1e73be;
-  font-size: 22px;
-  margin-bottom: 8px;
-}
-
-.hero-details p {
-  margin: 3px 0;
-  font-size: 15px;
-}
-
-/* ===== MOBILE FIX ===== */
-@media (max-width: 600px) {
+  /* Hero content centers, badge stays top-right */
   .hero {
     flex-direction: column;
     text-align: center;
-    padding-top: 55px;
-  }
-
-  .verify-wrapper {
-    top: -10px; 
-    right: 50%;
-    transform: translateX(50%);
-    position: absolute;
+    padding-top: 70px; /* space so badge doesn’t overlap */
   }
 
   .hero img {
     margin-top: 10px;
   }
+
+  .verify-wrapper {
+    top: 10px;
+    right: 10px;
+    transform: none !important;
+  }
 }
-
-    /* CARDS */
-    .cards-section {
-      max-width: 1000px;
-      margin: 20px auto 50px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-    }
-
-    .card {
-      background-color: #fff;
-      border-radius: 15px;
-      padding: 30px 25px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-      text-align: center;
-      transition: 0.25s ease;
-      cursor: pointer;
-      text-decoration: none;
-      color: inherit;
-    }
-
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .footer-bottom {
-      text-align: center;
-      margin-top: 30px;
-      padding: 10px;
-      color: #666;
-    }
   </style>
 </head>
 
