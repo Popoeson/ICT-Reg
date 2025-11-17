@@ -157,7 +157,7 @@
   font-size: 15px;
 }
 
-/* ===== MOBILE FIX ===== */
+/* ===== MOBILE FIX ===== 
 @media (max-width: 600px) {
   .hero {
     flex-direction: column;
@@ -166,7 +166,7 @@
   }
 
   .verify-wrapper {
-    top: -10px; /* move above the card entirely */
+    top: -10px; 
     right: 50%;
     transform: translateX(50%);
     position: absolute;
@@ -175,7 +175,7 @@
   .hero img {
     margin-top: 10px;
   }
-}
+}*/
 
     /* CARDS */
     .cards-section {
@@ -330,12 +330,12 @@
               verifyIcon.classList.add("verified");
               verifyIcon.innerHTML = `<i class="ri-verified-badge-fill"></i>`;
               verifyText.textContent = "VERIFIED";
-              verifyText.style.color = "#28a745";
+              verifyText.style.color = "#1e73be";
             } else {
               verifyIcon.classList.add("not-verified");
               verifyIcon.innerHTML = `✖️`;
               verifyText.textContent = "NOT VERIFIED";
-              verifyText.style.color = "#d9534f";
+              verifyText.style.color = "#1e73be";
             }
           }
         })
