@@ -90,41 +90,51 @@
   flex-wrap: wrap; /* allow stacking on small screens */
 }
 
-/* VERIFIED / NOT VERIFIED BADGE */
+/* VERIFIED / NOT VERIFIED BADGE (Fixed Version) */
 .verify-wrapper {
   position: absolute;
   top: 12px;
   right: 12px;
-  text-align: center;
-  display: none; /* hidden until JS shows it */
-  z-index: 20;  /* stays above the hero content */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 50; /* keep it above everything */
+  display: none; /* JS will show it */
 }
 
 .verify-icon {
-  font-size: 28px;
+  font-size: 20px;
   width: 45px;
   height: 45px;
+  background: #1e73be; /* BLUE BACKGROUND */
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   color: #fff;
-  margin: 0 auto;
 }
 
 .verify-text {
-  font-size: 10px;
-  margin-top: 3px;
+  margin-top: 4px;
+  font-size: 11px;
   font-weight: 600;
-  width: 60px;
+  text-align: center;
+  color: #1e73be; /* BLUE TEXT */
+  background: rgba(30,115,190,0.1);
+  padding: 2px 6px;
+  border-radius: 6px;
 }
 
-/* Mobile: still keep it top-right */
+/* MOBILE — keep top-right, do NOT center */
 @media (max-width: 600px) {
   .verify-wrapper {
     top: 10px;
     right: 10px;
-    transform: none;
+    transform: none !important;
+  }
+
+  .hero {
+    padding-top: 70px; /* create space so badge doesn't overlap */
   }
 }
 
@@ -147,13 +157,13 @@
   font-size: 15px;
 }
 
-/* ===== MOBILE FIX ===== */
+/* ===== MOBILE FIX ===== 
 @media (max-width: 600px) {
   .hero {
     flex-direction: column;
     text-align: center;
     padding-top: 55px; /* give space so badge won’t cover content */
-  }
+  }*/
 
   .verify-wrapper {
     top: -10px; /* move above the card entirely */
