@@ -216,6 +216,11 @@
         <h3>Register Admin</h3>
       </div>
 
+     <div class="card" id="info-download-card">
+        <div class="icon">⬇️</div>
+        <h3>Get Student Info.</h3>
+      </div>
+
     </div>
   </main>
 
@@ -272,6 +277,7 @@ const registeredCoursesCard = document.getElementById("registered-courses-card")
 const pinCard = document.getElementById("pin-card");
 const paymentCard = document.getElementById("payment-card");
 const adminRegisterCard = document.getElementById("adminRegister-card");
+const infoDownloadCard = document.getElementById("info-download-card");
 
 // SHOW/HIDE CARDS BASED ON ROLE
 
@@ -355,6 +361,10 @@ paymentCard.addEventListener("click", () => {
 });
 adminRegisterCard.addEventListener("click", () => {
   window.location.href = "admin-register.html";
+});
+
+infoDownloadCard.addEventListener("click", () => {
+  window.location.href = "student-info-download.html";
 });
 
 // FETCH STATISTICS (with department filtering)
