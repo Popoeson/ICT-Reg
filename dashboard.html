@@ -76,73 +76,95 @@
     }
 
     /* ===== HERO ===== */
-    .hero {
-      max-width: 1000px;
-      margin: 30px auto;
-      background-color: #fff;
-      border-radius: 15px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-      padding: 25px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      position: relative;
-    }
+.hero {
+  max-width: 1000px;
+  margin: 30px auto;
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 25px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  flex-wrap: wrap; /* allow stacking on small screens */
+}
 
-    /* VERIFIED / NOT VERIFIED BADGE */
-    .verify-wrapper {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      text-align: center;
-      display: none; /* default hidden */
-    }
+/* VERIFIED / NOT VERIFIED BADGE */
+.verify-wrapper {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  text-align: center;
+  display: none; /* hidden until JS shows it */
+  z-index: 10;
+}
 
-    .verify-icon {
-      font-size: 28px;
-      width: 45px;
-      height: 45px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      color: #fff;
-      margin: 0 auto;
-    }
+.verify-icon {
+  font-size: 28px;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  margin: 0 auto;
+}
 
-    .verify-text {
-      font-size: 10px;
-      margin-top: 3px;
-      font-weight: 600;
-      width: 50px;
-    }
+.verify-text {
+  font-size: 10px;
+  margin-top: 3px;
+  font-weight: 600;
+  width: 55px;
+}
 
-    .verified {
-      background: #28a745;
-    }
+.verified {
+  background: #28a745;
+}
 
-    .not-verified {
-      background: #d9534f;
-    }
+.not-verified {
+  background: #d9534f;
+}
 
-    .hero img {
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid #1e73be;
-    }
+.hero img {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #1e73be;
+}
 
-    .hero-details h2 {
-      color: #1e73be;
-      font-size: 22px;
-      margin-bottom: 8px;
-    }
+.hero-details h2 {
+  color: #1e73be;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
 
-    .hero-details p {
-      margin: 3px 0;
-      font-size: 15px;
-    }
+.hero-details p {
+  margin: 3px 0;
+  font-size: 15px;
+}
+
+/* ===== MOBILE FIX ===== */
+@media (max-width: 600px) {
+  .hero {
+    flex-direction: column;
+    text-align: center;
+    padding-top: 55px; /* give space so badge won’t cover content */
+  }
+
+  .verify-wrapper {
+    top: -10px; /* move above the card entirely */
+    right: 50%;
+    transform: translateX(50%);
+    position: absolute;
+  }
+
+  .hero img {
+    margin-top: 10px;
+  }
+}
 
     /* CARDS */
     .cards-section {
