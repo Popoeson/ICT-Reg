@@ -1576,7 +1576,6 @@ app.put("/api/students/verify/matric/:matricNo", async (req, res) => {
   }
 });
 
-const Archiver = require("archiver");
 
 // =================== SINGLE STUDENT DOWNLOAD ===================
 app.get("/api/students/:id/download", async (req, res) => {
