@@ -1,529 +1,226 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Student Info Download | ICT Registration Portal</title>
-
-  <style>
-    :root{
-      --primary: #007bff;
-      --bg: #f5f7fa;
-      --card: #fff;
-      --muted: #6b7280;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    }
-    *{box-sizing:border-box;}
-    body{margin:0;background:var(--bg);color:#111;}
-
-    header{
-      background:var(--primary);
-      color:#fff;
-      padding:14px 18px;
-      display:flex;
-      gap:12px;
-      align-items:center;
-      justify-content:space-between;
-      flex-wrap:wrap;
-    }
-    header h1{font-size:1.2rem;margin:0;}
-    .header-right{display:flex;gap:8px;align-items:center;width:100%;flex-wrap:wrap;}
-    .filters{
-      display:flex;
-      gap:8px;
-      align-items:center;
-      background:rgba(255,255,255,0.06);
-      padding:8px;
-      border-radius:8px;
-      flex-wrap:wrap;
-      width:100%;
-    }
-    .filters input,.filters select{
-      padding:8px;
-      border-radius:6px;
-      border:1px solid rgba(0,0,0,0.08);
-      font-size:0.95rem;
-      background:#fff;
-      flex:1;
-      min-width:120px;
-    }
-    .filters button{
-      background:#fff;color:var(--primary);
-      border:none;padding:8px 10px;
-      border-radius:6px;
-      cursor:pointer;font-weight:600;
-    }
-    .filters button:disabled{opacity:0.6;cursor:not-allowed;}
-
-    main{padding:18px;max-width:1200px;margin:18px auto;}
-    .meta-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
-    .students-container{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-      gap:12px;
-    }
-
-    .student-card{
-      background:var(--card);
-      border-radius:8px;
-      padding:10px;
-      box-shadow:0 4px 10px rgba(0,0,0,0.06);
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:space-between;
-      min-height:72px;
-    }
-    .student-left{display:flex;gap:10px;align-items:center;flex:1;min-width:0}
-    .student-left img{width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--primary);flex-shrink:0}
-    .student-info{overflow:hidden}
-    .student-info h3{font-size:0.98rem;margin:0;color:#0b2b53;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .student-info p{margin:0;font-size:0.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .card-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
-    .download-btn{background:var(--primary);color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600}
-    .download-btn:disabled{opacity:0.6;cursor:not-allowed}
-    .small-muted{font-size:0.82rem;color:var(--muted)}
-
-    .pagination{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:16px;flex-wrap:wrap;}
-    .page-btn{padding:6px 10px;border-radius:6px;border:1px solid #e6eefc;background:#fff;cursor:pointer;}
-    .page-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
-    .page-info{font-size:0.9rem;color:var(--muted);}
-
-    .empty{padding:28px;text-align:center;color:var(--muted);}
-
-    @media (max-width:640px){
-      header{flex-direction:column;align-items:flex-start;}
-      .filters{flex-direction:column;align-items:stretch;gap:6px;width:100%;}
-      .filters input,.filters select,.filters button{width:100%;}
-      .student-card{flex-direction:column;align-items:flex-start;gap:6px;min-height:auto;}
-      .student-left{flex-direction:row;gap:8px;align-items:center;width:100%;}
-      .student-info h3,.student-info p{white-space:normal;overflow:visible;text-overflow:initial;}
-      .card-actions{flex-direction:row;justify-content:space-between;width:100%;}
-      .download-btn{padding:6px 8px;font-size:0.9rem;}
-    }
-
-    /* hidden print area (keeps styling for snapshot) */
-    .print-area { width:794px; padding:24px; background:#fff; color:#000; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
-    .print-header { text-align:center; margin-bottom:16px; }
-    .print-header img { height:70px; display:block; margin:0 auto 6px; }
-    .section-title { font-weight:700; color:var(--primary); margin:6px 0; }
-    .personal-grid { display:flex; gap:16px; align-items:flex-start; }
-    .personal-left img { width:120px; height:120px; object-fit:cover; border-radius:6px; border:2px solid var(--primary); }
-    .info-row { margin-bottom:6px; }
-    .doc-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
-    .doc-thumb { border:1px solid #ddd; padding:8px; border-radius:6px; text-align:center; font-size:12px;}
-    hr.section-sep { border:0; border-top:1px solid #ddd; margin:16px 0; }
-    table.results { width:100%; border-collapse:collapse; margin-top:8px; }
-    table.results th, table.results td { border:1px solid #ddd; padding:6px; font-size:12px; }
-    table.results th { background:var(--primary); color:#fff; }
-  </style>
-
-  <!-- jsPDF + html2canvas -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Information PDF</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    body {
+      background: #f2f2f2;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .container {
+      width: 750px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin: 0;
+      font-size: 22px;
+    }
+    .section-title {
+      font-size: 20px;
+      margin-top: 25px;
+      border-bottom: 2px solid #000;
+      padding-bottom: 5px;
+    }
+    .label {
+      font-weight: bold;
+    }
+    .passport {
+      width: 120px;
+      height: 130px;
+      object-fit: cover;
+      border: 2px solid #333;
+    }
+  </style>
 </head>
+
 <body>
-  <header>
-    <h1>Student Info Download</h1>
-    <div class="header-right">
-      <div class="filters" role="search" aria-label="filters">
-        <input id="searchInput" placeholder="Search name or matric" />
-        <select id="levelFilter" title="Filter by level">
-          <option value="">All Levels</option>
-          <option value="ND1">ND1</option>
-          <option value="ND2">ND2</option>
-          <option value="HND1">HND1</option>
-          <option value="HND2">HND2</option>
-        </select>
-        <select id="deptFilter" title="Filter by department">
-          <option value="">All Departments</option>
-          <option>Accountancy</option>
-          <option>Business Admin</option>
-          <option>Computer Science</option>
-          <option>Computer Engineering</option>
-          <option>Electrical Engineering</option>
-          <option>Mass Communication</option>
-          <option>Science Lab Tech</option>
-          <option>Estate Management</option>
-          <option>OTM</option>
-        </select>
-        <button id="bulkDownloadBtn" disabled>Bulk Download</button>
-      </div>
+
+<div class="container" id="pdfContent">
+
+  <!-- HEADER -->
+  <div style="text-align:center; margin-bottom:20px;">
+    <img id="schoolLogo" src="" alt="School Logo" style="width:100px; height:100px; object-fit:contain;">
+    <h2 id="schoolName"></h2>
+    <h3>STUDENT INFORMATION</h3>
+
+    <div id="verifyStatus" style="font-size:18px; margin-top:8px;"></div>
+  </div>
+
+  <!-- PERSONAL INFORMATION -->
+  <h3 class="section-title">Personal Information</h3>
+  <div style="display:flex; gap:20px;">
+    <img id="passport" class="passport" src="">
+    <div>
+      <p><span class="label">Full Name:</span> <span id="fullName"></span></p>
+      <p><span class="label">Matric Number:</span> <span id="matricNo"></span></p>
+      <p><span class="label">Department:</span> <span id="department"></span></p>
+      <p><span class="label">Level:</span> <span id="level"></span></p>
+      <p><span class="label">Email:</span> <span id="email"></span></p>
+      <p><span class="label">Phone:</span> <span id="phone"></span></p>
+      <p><span class="label">State of Origin:</span> <span id="stateOrigin"></span></p>
+      <p><span class="label">Address:</span> <span id="address"></span></p>
     </div>
-  </header>
+  </div>
 
-  <main>
-    <div class="meta-row">
-      <div class="small-muted" id="countInfo">Loading students…</div>
-      <div class="small-muted" id="pageInfo"></div>
-    </div>
+  <!-- NEXT OF KIN -->
+  <h3 class="section-title">Next of Kin</h3>
+  <p><span class="label">Name:</span> <span id="nokName"></span></p>
+  <p><span class="label">Phone:</span> <span id="nokPhone"></span></p>
+  <p><span class="label">Relationship:</span> <span id="nokRelation"></span></p>
+  <p><span class="label">Address:</span> <span id="nokAddress"></span></p>
 
-    <div id="studentsContainer" class="students-container" aria-live="polite"></div>
+  <!-- DOCUMENTS -->
+  <h3 class="section-title">Documents</h3>
+  <div id="documentsList"></div>
 
-    <div id="pagination" class="pagination" aria-label="Pagination"></div>
-  </main>
+  <!-- OLEVEL IMAGES -->
+  <h3 class="section-title">O'Level Result Images</h3>
+  <div id="olevelImages"></div>
 
-  <footer style="text-align:center;padding:14px;background:#fff;border-top:1px solid #eee">
-    © 2025 ICT Registration Portal – All Rights Reserved.
-  </footer>
+  <!-- RESULTS SECTION -->
+  <h3 class="section-title">Results</h3>
+  <div id="resultsList"></div>
+
+</div>
+
+<button onclick="downloadPDF()" style="margin-top:20px; padding:10px 20px;">Download PDF</button>
+
 
 <script>
 const backendURL = "https://ict-reg.onrender.com";
-const PAGE_SIZE = 200;
 
-const studentsContainer = document.getElementById("studentsContainer");
-const searchInput = document.getElementById("searchInput");
-const levelFilter = document.getElementById("levelFilter");
-const deptFilter = document.getElementById("deptFilter");
-const bulkDownloadBtn = document.getElementById("bulkDownloadBtn");
-const countInfo = document.getElementById("countInfo");
-const pageInfo = document.getElementById("pageInfo");
-const paginationEl = document.getElementById("pagination");
+// ========== FETCH STUDENT ==========
+async function loadStudent() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const matric = urlParams.get("matric");
 
-let allStudents = [];
-let filtered = [];
-let currentPage = 1;
+  const res = await fetch(`${backendURL}/api/students/matric/${matric}`);
+  const data = await res.json();
 
-// Admin check (keep same as your app)
-const adminName = localStorage.getItem("adminName");
-const adminRole = localStorage.getItem("adminRole");
-const adminDepartment = localStorage.getItem("adminDepartment");
-if(!adminName||!adminRole) window.location.href="login.html";
-const normalizedRole = (adminRole||"").toLowerCase().replace(/\s/g,"");
-const isSuperAdmin = normalizedRole==="superadmin";
-const isHeadAdmin = normalizedRole==="headadmin";
-const isCashier = normalizedRole==="cashier";
-if(isCashier){alert("Access Denied");window.location.href="login.html";}
-
-// Fetch students
-async function fetchStudents(){
-  studentsContainer.innerHTML='<div class="empty">Loading students…</div>';
-  try{
-    const res=await fetch(`${backendURL}/api/students?limit=10000`);
-    const payload=await res.json();
-    let list=payload.success?payload.data||[]:[];
-    list=list.map(s=>{
-      const name = s.studentName || [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ");
-      return {...s, displayName:(name||"N/A").trim()};
-    });
-    if(!isSuperAdmin && !isHeadAdmin && adminDepartment){
-      list=list.filter(s=>(s.department||"").toLowerCase().trim()===adminDepartment.toLowerCase().trim());
-    }
-    allStudents=list;
-    applyFiltersAndRender();
-  }catch(err){
-    console.error(err);
-    studentsContainer.innerHTML='<div class="empty">Error loading students.</div>';
-    countInfo.textContent="Failed to load students";
+  if (!data.success) {
+    alert("Student not found");
+    return;
   }
-}
+  const student = data.student;
 
-function applyFiltersAndRender(){
-  const q=(searchInput.value||"").toLowerCase().trim();
-  const level=(levelFilter.value||"").trim();
-  const dept=(deptFilter.value||"").trim();
-  filtered=allStudents.filter(s=>{
-    if(level&&(s.level||"")!==level) return false;
-    if(dept&&(s.department||"")!==dept) return false;
-    if(!q) return true;
-    const name=(s.displayName||"").toLowerCase();
-    const matric=(s.matricNo||s.matricNumber||"").toLowerCase();
-    return name.includes(q)||matric.includes(q);
-  });
-  const totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
-  if(currentPage>totalPages) currentPage=totalPages;
-  renderPage(currentPage);
-}
+  // ========== HEADER ==========
+  document.getElementById("schoolLogo").src = student.schoolLogo || "";
+  document.getElementById("schoolName").innerText = student.schoolName || "";
 
-function renderPage(pageNum){
-  paginationEl.innerHTML="";
-  studentsContainer.innerHTML="";
-  const total=filtered.length;
-  const totalPages=Math.max(1,Math.ceil(total/PAGE_SIZE));
-  pageNum=Math.max(1,Math.min(pageNum,totalPages));
-  currentPage=pageNum;
-  const start=(pageNum-1)*PAGE_SIZE;
-  const end=Math.min(total,start+PAGE_SIZE);
-  const pageItems=filtered.slice(start,end);
-  countInfo.textContent=`Showing ${start+1}-${end} of ${total} students`;
-  pageInfo.textContent=`Page ${pageNum} of ${totalPages}`;
-  if(!pageItems.length){studentsContainer.innerHTML='<div class="empty">No students found.</div>';}
-  else{
-    const fragment=document.createDocumentFragment();
-    pageItems.forEach(s=>{
-      const card=document.createElement("div");
-      card.className="student-card";
-      card.innerHTML=`
-        <div class="student-left">
-          <img src="${escapeHtml(s.passport||s.photo||'https://via.placeholder.com/60')}" alt="passport" loading="lazy"/>
-          <div class="student-info">
-            <h3 title="${escapeHtml(s.displayName)}">${escapeHtml(s.displayName)}</h3>
-            <p>${escapeHtml(s.department||'N/A')} • ${escapeHtml(s.level||'N/A')}</p>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button class="download-btn" data-id="${escapeHtml(s._id||s.id)}">Download</button>
-          <div class="small-muted">${escapeHtml(s.matricNo||s.matricNumber||'')}</div>
-        </div>
-      `;
-      fragment.appendChild(card);
+  // Verification Icon
+  document.getElementById("verifyStatus").innerHTML =
+    student.verified
+      ? "✔ Verified"
+      : "✘ Not Verified";
+
+  // ========== Personal Info ==========
+  document.getElementById("passport").src = student.passport || "";
+  document.getElementById("fullName").innerText = `${student.surname} ${student.firstname} ${student.middlename}`;
+  document.getElementById("matricNo").innerText = student.matricNo;
+  document.getElementById("department").innerText = student.department;
+  document.getElementById("level").innerText = student.level;
+  document.getElementById("email").innerText = student.email;
+  document.getElementById("phone").innerText = student.phone;
+  document.getElementById("stateOrigin").innerText = student.stateOrigin;
+  document.getElementById("address").innerText = student.address;
+
+  // ========== Next of Kin ==========
+  document.getElementById("nokName").innerText = `${student.nokSurname} ${student.nokFirstname}`;
+  document.getElementById("nokPhone").innerText = student.nokPhone || "N/A";
+  document.getElementById("nokRelation").innerText = student.nokRelation || "N/A";
+  document.getElementById("nokAddress").innerText = student.nokAddress || "N/A";
+
+  // ========== Documents ==========
+  const docDiv = document.getElementById("documentsList");
+  if (student.documents && student.documents.length) {
+    student.documents.forEach(doc => {
+      const el = document.createElement("p");
+      el.innerHTML = `<b>${doc.name}:</b> <a href="${doc.url}" target="_blank">${doc.url}</a>`;
+      docDiv.appendChild(el);
     });
-    studentsContainer.appendChild(fragment);
-    document.querySelectorAll(".download-btn").forEach(btn=>btn.addEventListener("click",(e)=>downloadSingleStudent(btn.dataset.id,btn)));
+  } else {
+    docDiv.innerHTML = "<p>No documents uploaded</p>";
   }
-  renderPaginationControls(totalPages,pageNum);
-}
 
-function renderPaginationControls(totalPages,current){
-  const createBtn=(label,cls,handler,disabled=false)=>{
-    const b=document.createElement("button");
-    b.type="button";b.className=`page-btn ${cls||''}`;b.textContent=label;if(disabled)b.disabled=true;b.addEventListener("click",handler);return b;
-  };
-  paginationEl.appendChild(createBtn("« Prev","",()=>renderPage(current-1),current<=1));
-  const delta=2;
-  const start=Math.max(1,current-delta);
-  const end=Math.min(totalPages,current+delta);
-  if(start>1){paginationEl.appendChild(createBtn("1","",()=>renderPage(1))); if(start>2){const dots=document.createElement("span");dots.className="page-info";dots.textContent="…";paginationEl.appendChild(dots);}}
-  for(let p=start;p<=end;p++){paginationEl.appendChild(createBtn(p,p===current?"active":"",()=>renderPage(p)));}
-  if(end<totalPages){if(end<totalPages-1){const dots=document.createElement("span");dots.className="page-info";dots.textContent="…";paginationEl.appendChild(dots);}
-  paginationEl.appendChild(createBtn(totalPages,"",()=>renderPage(totalPages)));}
-  paginationEl.appendChild(createBtn("Next »","",()=>renderPage(current+1),current>=totalPages));
-}
-
-/* Utility: convert image URL -> base64 dataURL (used for embedding in print DOM) */
-async function toDataURL(url) {
-  try {
-    const res = await fetch(url, { mode: 'cors' });
-    const blob = await res.blob();
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (err) {
-    console.warn("Image fetch failed:", url, err);
-    return null;
-  }
-}
-
-/* SINGLE DOWNLOAD: build print area -> html2canvas -> jsPDF -> add doc links page */
-async function downloadSingleStudent(studentId, btnEl) {
-  try {
-    btnEl.disabled = true;
-    btnEl.textContent = "Generating PDF…";
-
-    // Fetch fresh full student
-    const sRes = await fetch(`${backendURL}/api/students/${encodeURIComponent(studentId)}`);
-    if (!sRes.ok) throw new Error("Failed to fetch student");
-    const sJson = await sRes.json();
-    if (!sJson.success || !sJson.student) throw new Error("Student record missing");
-    const student = sJson.student;
-
-    // Fetch student documents
-    const dRes = await fetch(`${backendURL}/api/documents/${encodeURIComponent(student._id)}`);
-    let docData = { files: {}, oLevelData: [] };
+  // ========== OLEVEL IMAGES ==========
+  async function fetchOlevelImages(matricNumber) {
+    let olevelImages = [];
     try {
-      const dJson = await dRes.json();
-      docData = dJson.data || docData;
-    } catch (e) { console.warn("No documents found for student", e); }
-
-    // Fetch results
-    let results = [];
-    try {
-      const rRes = await fetch(`${backendURL}/api/results?matricNo=${encodeURIComponent(student.matricNo || student.matricNo || "")}`);
-      const rJson = await rRes.json();
-      results = rJson.results || [];
-    } catch (e) { console.warn("Results fetch failed", e); }
-
-    // Build print area DOM off-screen
-    const printArea = document.createElement("div");
-    printArea.className = "print-area";
-    printArea.style.position = "absolute";
-    printArea.style.left = "-9999px";
-    printArea.style.top = "-9999px";
-    // header (logo + school name + title + verified)
-    const verifiedText = student.verified ? "Verified ✔" : "Not Verified ✘";
-    const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ") || (student.displayName || "N/A");
-    const passportUrl = student.passport || student.photo || "";
-    // prepare document thumbnails as base64 if available
-    const files = docData.files || {};
-    const fileEntries = Object.entries(files).filter(([,v]) => v);
-    // map of fileKey -> base64 (try to convert)
-    const fileBase64Map = {};
-    await Promise.all(fileEntries.map(async ([k, v]) => {
-      if (!v) return;
-      const dataUrl = await toDataURL(v).catch(()=>null);
-      fileBase64Map[k] = { url: v, dataUrl };
-    }));
-
-    // Build documents HTML
-    const docThumbsHtml = fileEntries.map(([k, v]) => {
-      const label = k.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-      const dataUrl = (fileBase64Map[k] && fileBase64Map[k].dataUrl) ? fileBase64Map[k].dataUrl : null;
-      const imgTag = dataUrl ? `<img src="${dataUrl}" style="width:100%;height:90px;object-fit:cover;border-radius:4px;">` : (v ? `<img src="${v}" style="width:100%;height:90px;object-fit:cover;border-radius:4px;">` : `<div style="height:90px;display:flex;align-items:center;justify-content:center;color:#777">No preview</div>`);
-      return `<div class="doc-thumb"><div style="height:90px;overflow:hidden">${imgTag}</div><div style="margin-top:6px;word-break:break-word;font-size:12px">${label}</div><div style="font-size:11px;color:#0066cc;word-break:break-all;margin-top:6px">${v}</div></div>`;
-    }).join("");
-
-    // O'Level inputs
-    const olevelHtml = (docData.oLevelData && docData.oLevelData.length)
-      ? docData.oLevelData.map(o => `<div style="margin-bottom:8px;font-size:13px"><strong>${o.examType || 'O Level'}</strong><div>Serial: ${o.serialNumber || 'N/A'}</div><div>Pin: ${o.pin || 'N/A'}</div></div>`).join("")
-      : `<div class="no-file">No O'Level record found</div>`;
-
-    // results table html
-    const resultsRows = (results && results.length) ? results.map(r => `<tr><td>${escapeHtml(r.courseCode||"")}</td><td>${escapeHtml(r.courseTitle||"")}</td><td>${escapeHtml(r.level||"")}</td><td>${escapeHtml(r.semester||"")}</td><td>${r.score ?? ""}</td><td>${r.grade ?? ""}</td></tr>`).join("") : `<tr><td colspan="6" style="text-align:center;color:#777">No results found</td></tr>`;
-
-    printArea.innerHTML = `
-      <div class="print-header">
-        <img src="upload/logo.jpg" alt="Logo" onerror="this.style.display='none'">
-        <div style="font-weight:800;font-size:18px;margin-top:6px;">OWU COLLEGE OF MANAGEMENT TECHNOLOGY</div>
-        <div style="font-size:14px;margin-top:4px;">Student Information</div>
-        <div style="margin-top:6px;font-size:12px;color:${student.verified ? 'green':'#777'}">${verifiedText}</div>
-      </div>
-      <hr class="section-sep">
-      <div>
-        <div style="font-weight:700;margin-bottom:6px;">Personal Information</div>
-        <div class="personal-grid">
-          <div class="personal-left">
-            ${passportUrl ? `<img src="${passportUrl}" alt="passport">` : `<div style="width:120px;height:120px;background:#f1f1f1;display:flex;align-items:center;justify-content:center;color:#777;border-radius:6px">No Photo</div>`}
-          </div>
-          <div class="personal-right" style="flex:1">
-            <div class="info-row"><strong>Full Name:</strong> ${escapeHtml(fullName)}</div>
-            <div class="info-row"><strong>Matric Number:</strong> ${escapeHtml(student.matricNo || student.matricNumber || "N/A")}</div>
-            <div class="info-row"><strong>Department:</strong> ${escapeHtml(student.department || "N/A")}</div>
-            <div class="info-row"><strong>Level:</strong> ${escapeHtml(student.level || "N/A")}</div>
-            <div class="info-row"><strong>Email:</strong> ${escapeHtml(student.email || "N/A")}</div>
-            <div class="info-row"><strong>Phone:</strong> ${escapeHtml(student.phone || "N/A")}</div>
-            <div class="info-row"><strong>D.O.B:</strong> ${escapeHtml(student.dob || "N/A")}</div>
-            <div class="info-row"><strong>State of Origin:</strong> ${escapeHtml(student.stateOrigin || "N/A")}</div>
-            <div class="info-row"><strong>LGA of Origin:</strong> ${escapeHtml(student.lgaOrigin || "N/A")}</div>
-            <div class="info-row"><strong>Address:</strong> ${escapeHtml(student.address || "N/A")}</div>
-          </div>
-        </div>
-        <hr class="section-sep">
-        <div style="font-weight:700;margin-bottom:6px;">Next of Kin</div>
-        <div class="info-row"><strong>Name:</strong> ${escapeHtml([student.nokSurname, student.nokFirstname].filter(Boolean).join(" ") || "N/A")}</div>
-        <div class="info-row"><strong>Relation:</strong> ${escapeHtml(student.nokRelation || "N/A")}</div>
-        <div class="info-row"><strong>Phone:</strong> ${escapeHtml(student.nokPhone || "N/A")}</div>
-        <div class="info-row"><strong>Address:</strong> ${escapeHtml(student.nokAddress || "N/A")}</div>
-        <hr class="section-sep">
-        <div style="font-weight:700;margin-bottom:6px;">Next of Kin</div>
-        <div class="info-row"><strong>Name:</strong> ${escapeHtml([student.nokSurname, student.nokFirstname].filter(Boolean).join(" ") || "N/A")}</div>
-        <div class="info-row"><strong>Relation:</strong> ${escapeHtml(student.nokRelation || "N/A")}</div>
-        <div class="info-row"><strong>Phone:</strong> ${escapeHtml(student.nokPhone || "N/A")}</div>
-        <div class="info-row"><strong>Address:</strong> ${escapeHtml(student.nokAddress || "N/A")}</div>
-        <hr class="section-sep">
-        <div style="font-weight:700;margin-bottom:6px;">Documents</div>
-        <div class="doc-grid">${docThumbsHtml || '<div class="no-file">No documents uploaded</div>'}</div>
-        <div style="font-size:12px;margin-top:8px;color:#444">JAMB Info: Reg No: ${escapeHtml(docData.jambInfo?.jambRegNo || 'N/A')} — Score: ${escapeHtml(docData.jambInfo?.jambScore || 'N/A')}</div>
-        <div style="margin-top:12px"><strong>O'Level Details</strong>${olevelHtml}</div>
-        <hr class="section-sep">
-        <div style="font-weight:700;margin-bottom:6px;">Results</div>
-        <div style="overflow:auto">
-          <table class="results">
-            <thead><tr><th>Course Code</th><th>Course Title</th><th>Level</th><th>Semester</th><th>Score</th><th>Grade</th></tr></thead>
-            <tbody>${resultsRows}</tbody>
-          </table>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(printArea);
-
-    // Render printArea to canvas -> pdf
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF("p", "pt", "a4");
-    // use a good scale for readability
-    const canvas = await html2canvas(printArea, { scale: 2, useCORS: true, allowTaint: false });
-    const imgData = canvas.toDataURL("image/png");
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    // compute image height to keep aspect ratio
-    const imgProps = { width: canvas.width, height: canvas.height };
-    const imgWidth = pageWidth;
-    const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-
-    // If image taller than page, add extra pages by slicing canvas vertically.
-    if (imgHeight > pageHeight) {
-      // number of full pages already added = 1, add more as needed
-      let renderedHeight = imgHeight;
-      let offset = pageHeight;
-      while (renderedHeight > pageHeight) {
-        // create a temporary canvas slice
-        const sliceCanvas = document.createElement("canvas");
-        sliceCanvas.width = canvas.width;
-        sliceCanvas.height = Math.min(canvas.height - (offset - 0) * (canvas.width / imgWidth), canvas.height);
-        const sCtx = sliceCanvas.getContext("2d");
-        // draw the appropriate slice from original
-        const srcY = Math.floor((offset / imgHeight) * canvas.height);
-        const srcH = sliceCanvas.height;
-        sCtx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
-        const sliceData = sliceCanvas.toDataURL("image/png");
-        pdf.addPage();
-        // compute slice image height scaled to pdf width
-        const sliceImgHeight = (srcH * imgWidth) / canvas.width;
-        pdf.addImage(sliceData, "PNG", 0, 0, imgWidth, sliceImgHeight);
-        renderedHeight -= pageHeight;
-        offset += pageHeight;
+      const res = await fetch(`${backendURL}/api/olevel/${encodeURIComponent(matricNumber)}`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      if (data.success && Array.isArray(data.record)) {
+        olevelImages = data.record
+          .flatMap(r => r.olevelData.map(d => d.fileUrl))
+          .filter(url => url && url !== "N/A");
       }
+    } catch (err) {
+      console.error("O'Level error:", err);
     }
+    return olevelImages;
+  }
 
-    // Add a second page with clickable doc URLs (if any)
-    const docUrls = fileEntries.map(([k,v]) => ({ key: k, url: v }));
-    if (docUrls.length) {
-      pdf.addPage();
-      pdf.setFontSize(12);
-      pdf.setTextColor(0,0,200);
-      pdf.text("Document Links", 40, 40);
-      pdf.setFontSize(10);
-      let y = 60;
-      const lineHeight = 14;
-      for (const d of docUrls) {
-        const label = d.key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-        // print label
-        pdf.setTextColor(0,0,0);
-        pdf.text(`${label}:`, 40, y);
-        // print link text (wrapped if long)
-        pdf.setTextColor(0,0,200);
-        const urlText = d.url || '';
-        const splitted = pdf.splitTextToSize(urlText, pageWidth - 110);
-        pdf.text(splitted, 110, y);
-        // add clickable link over the text area
-        // estimate height for the link area
-        const linkHeight = splitted.length * 10 + 2;
-        // create link rectangle (x,y,w,h)
-        pdf.link(110, y - 8, pageWidth - 150, linkHeight, { url: urlText });
-        y += linkHeight + 8;
-        if (y > pageHeight - 40) { pdf.addPage(); y = 40; }
-      }
-    }
+  const oLevelImages = await fetchOlevelImages(student.matricNo);
+  const oDiv = document.getElementById("olevelImages");
 
-    // finalize
-    const fileName = `student_${(student.matricNo || student.matricNumber || student._id || studentId).replace(/\s+/g,'_')}.pdf`;
-    pdf.save(fileName);
+  if (oLevelImages.length) {
+    oLevelImages.forEach(url => {
+      const img = document.createElement("img");
+      img.src = url;
+      img.style.width = "250px";
+      img.style.margin = "10px 0";
+      img.style.border = "1px solid #000";
+      oDiv.appendChild(img);
+    });
+  } else {
+    oDiv.innerHTML = "<p>No O'Level images found</p>";
+  }
 
-    // cleanup
-    document.body.removeChild(printArea);
-    btnEl.disabled = false;
-    btnEl.textContent = "Download";
-  } catch (err) {
-    console.error("PDF generation failed:", err);
-    alert("PDF generation failed: " + (err.message || ""));
-    try { btnEl.disabled = false; btnEl.textContent = "Download"; } catch {}
+  // ========== Results ==========
+  const res2 = await fetch(`${backendURL}/api/results/${student.matricNo}`);
+  const resultsData = await res2.json();
+
+  const rDiv = document.getElementById("resultsList");
+  if (resultsData.success && resultsData.results.length) {
+    resultsData.results.forEach(r => {
+      const p = document.createElement("p");
+      p.innerHTML = `<b>${r.courseCode}</b> - ${r.courseTitle}: ${r.score}`;
+      rDiv.appendChild(p);
+    });
+  } else {
+    rDiv.innerHTML = "<p>No results available</p>";
   }
 }
 
+loadStudent();
 
-// Escape html helper
-function escapeHtml(str=""){ return String(str||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])); }
 
-// Wire filters
-searchInput.addEventListener("input",()=>{currentPage=1;applyFiltersAndRender();});
-levelFilter.addEventListener("change",()=>{currentPage=1;applyFiltersAndRender();});
-deptFilter.addEventListener("change",()=>{currentPage=1;applyFiltersAndRender();});
+// ========== PDF GENERATION ==========
+async function downloadPDF() {
+  const element = document.getElementById("pdfContent");
+  const canvas = await html2canvas(element, { scale: 2 });
+  const imgData = canvas.toDataURL("image/png");
 
-// initial load
-fetchStudents();
+  const pdf = new jspdf.jsPDF("p", "mm", "a4");
+  const width = pdf.internal.pageSize.getWidth();
+  const height = (canvas.height * width) / canvas.width;
+
+  pdf.addImage(imgData, "PNG", 0, 0, width, height);
+
+  pdf.save("student-info.pdf");
+}
+
 </script>
+
 </body>
 </html>
