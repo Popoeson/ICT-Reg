@@ -1639,6 +1639,69 @@ app.get("/api/students/:id/download", async (req, res) => {
   }
 });
 
+// BULK DOWNLOAD
+app.get("/api/students/download/all", async (req, res) => {
+  try {
+    const students = await Student.find().lean();
+    if (!students || students.length === 0)
+      return res.status(404).json({ success: false, message: "No students found." });
+
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", "attachment; filename=all_students_info.zip");
+
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    archive.pipe(res);
+
+    for (const student of students) {
+      const safeName = (student.studentName || "Unknown").replace(/\s+/g, "_");
+
+      const pdfStream = new streamBuffers.WritableStreamBuffer();
+      const pdf = new PDFDocument({ margin: 40 });
+      pdf.pipe(pdfStream);
+
+      pdf.fontSize(20).text("STUDENT INFORMATION REPORT", { align: "center" });
+      pdf.moveDown();
+      pdf.fontSize(14).text("Personal Details", { underline: true });
+      pdf.moveDown(0.5);
+      pdf.fontSize(12).text(`Name: ${student.studentName || "N/A"}`);
+      pdf.text(`Matric Number: ${student.matricNumber || "N/A"}`);
+      pdf.text(`Department: ${student.department || "N/A"}`);
+      pdf.text(`Level: ${student.level || "N/A"}`);
+      pdf.text(`Email: ${student.email || "N/A"}`);
+      pdf.text(`Phone: ${student.phone || "N/A"}`);
+      pdf.moveDown();
+
+      if (student.passport) {
+        pdf.fontSize(14).text("Passport", { underline: true });
+        pdf.moveDown(0.5);
+
+        try {
+          const img = await axios.get(student.passport, { responseType: "arraybuffer" });
+          pdf.image(img.data, { width: 120, height: 120 });
+        } catch {
+          pdf.text("Could not load passport image.");
+        }
+      }
+
+      pdf.end();
+
+      await new Promise(resolve => {
+        pdf.on("end", () => {
+          const pdfBuffer = pdfStream.getContents();
+          archive.append(pdfBuffer, { name: `${safeName}.pdf` });
+          resolve();
+        });
+      });
+    }
+
+    archive.finalize();
+
+  } catch (err) {
+    console.error("Bulk Download Error:", err);
+    res.status(500).json({ success: false, message: "Error generating bulk ZIP." });
+  }
+});
+
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
