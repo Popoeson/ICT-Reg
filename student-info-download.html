@@ -336,34 +336,31 @@ async function downloadSingleStudent(studentId, btnEl) {
     btnEl.disabled = true;
     btnEl.textContent = "Generating PDF…";
 
-    // ===== Fetch student data =====
+    // Fetch student data
     const sRes = await fetch(`${backendURL}/api/students/${encodeURIComponent(studentId)}`);
     const sJson = await sRes.json();
     if (!sJson.success || !sJson.student) throw new Error("Student not found");
     const student = sJson.student;
 
-    // ===== Fetch documents =====
-    const dRes = await fetch(`${backendURL}/api/documents/${encodeURIComponent(student._id)}`);
+    // Fetch documents
     let docData = { files: {}, oLevelData: [] };
-    try { docData = (await dRes.json()).data || docData; } catch {}
+    try {
+      const dRes = await fetch(`${backendURL}/api/documents/${encodeURIComponent(student._id)}`);
+      docData = (await dRes.json()).data || docData;
+    } catch {}
 
-    // ===== Fetch O'Level images =====
-    async function fetchOlevelImages(matricNumber) {
-      let imgs = [];
-      if (!matricNumber) return imgs;
-      try {
-        const res = await fetch(`${backendURL}/api/olevel/${encodeURIComponent(matricNumber)}`);
-        const data = await res.json();
-        if (data.success && Array.isArray(data.record)) {
-          imgs = data.record.flatMap(r => r.olevelData.map(d => d.fileUrl)).filter(u => u && u !== "N/A");
-        }
-      } catch (e) { console.warn("O'Level fetch failed", e); }
-      return imgs;
-    }
-    const oLevelImages = await fetchOlevelImages(student.matricNo || student.matricNumber || "");
+    // Fetch O'Level images
+    let oLevelImages = [];
+    try {
+      const res = await fetch(`${backendURL}/api/olevel/${encodeURIComponent(student.matricNo || student.matricNumber || "")}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.record)) {
+        oLevelImages = data.record.flatMap(r => r.olevelData.map(d => d.fileUrl)).filter(u => u && u !== "N/A");
+      }
+    } catch(e) { console.warn(e); }
 
-    // ===== Convert image URL to base64 to avoid CORS issues =====
-    async function toDataURL(url) {
+    // Convert all images to base64
+    async function imgToBase64(url) {
       try {
         const res = await fetch(url);
         const blob = await res.blob();
@@ -375,56 +372,35 @@ async function downloadSingleStudent(studentId, btnEl) {
       } catch { return null; }
     }
 
-    // ===== Convert all document images =====
-    const files = docData.files || {};
-    const fileEntries = Object.entries(files).filter(([,v]) => v);
+    const passportBase64 = student.passport ? await imgToBase64(student.passport) : null;
     const fileBase64Map = {};
-    await Promise.all(fileEntries.map(async ([k,v]) => {
-      const dataUrl = await toDataURL(v).catch(()=>null);
-      fileBase64Map[k] = dataUrl;
-    }));
-
-    // ===== Convert O'Level images =====
+    for (const [k, v] of Object.entries(docData.files || {})) {
+      fileBase64Map[k] = v ? await imgToBase64(v) : null;
+    }
     const oLevelBase64 = [];
     for (const url of oLevelImages) {
-      const base64 = await toDataURL(url).catch(()=>null);
-      if (base64) oLevelBase64.push(base64);
+      const b64 = await imgToBase64(url);
+      if (b64) oLevelBase64.push(b64);
     }
 
-    // ===== Build offscreen print area =====
+    // Build print area
     const printArea = document.createElement("div");
-    printArea.style.position = "fixed";
-    printArea.style.top = "0";
-    printArea.style.left = "0";
-    printArea.style.width = "210mm"; // A4 width
-    printArea.style.minHeight = "297mm"; // A4 height
-    printArea.style.opacity = "1"; // Must be visible to html2canvas
-    printArea.style.background = "#fff";
-    printArea.style.padding = "16px";
-    printArea.style.fontSize = "12px";
-    printArea.style.boxSizing = "border-box";
-    printArea.style.zIndex = "-999"; // keep behind everything
+    printArea.className = "print-area";
+    printArea.style.position = "absolute";
+    printArea.style.left = "-9999px"; // offscreen but visible
     document.body.appendChild(printArea);
 
-    // ===== Build HTML content =====
     const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ") || "N/A";
-    const passportBase64 = student.passport ? await toDataURL(student.passport).catch(()=>null) : null;
-
     let docHtml = "";
-    fileEntries.forEach(([k,v]) => {
-      const base64 = fileBase64Map[k];
-      docHtml += `
-        <div style="margin-bottom:8px">
-          <div>${k}</div>
-          ${base64 ? `<img src="${base64}" style="width:120px;height:90px;object-fit:cover;border:1px solid #ccc;border-radius:4px;">` : `<div style="width:120px;height:90px;background:#eee;display:flex;align-items:center;justify-content:center;">No Preview</div>`}
-        </div>`;
-    });
-
+    for (const [k, v] of Object.entries(fileBase64Map)) {
+      docHtml += `<div><strong>${k}:</strong><br>${v ? `<img src="${v}" style="width:120px;height:90px;object-fit:cover;">` : "No Preview"}</div>`;
+    }
     let olevelHtml = "";
-    oLevelBase64.forEach(b64 => {
-      olevelHtml += `<div style="display:inline-block;margin:4px"><img src="${b64}" style="width:120px;height:90px;object-fit:cover;border:1px solid #ccc;border-radius:4px"></div>`;
-    });
-    if(!olevelHtml) olevelHtml = "<div>No O'Level uploaded</div>";
+    if(oLevelBase64.length) {
+      oLevelBase64.forEach(b64 => {
+        olevelHtml += `<img src="${b64}" style="width:120px;height:90px;margin:4px;object-fit:cover;">`;
+      });
+    } else olevelHtml = "No O'Level uploaded";
 
     printArea.innerHTML = `
       <h2>Student Info</h2>
@@ -432,22 +408,15 @@ async function downloadSingleStudent(studentId, btnEl) {
       <div><strong>Matric Number:</strong> ${student.matricNo || student.matricNumber || "N/A"}</div>
       <div><strong>Department:</strong> ${student.department || "N/A"}</div>
       <div><strong>Level:</strong> ${student.level || "N/A"}</div>
-      <div style="margin-top:16px">
-        <h3>Passport</h3>
-        ${passportBase64 ? `<img src="${passportBase64}" style="width:120px;height:120px;object-fit:cover;border-radius:6px;">` : "<div>No photo</div>"}
-      </div>
-      <div style="margin-top:16px">
-        <h3>Documents</h3>${docHtml}
-      </div>
-      <div style="margin-top:16px">
-        <h3>O'Level</h3>${olevelHtml}
-      </div>
+      <div><strong>Passport:</strong><br>${passportBase64 ? `<img src="${passportBase64}" style="width:120px;height:120px;">` : "No Photo"}</div>
+      <div><strong>Documents:</strong><br>${docHtml}</div>
+      <div><strong>O'Level:</strong><br>${olevelHtml}</div>
     `;
 
-    // ===== Wait for images to load =====
+    // Wait for all images
     await waitForImages(printArea);
 
-    // ===== Generate PDF =====
+    // Generate PDF
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF("p", "pt", "a4");
     const canvas = await html2canvas(printArea, { scale: 2, useCORS: true });
@@ -456,27 +425,18 @@ async function downloadSingleStudent(studentId, btnEl) {
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
     pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
 
-    // ===== Cleanup =====
+    // Cleanup and save
     document.body.removeChild(printArea);
     pdf.save(`student_${(student.matricNo || student._id).replace(/\s+/g,'_')}.pdf`);
 
     btnEl.disabled = false;
     btnEl.textContent = "Download";
-
-  } catch (err) {
-    console.error("PDF failed:", err);
-    alert("PDF generation failed: " + (err.message || ""));
+  } catch(err) {
+    console.error(err);
+    alert("PDF generation failed: " + err.message);
     btnEl.disabled = false;
     btnEl.textContent = "Download";
   }
-}
-
-async function waitForImages(container){
-  const images = container.querySelectorAll("img");
-  await Promise.all([...images].map(img => {
-    if(img.complete) return Promise.resolve();
-    return new Promise(resolve => { img.onload = img.onerror = resolve; });
-  }));
 }
 
 /* ------------------ BULK DOWNLOAD (OPTIONAL) ------------------ */
