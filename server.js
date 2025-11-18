@@ -1582,18 +1582,18 @@ app.put("/api/students/verify/matric/:matricNo", async (req, res) => {
 app.get("/api/students/:id/download", async (req, res) => {
   try {
     const student = await Student.findById(req.params.id).lean();
-    if (!student) return res.status(404).json({ success: false, message: "Student not found" });
+    if (!student)
+      return res.status(404).json({ success: false, message: "Student not found" });
+
+    const safeName = (student.studentName || "Unknown").replace(/\s+/g, "_");
 
     res.setHeader("Content-Type", "application/zip");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=${student.studentName.replace(/\s+/g, "_")}_info.zip`
-    );
+    res.setHeader("Content-Disposition", `attachment; filename=${safeName}_info.zip`);
 
-    const archive = Archiver("zip", { zlib: { level: 9 } });
+    const archive = archiver("zip", { zlib: { level: 9 } });
     archive.pipe(res);
 
-    // Create PDF in buffer
+    // PDF BUFFER
     const pdfStream = new streamBuffers.WritableStreamBuffer();
     const pdf = new PDFDocument({ margin: 40 });
     pdf.pipe(pdfStream);
@@ -1602,10 +1602,10 @@ app.get("/api/students/:id/download", async (req, res) => {
     pdf.moveDown();
     pdf.fontSize(14).text("Personal Details", { underline: true });
     pdf.moveDown(0.5);
-    pdf.fontSize(12).text(`Name: ${student.studentName}`);
-    pdf.text(`Matric Number: ${student.matricNumber}`);
-    pdf.text(`Department: ${student.department}`);
-    pdf.text(`Level: ${student.level}`);
+    pdf.fontSize(12).text(`Name: ${student.studentName || "N/A"}`);
+    pdf.text(`Matric Number: ${student.matricNumber || "N/A"}`);
+    pdf.text(`Department: ${student.department || "N/A"}`);
+    pdf.text(`Level: ${student.level || "N/A"}`);
     pdf.text(`Email: ${student.email || "N/A"}`);
     pdf.text(`Phone: ${student.phone || "N/A"}`);
     pdf.moveDown();
@@ -1614,12 +1614,14 @@ app.get("/api/students/:id/download", async (req, res) => {
     if (student.passport) {
       pdf.fontSize(14).text("Passport", { underline: true });
       pdf.moveDown(0.5);
+
       try {
         const img = await axios.get(student.passport, { responseType: "arraybuffer" });
         pdf.image(img.data, { width: 120, height: 120 });
-      } catch (err) {
+      } catch {
         pdf.text("Could not load passport image.");
       }
+
       pdf.moveDown();
     }
 
@@ -1627,9 +1629,10 @@ app.get("/api/students/:id/download", async (req, res) => {
 
     pdfStream.on("finish", () => {
       const pdfBuffer = pdfStream.getContents();
-      archive.append(pdfBuffer, { name: `${student.studentName.replace(/\s+/g, "_")}.pdf` });
+      archive.append(pdfBuffer, { name: `${safeName}.pdf` });
       archive.finalize();
     });
+
   } catch (err) {
     console.error("Single Download Error:", err);
     res.status(500).json({ success: false, message: "Error generating PDF" });
@@ -1646,10 +1649,12 @@ app.get("/api/students/download/all", async (req, res) => {
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", "attachment; filename=all_students_info.zip");
 
-    const archive = Archiver("zip", { zlib: { level: 9 } });
+    const archive = archiver("zip", { zlib: { level: 9 } });
     archive.pipe(res);
 
     for (const student of students) {
+      const safeName = (student.studentName || "Unknown").replace(/\s+/g, "_");
+
       const pdfStream = new streamBuffers.WritableStreamBuffer();
       const pdf = new PDFDocument({ margin: 40 });
       pdf.pipe(pdfStream);
@@ -1658,10 +1663,10 @@ app.get("/api/students/download/all", async (req, res) => {
       pdf.moveDown();
       pdf.fontSize(14).text("Personal Details", { underline: true });
       pdf.moveDown(0.5);
-      pdf.fontSize(12).text(`Name: ${student.studentName}`);
-      pdf.text(`Matric Number: ${student.matricNumber}`);
-      pdf.text(`Department: ${student.department}`);
-      pdf.text(`Level: ${student.level}`);
+      pdf.fontSize(12).text(`Name: ${student.studentName || "N/A"}`);
+      pdf.text(`Matric Number: ${student.matricNumber || "N/A"}`);
+      pdf.text(`Department: ${student.department || "N/A"}`);
+      pdf.text(`Level: ${student.level || "N/A"}`);
       pdf.text(`Email: ${student.email || "N/A"}`);
       pdf.text(`Phone: ${student.phone || "N/A"}`);
       pdf.moveDown();
@@ -1670,12 +1675,14 @@ app.get("/api/students/download/all", async (req, res) => {
       if (student.passport) {
         pdf.fontSize(14).text("Passport", { underline: true });
         pdf.moveDown(0.5);
+
         try {
           const img = await axios.get(student.passport, { responseType: "arraybuffer" });
           pdf.image(img.data, { width: 120, height: 120 });
-        } catch (err) {
+        } catch {
           pdf.text("Could not load passport image.");
         }
+
         pdf.moveDown();
       }
 
@@ -1683,7 +1690,7 @@ app.get("/api/students/download/all", async (req, res) => {
 
       await new Promise(resolve => pdfStream.on("finish", resolve));
       const pdfBuffer = pdfStream.getContents();
-      archive.append(pdfBuffer, { name: `${student.studentName.replace(/\s+/g, "_")}.pdf` });
+      archive.append(pdfBuffer, { name: `${safeName}.pdf` });
     }
 
     archive.finalize();
