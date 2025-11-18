@@ -28,11 +28,29 @@ app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
 
 // ====== CORS ======
+import cors from "cors";
+
+const allowedOrigins = [
+  process.env.FRONTEND_ORIGIN || "https://ict-reg.vercel.app",
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_ORIGIN || "https://ict-reg.vercel.app",
+    origin: function (origin, callback) {
+      // allow requests with no origin (like Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
+    credentials: true, // if you use cookies or auth headers
   })
 );
+
+// Allow preflight requests for all routes
+app.options("*", cors());
 
 // ====== Database Connection ======
 const MONGO = process.env.MONGO_URI || process.env.MONGO || "";
