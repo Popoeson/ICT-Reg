@@ -13,8 +13,10 @@
       --accent-hover: #0056b3;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:#111}
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--bg);color:#111;}
+    
+    /* Header */
     header{
       background:var(--primary);
       color:#fff;
@@ -25,16 +27,37 @@
       justify-content:space-between;
       flex-wrap:wrap;
     }
-    header h1{font-size:1.15rem;margin:0}
-    .header-right{display:flex;gap:8px;align-items:center}
-    .filters{display:flex;gap:8px;align-items:center;background:rgba(255,255,255,0.06);padding:8px;border-radius:8px}
-    .filters input,.filters select{padding:8px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);font-size:0.95rem;background:#fff}
-    .filters button{
-      background:#fff;color:var(--primary);border:none;padding:8px 10px;border-radius:6px;cursor:pointer;font-weight:600;
+    header h1{font-size:1.2rem;margin:0;}
+    .header-right{display:flex;gap:8px;align-items:center;width:100%;flex-wrap:wrap;}
+    .filters{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      background:rgba(255,255,255,0.06);
+      padding:8px;
+      border-radius:8px;
+      flex-wrap:wrap;
+      width:100%;
     }
-    .filters button:disabled{opacity:0.6;cursor:not-allowed}
-    main{padding:18px;max-width:1200px;margin:18px auto}
-    .meta-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+    .filters input,.filters select{
+      padding:8px;
+      border-radius:6px;
+      border:1px solid rgba(0,0,0,0.08);
+      font-size:0.95rem;
+      background:#fff;
+      flex:1;
+      min-width:120px;
+    }
+    .filters button{
+      background:#fff;color:var(--primary);
+      border:none;padding:8px 10px;
+      border-radius:6px;
+      cursor:pointer;font-weight:600;
+    }
+    .filters button:disabled{opacity:0.6;cursor:not-allowed;}
+
+    main{padding:18px;max-width:1200px;margin:18px auto;}
+    .meta-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
     .students-container{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
@@ -64,19 +87,24 @@
     .small-muted{font-size:0.82rem;color:var(--muted)}
 
     /* pagination */
-    .pagination{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:16px;flex-wrap:wrap}
-    .page-btn{padding:6px 10px;border-radius:6px;border:1px solid #e6eefc;background:#fff;cursor:pointer}
-    .page-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-    .page-info{font-size:0.9rem;color:var(--muted)}
+    .pagination{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:16px;flex-wrap:wrap;}
+    .page-btn{padding:6px 10px;border-radius:6px;border:1px solid #e6eefc;background:#fff;cursor:pointer;}
+    .page-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+    .page-info{font-size:0.9rem;color:var(--muted);}
 
     /* empty */
-    .empty{padding:28px;text-align:center;color:var(--muted)}
+    .empty{padding:28px;text-align:center;color:var(--muted);}
 
-    /* responsive tighten */
+    /* responsive */
     @media (max-width:640px){
-      .filters input,.filters select{padding:6px;font-size:0.9rem}
-      .student-left img{width:52px;height:52px}
-      .download-btn{padding:6px 8px;font-size:0.9rem}
+      header{flex-direction:column;align-items:flex-start;}
+      .filters{flex-direction:column;align-items:stretch;gap:6px;width:100%;}
+      .filters input,.filters select,.filters button{width:100%;}
+      .student-card{flex-direction:column;align-items:flex-start;gap:6px;min-height:auto;}
+      .student-left{flex-direction:row;gap:8px;align-items:center;width:100%;}
+      .student-info h3,.student-info p{white-space:normal;overflow:visible;text-overflow:initial;}
+      .card-actions{flex-direction:row;justify-content:space-between;width:100%;}
+      .download-btn{padding:6px 8px;font-size:0.9rem;}
     }
   </style>
 </head>
@@ -128,32 +156,9 @@
   </footer>
 
 <script>
-/* CONFIG */
 const backendURL = "https://ict-reg.onrender.com";
-const PAGE_SIZE = 200; // pagination size as requested
+const PAGE_SIZE = 200;
 
-/* ADMIN ACCESS (mirror Admin Dashboard) */
-const adminName = localStorage.getItem("adminName");
-const adminRole = localStorage.getItem("adminRole");
-const adminDepartment = localStorage.getItem("adminDepartment");
-
-if (!adminName || !adminRole) {
-  // not logged in
-  window.location.href = "login.html";
-}
-
-const normalizedRole = (adminRole || "").toLowerCase().replace(/\s/g, "");
-const isSuperAdmin = normalizedRole === "superadmin";
-const isHeadAdmin = normalizedRole === "headadmin";
-const isAdmin = normalizedRole === "admin";
-const isCashier = normalizedRole === "cashier";
-
-if (isCashier) {
-  alert("Access Denied");
-  window.location.href = "login.html";
-}
-
-/* UI Elements */
 const studentsContainer = document.getElementById("studentsContainer");
 const searchInput = document.getElementById("searchInput");
 const levelFilter = document.getElementById("levelFilter");
@@ -163,248 +168,153 @@ const countInfo = document.getElementById("countInfo");
 const pageInfo = document.getElementById("pageInfo");
 const paginationEl = document.getElementById("pagination");
 
-let allStudents = [];   // raw fetched list (post server filtering by role)
-let filtered = [];      // filtered list after search/filters
-let currentPage = 1;    // 1-based
+let allStudents = [];
+let filtered = [];
+let currentPage = 1;
 
-/* Fetch students from server (large limit similar to other pages) */
-async function fetchStudents() {
-  studentsContainer.innerHTML = '<div class="empty">Loading students…</div>';
-  try {
-    const res = await fetch(`${backendURL}/api/students?limit=10000`);
-    const payload = await res.json();
-    let list = payload.success ? payload.data || [] : [];
+// Admin check
+const adminName = localStorage.getItem("adminName");
+const adminRole = localStorage.getItem("adminRole");
+const adminDepartment = localStorage.getItem("adminDepartment");
+if(!adminName||!adminRole) window.location.href="login.html";
+const normalizedRole = (adminRole||"").toLowerCase().replace(/\s/g,"");
+const isSuperAdmin = normalizedRole==="superadmin";
+const isHeadAdmin = normalizedRole==="headadmin";
+const isCashier = normalizedRole==="cashier";
+if(isCashier){alert("Access Denied");window.location.href="login.html";}
 
-    // Normalize name field: some endpoints use studentName or firstname/surname — try to create display name
-    list = list.map(s => {
-      const name = s.studentName || [s.surname, s.firstname, s.middlename].filter(Boolean).join(" ");
-      return Object.assign({}, s, { displayName: (name || "N/A").trim() });
-    });
-
-    // Role-based server-side guard: still filter client-side in case server returned everything
-    if (!isSuperAdmin && !isHeadAdmin && adminDepartment) {
-      list = list.filter(s => (s.department || "").toLowerCase().trim() === adminDepartment.toLowerCase().trim());
+// Fetch students
+async function fetchStudents(){
+  studentsContainer.innerHTML='<div class="empty">Loading students…</div>';
+  try{
+    const res=await fetch(`${backendURL}/api/students?limit=10000`);
+    const payload=await res.json();
+    let list=payload.success?payload.data||[]:[];
+    list=list.map(s=>{const name=s.studentName||[s.surname,s.firstname,s.middlename].filter(Boolean).join(" "); return {...s,displayName:(name||"N/A").trim()};});
+    if(!isSuperAdmin && !isHeadAdmin && adminDepartment){
+      list=list.filter(s=>(s.department||"").toLowerCase().trim()===adminDepartment.toLowerCase().trim());
     }
-
-    allStudents = list;
+    allStudents=list;
     applyFiltersAndRender();
-  } catch (err) {
-    console.error("Error fetching students:", err);
-    studentsContainer.innerHTML = `<div class="empty">Error loading students.</div>`;
-    countInfo.textContent = "Failed to load students";
+  }catch(err){
+    console.error(err);
+    studentsContainer.innerHTML='<div class="empty">Error loading students.</div>';
+    countInfo.textContent="Failed to load students";
   }
 }
 
-/* Apply search & filters, then paginate + render */
-function applyFiltersAndRender() {
-  const q = (searchInput.value || "").toLowerCase().trim();
-  const level = (levelFilter.value || "").trim();
-  const dept = (deptFilter.value || "").trim();
-
-  filtered = allStudents.filter(s => {
-    if (level && (s.level || "") !== level) return false;
-    if (dept && (s.department || "") !== dept) return false;
-    if (!q) return true;
-    const name = (s.displayName || "").toLowerCase();
-    const matric = (s.matricNo || s.matricNumber || "").toLowerCase();
-    return name.includes(q) || matric.includes(q);
+// Filters + pagination
+function applyFiltersAndRender(){
+  const q=(searchInput.value||"").toLowerCase().trim();
+  const level=(levelFilter.value||"").trim();
+  const dept=(deptFilter.value||"").trim();
+  filtered=allStudents.filter(s=>{
+    if(level&&(s.level||"")!==level) return false;
+    if(dept&&(s.department||"")!==dept) return false;
+    if(!q) return true;
+    const name=(s.displayName||"").toLowerCase();
+    const matric=(s.matricNo||s.matricNumber||"").toLowerCase();
+    return name.includes(q)||matric.includes(q);
   });
-
-  // reset page if current page out of range
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  if (currentPage > totalPages) currentPage = totalPages;
-
+  const totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
+  if(currentPage>totalPages) currentPage=totalPages;
   renderPage(currentPage);
 }
 
-/* Render a specific page */
-function renderPage(pageNum) {
-  paginationEl.innerHTML = "";
-  studentsContainer.innerHTML = "";
-
-  const total = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  pageNum = Math.max(1, Math.min(pageNum, totalPages));
-  currentPage = pageNum;
-
-  // indices
-  const start = (pageNum - 1) * PAGE_SIZE;
-  const end = Math.min(total, start + PAGE_SIZE);
-  const pageItems = filtered.slice(start, end);
-
-  // update meta
-  countInfo.textContent = `Showing ${start + 1}-${end} of ${total} students`;
-  pageInfo.textContent = `Page ${pageNum} of ${totalPages}`;
-
-  if (!pageItems.length) {
-    studentsContainer.innerHTML = `<div class="empty">No students found.</div>`;
-  } else {
-    const fragment = document.createDocumentFragment();
-    pageItems.forEach(s => {
-      const card = document.createElement("div");
-      card.className = "student-card";
-      card.innerHTML = `
+function renderPage(pageNum){
+  paginationEl.innerHTML="";
+  studentsContainer.innerHTML="";
+  const total=filtered.length;
+  const totalPages=Math.max(1,Math.ceil(total/PAGE_SIZE));
+  pageNum=Math.max(1,Math.min(pageNum,totalPages));
+  currentPage=pageNum;
+  const start=(pageNum-1)*PAGE_SIZE;
+  const end=Math.min(total,start+PAGE_SIZE);
+  const pageItems=filtered.slice(start,end);
+  countInfo.textContent=`Showing ${start+1}-${end} of ${total} students`;
+  pageInfo.textContent=`Page ${pageNum} of ${totalPages}`;
+  if(!pageItems.length){studentsContainer.innerHTML='<div class="empty">No students found.</div>';}
+  else{
+    const fragment=document.createDocumentFragment();
+    pageItems.forEach(s=>{
+      const card=document.createElement("div");
+      card.className="student-card";
+      card.innerHTML=`
         <div class="student-left">
-          <img src="${escapeHtml(s.passport || s.photo || 'https://via.placeholder.com/60')}" alt="passport" loading="lazy" />
+          <img src="${escapeHtml(s.passport||s.photo||'https://via.placeholder.com/60')}" alt="passport" loading="lazy"/>
           <div class="student-info">
             <h3 title="${escapeHtml(s.displayName)}">${escapeHtml(s.displayName)}</h3>
-            <p>${escapeHtml(s.department || 'N/A')} • ${escapeHtml(s.level || 'N/A')}</p>
+            <p>${escapeHtml(s.department||'N/A')} • ${escapeHtml(s.level||'N/A')}</p>
           </div>
         </div>
         <div class="card-actions">
-          <button class="download-btn" data-id="${escapeHtml(s._id || s.id)}" title="Download student info">Download</button>
-          <div class="small-muted">${escapeHtml(s.matricNo || s.matricNumber || '')}</div>
+          <button class="download-btn" data-id="${escapeHtml(s._id||s.id)}">Download</button>
+          <div class="small-muted">${escapeHtml(s.matricNo||s.matricNumber||'')}</div>
         </div>
       `;
       fragment.appendChild(card);
     });
     studentsContainer.appendChild(fragment);
-
-    // wire download buttons for the rendered page
-    document.querySelectorAll(".download-btn").forEach(btn => {
-      btn.addEventListener("click", () => downloadSingleStudent(btn.dataset.id, btn));
-    });
+    document.querySelectorAll(".download-btn").forEach(btn=>btn.addEventListener("click",()=>downloadSingleStudent(btn.dataset.id,btn)));
   }
-
-  // render pagination controls (compact)
-  renderPaginationControls(totalPages, pageNum);
+  renderPaginationControls(totalPages,pageNum);
 }
 
-/* Pagination controls */
-function renderPaginationControls(totalPages, current) {
-  // Prev
-  const createBtn = (label, cls, handler, disabled=false) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = `page-btn ${cls||''}`;
-    b.textContent = label;
-    if (disabled) b.disabled = true;
-    b.addEventListener("click", handler);
-    return b;
+function renderPaginationControls(totalPages,current){
+  const createBtn=(label,cls,handler,disabled=false)=>{
+    const b=document.createElement("button");
+    b.type="button";b.className=`page-btn ${cls||''}`;b.textContent=label;if(disabled)b.disabled=true;b.addEventListener("click",handler);return b;
   };
-
-  // If many pages, show first, prev, a few around current, next, last
-  paginationEl.appendChild(createBtn("« Prev", "", () => renderPage(current - 1), current <= 1));
-  // show up to 5 numeric page buttons centered on current
-  const delta = 2;
-  const start = Math.max(1, current - delta);
-  const end = Math.min(totalPages, current + delta);
-  if (start > 1) {
-    const first = createBtn("1", "", () => renderPage(1));
-    paginationEl.appendChild(first);
-    if (start > 2) {
-      const dots = document.createElement("span"); dots.className="page-info"; dots.textContent="…";
-      paginationEl.appendChild(dots);
-    }
-  }
-  for (let p = start; p <= end; p++) {
-    const btn = createBtn(p, p===current ? "active" : "", () => renderPage(p));
-    if (p === current) btn.classList.add("active");
-    paginationEl.appendChild(btn);
-  }
-  if (end < totalPages) {
-    if (end < totalPages - 1) {
-      const dots = document.createElement("span"); dots.className="page-info"; dots.textContent="…";
-      paginationEl.appendChild(dots);
-    }
-    const last = createBtn(totalPages, "", () => renderPage(totalPages));
-    paginationEl.appendChild(last);
-  }
-  paginationEl.appendChild(createBtn("Next »", "", () => renderPage(current + 1), current >= totalPages));
+  paginationEl.appendChild(createBtn("« Prev","",()=>renderPage(current-1),current<=1));
+  const delta=2;
+  const start=Math.max(1,current-delta);
+  const end=Math.min(totalPages,current+delta);
+  if(start>1){paginationEl.appendChild(createBtn("1","",()=>renderPage(1))); if(start>2){const dots=document.createElement("span");dots.className="page-info";dots.textContent="…";paginationEl.appendChild(dots);}}
+  for(let p=start;p<=end;p++){paginationEl.appendChild(createBtn(p,p===current?"active":"",()=>renderPage(p)));}
+  if(end<totalPages){if(end<totalPages-1){const dots=document.createElement("span");dots.className="page-info";dots.textContent="…";paginationEl.appendChild(dots);}
+  paginationEl.appendChild(createBtn(totalPages,"",()=>renderPage(totalPages)));}
+  paginationEl.appendChild(createBtn("Next »","",()=>renderPage(current+1),current>=totalPages));
 }
 
-/* Download single student — calls server endpoint and streams blob */
-async function downloadSingleStudent(studentId, btnEl) {
-  try {
-    btnEl.disabled = true;
-    btnEl.textContent = "Downloading…";
-    const res = await fetch(`${backendURL}/api/students/${encodeURIComponent(studentId)}/download`, {
-      method: "GET"
-    });
-
-    if (!res.ok) {
-      const txt = await res.text().catch(()=>res.statusText);
-      throw new Error(`Server returned ${res.status}: ${txt}`);
-    }
-
-    const blob = await res.blob();
-    // attempt filename from header or fallback
-    const cd = res.headers.get("content-disposition") || "";
-    let filename = `student_${studentId}.zip`;
-    const m = cd.match(/filename\*=UTF-8''(.+)|filename="(.+)"|filename=(.+)/);
-    if (m) filename = decodeURIComponent(m[1] || m[2] || m[3]);
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error("Download error:", err);
-    alert("Error downloading student info: " + (err.message || "Server error"));
-  } finally {
-    btnEl.disabled = false;
-    btnEl.textContent = "Download";
-  }
+// Single download
+async function downloadSingleStudent(studentId,btnEl){
+  try{
+    btnEl.disabled=true; btnEl.textContent="Downloading…";
+    const res=await fetch(`${backendURL}/api/students/${encodeURIComponent(studentId)}/download`);
+    if(!res.ok){throw new Error(`Server returned ${res.status}`);}
+    const blob=await res.blob();
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=`student_${studentId}.zip`;
+    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
+  }catch(err){console.error(err);alert("Download failed");}
+  finally{btnEl.disabled=false; btnEl.textContent="Download";}
 }
 
-/* Bulk download — calls server endpoint to download permitted students as a zip.
-   NOTE: server should enforce role/dept restrictions; this button triggers download of all permitted students.
-*/
-bulkDownloadBtn.addEventListener("click", async () => {
-  if (!confirm("Bulk download will produce a ZIP containing one PDF per student for all students you have access to. Continue?")) return;
-  bulkDownloadBtn.disabled = true;
-  bulkDownloadBtn.textContent = "Preparing…";
-  try {
-    // If your backend provides filtering via query (e.g., dept/level/search), you can append query params.
-    // We'll call the endpoint that returns zip for all permitted students.
-    const url = `${backendURL}/api/students/download/all`;
-    const res = await fetch(url, { method: "GET" });
-
-    if (!res.ok) {
-      const txt = await res.text().catch(()=>res.statusText);
-      throw new Error(`Server returned ${res.status}: ${txt}`);
-    }
-
-    const blob = await res.blob();
-    const cd = res.headers.get("content-disposition") || "";
-    let filename = `students_all.zip`;
-    const m = cd.match(/filename\*=UTF-8''(.+)|filename="(.+)"|filename=(.+)/);
-    if (m) filename = decodeURIComponent(m[1] || m[2] || m[3]);
-
-    const urlBlob = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = urlBlob;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(urlBlob);
-  } catch (err) {
-    console.error("Bulk download failed:", err);
-    alert("Bulk download failed: " + (err.message || "Server error"));
-  } finally {
-    bulkDownloadBtn.disabled = false;
-    bulkDownloadBtn.textContent = "Bulk Download";
-  }
-});
-
-/* Utility: escapeHtml to prevent injection in generated markup */
-function escapeHtml(str=""){
-  return String(str||"").replace(/[&<>"']/g, function(m){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m];
-  });
+// Bulk download
+bulkDownloadBtn.addEventListener("click",async()=>{
+  if(!confirm("Bulk download all accessible students?")) return;
+  bulkDownloadBtn.disabled=true; bulkDownloadBtn.textContent="Preparing…";
+  try{
+    const res=await fetch(`${backendURL}/api/students/download/all`);
+    if(!res.ok) throw new Error(`Server returned ${res.status}`);
+    const blob=await res.blob();
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="students_all.zip";
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+  }catch(err){console.error(err);alert("Bulk download failed");}
+  finally{bulkDownloadBtn.disabled=false; bulkDownloadBtn.textContent="Bulk Download";}
 }
 
-/* Wire filters */
-searchInput.addEventListener("input", () => { currentPage = 1; applyFiltersAndRender(); });
-levelFilter.addEventListener("change", () => { currentPage = 1; applyFiltersAndRender(); });
-deptFilter.addEventListener("change", () => { currentPage = 1; applyFiltersAndRender(); });
+// Escape html
+function escapeHtml(str=""){return String(str||"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));}
 
-/* Initial fetch */
+// Wire filters
+searchInput.addEventListener("input",()=>{currentPage=1;applyFiltersAndRender();});
+levelFilter.addEventListener("change",()=>{currentPage=1;applyFiltersAndRender();});
+deptFilter.addEventListener("change",()=>{currentPage=1;applyFiltersAndRender();});
+
 fetchStudents();
 </script>
 </body>
