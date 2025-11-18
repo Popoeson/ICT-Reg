@@ -6,7 +6,7 @@ import cors from "cors";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
-const Archiver = require("archiver");
+import archiver from "archiver";
 import PDFDocument from "pdfkit";
 import axios from "axios";
 import helmet from "helmet";
@@ -1658,6 +1658,107 @@ app.get("/api/students/:id/download", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error generating PDF",
+    });
+  }
+});
+
+// ========== BULK DOWNLOAD ROUTE (ES MODULE VERSION) ==========
+app.get("/api/students/download/all", async (req, res) => {
+  try {
+    const students = await Student.find().lean();
+
+    if (!students || students.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No students found.",
+      });
+    }
+
+    // ZIP response headers
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=all_students_info.zip"
+    );
+
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    archive.pipe(res);
+
+    // Loop through students
+    for (const student of students) {
+      const pdfName = `${student.studentName.replace(/\s+/g, "_")}.pdf`;
+      const pdf = new PDFDocument({ margin: 40 });
+
+      archive.append(pdf, { name: pdfName });
+
+      // ===== PDF CONTENT =====
+
+      pdf.fontSize(20).text("STUDENT INFORMATION REPORT", { align: "center" });
+      pdf.moveDown();
+
+      pdf.fontSize(14).text("Personal Details", { underline: true });
+      pdf.moveDown(0.5);
+
+      pdf.fontSize(12).text(`Name: ${student.studentName}`);
+      pdf.text(`Matric Number: ${student.matricNumber}`);
+      pdf.text(`Department: ${student.department}`);
+      pdf.text(`Level: ${student.level}`);
+      pdf.text(`Email: ${student.email || "N/A"}`);
+      pdf.text(`Phone: ${student.phone || "N/A"}`);
+      pdf.moveDown();
+
+
+      // Passport
+      if (student.passport) {
+        pdf.fontSize(14).text("Passport", { underline: true });
+        pdf.moveDown(0.5);
+
+        try {
+          const image = await axios.get(student.passport, {
+            responseType: "arraybuffer",
+          });
+          pdf.image(image.data, { width: 120, height: 120 });
+        } catch (err) {
+          pdf.text("Unable to load passport image.");
+        }
+
+        pdf.moveDown();
+      }
+
+      // Documents
+      if (student.documents?.length > 0) {
+        pdf.fontSize(14).text("Uploaded Documents", { underline: true });
+        pdf.moveDown(0.5);
+
+        for (let i = 0; i < student.documents.length; i++) {
+          const doc = student.documents[i];
+          pdf.fontSize(12).text(`${i + 1}. ${doc.name}`);
+          pdf.fillColor("blue").text(doc.url, { link: doc.url });
+          pdf.fillColor("black");
+          pdf.moveDown(0.5);
+        }
+      }
+
+      // Results
+      if (student.results?.length > 0) {
+        pdf.fontSize(14).text("Academic Results", { underline: true });
+        pdf.moveDown(0.5);
+
+        student.results.forEach((r, i) => {
+          pdf.fontSize(12).text(`${i + 1}. ${r.course} — Score: ${r.score}`);
+          pdf.moveDown(0.3);
+        });
+      }
+
+      pdf.end();
+    }
+
+    archive.finalize();
+  } catch (error) {
+    console.error("Bulk Download Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error generating bulk ZIP.",
     });
   }
 });
