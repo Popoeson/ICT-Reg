@@ -330,6 +330,21 @@ async function fetchOlevelImages(matricNumber) {
   return olevelImages;
 }
 
+// Helper: Wait for all images inside a container to finish loading
+async function waitForImages(container) {
+  const imgs = container.querySelectorAll("img");
+  if (!imgs.length) return;
+
+  await Promise.all(
+    [...imgs].map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(resolve => {
+        img.onload = img.onerror = resolve;
+      });
+    })
+  );
+}
+
 /* SINGLE DOWNLOAD: build print area -> html2canvas -> jsPDF -> add doc links page */
 async function downloadSingleStudent(studentId, btnEl) {
   try {
