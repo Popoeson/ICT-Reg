@@ -15,8 +15,7 @@
     }
     *{box-sizing:border-box;}
     body{margin:0;background:var(--bg);color:#111;}
-    
-    /* Header */
+
     header{
       background:var(--primary);
       color:#fff;
@@ -64,7 +63,6 @@
       gap:12px;
     }
 
-    /* Compact card */
     .student-card{
       background:var(--card);
       border-radius:8px;
@@ -86,16 +84,13 @@
     .download-btn:disabled{opacity:0.6;cursor:not-allowed}
     .small-muted{font-size:0.82rem;color:var(--muted)}
 
-    /* pagination */
     .pagination{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:16px;flex-wrap:wrap;}
     .page-btn{padding:6px 10px;border-radius:6px;border:1px solid #e6eefc;background:#fff;cursor:pointer;}
     .page-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
     .page-info{font-size:0.9rem;color:var(--muted);}
 
-    /* empty */
     .empty{padding:28px;text-align:center;color:var(--muted);}
 
-    /* responsive */
     @media (max-width:640px){
       header{flex-direction:column;align-items:flex-start;}
       .filters{flex-direction:column;align-items:stretch;gap:6px;width:100%;}
@@ -107,6 +102,9 @@
       .download-btn{padding:6px 8px;font-size:0.9rem;}
     }
   </style>
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <header>
@@ -144,9 +142,7 @@
       <div class="small-muted" id="pageInfo"></div>
     </div>
 
-    <div id="studentsContainer" class="students-container" aria-live="polite">
-      <!-- cards injected here -->
-    </div>
+    <div id="studentsContainer" class="students-container" aria-live="polite"></div>
 
     <div id="pagination" class="pagination" aria-label="Pagination"></div>
   </main>
@@ -276,45 +272,70 @@ function renderPaginationControls(totalPages,current){
   paginationEl.appendChild(createBtn("Next »","",()=>renderPage(current+1),current>=totalPages));
 }
 
-// Single download
-async function downloadSingleStudent(studentId,btnEl){
-  try{
-    btnEl.disabled=true; btnEl.textContent="Downloading…";
-    const res=await fetch(`${backendURL}/api/students/${encodeURIComponent(studentId)}/download`);
-    if(!res.ok){throw new Error(`Server returned ${res.status}`);}
-    const blob=await res.blob();
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download=`student_${studentId}.zip`;
-    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
-  }catch(err){console.error(err);alert("Download failed");}
-  finally{btnEl.disabled=false; btnEl.textContent="Download";}
-}
-
-// Bulk download
-bulkDownloadBtn.addEventListener("click", async () => {
-  if (!confirm("Bulk download all accessible students?")) return;
-  bulkDownloadBtn.disabled = true; 
-  bulkDownloadBtn.textContent = "Preparing…";
+// Single download (frontend PDF generation)
+async function downloadSingleStudent(studentId, btnEl) {
   try {
-    const res = await fetch(`${backendURL}/api/students/download/all`);
-    if (!res.ok) throw new Error(`Server returned ${res.status}`);
-    const blob = await res.blob();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "students_all.zip";
-    document.body.appendChild(a); 
-    a.click(); 
-    a.remove(); 
-    URL.revokeObjectURL(a.href);
+    btnEl.disabled = true;
+    btnEl.textContent = "Generating PDF…";
+
+    const student = allStudents.find(s => (s._id || s.id) === studentId);
+    if (!student) throw new Error("Student not found");
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("Student Information", 105, 20, { align: "center" });
+
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+
+    const startY = 40;
+    const lineHeight = 8;
+    let y = startY;
+
+    const info = [
+      ["Full Name", student.displayName || "N/A"],
+      ["Matric Number", student.matricNo || student.matricNumber || "N/A"],
+      ["Department", student.department || "N/A"],
+      ["Level", student.level || "N/A"],
+      ["Email", student.email || "N/A"],
+      ["Phone", student.phone || "N/A"]
+    ];
+
+    info.forEach(([label, value]) => {
+      doc.text(`${label}: ${value}`, 20, y);
+      y += lineHeight;
+    });
+
+    if (student.passport || student.photo) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = student.passport || student.photo;
+      img.onload = function () {
+        doc.addImage(img, "JPEG", 150, startY, 40, 40);
+        doc.save(`student_${studentId}.pdf`);
+        btnEl.disabled = false;
+        btnEl.textContent = "Download";
+      };
+      img.onerror = function () {
+        doc.save(`student_${studentId}.pdf`);
+        btnEl.disabled = false;
+        btnEl.textContent = "Download";
+      };
+    } else {
+      doc.save(`student_${studentId}.pdf`);
+      btnEl.disabled = false;
+      btnEl.textContent = "Download";
+    }
   } catch (err) {
     console.error(err);
-    alert("Bulk download failed");
-  } finally {
-    bulkDownloadBtn.disabled = false; 
-    bulkDownloadBtn.textContent = "Bulk Download";
+    alert("PDF generation failed");
+    btnEl.disabled = false;
+    btnEl.textContent = "Download";
   }
-});
+}
 
 // Escape html
 function escapeHtml(str=""){return String(str||"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));}
