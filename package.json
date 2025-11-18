@@ -19,9 +19,11 @@
     "pdfkit": "^0.14.0",
     "helmet": "^7.1.0",
     "xlsx": "^0.18.5",
+    "stream-buffers": "^3.0.2",
     "archiver": "^1.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
   }
 }
+
