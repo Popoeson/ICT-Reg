@@ -8,6 +8,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import archiver from "archiver";
 import PDFDocument from "pdfkit";
+import streamBuffers from "stream-buffers";
 import axios from "axios";
 import helmet from "helmet";
 import path from "path";
