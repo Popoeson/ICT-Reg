@@ -1575,6 +1575,92 @@ app.put("/api/students/verify/matric/:matricNo", async (req, res) => {
   }
 });
 
+const Archiver = require("archiver");
+
+// =================== SINGLE STUDENT DOWNLOAD ===================
+app.get("/api/students/:id/download", async (req, res) => {
+  try {
+    const studentId = req.params.id;
+    const student = await Student.findById(studentId);
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    // ZIP config
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${student.studentName.replace(/\s+/g, "_")}_info.zip`
+    );
+
+    const archive = Archiver("zip", { zlib: { level: 9 } });
+    archive.pipe(res);
+
+    // ===== PDF DOCUMENT =====
+    const pdf = new PDFDocument({ margin: 40 });
+    archive.append(pdf, {
+      name: `${student.studentName.replace(/\s+/g, "_")}.pdf`,
+    });
+
+    // TITLE
+    pdf.fontSize(20).text("STUDENT INFORMATION REPORT", { align: "center" });
+    pdf.moveDown();
+
+    // PERSONAL DETAILS
+    pdf.fontSize(14).text("Personal Details", { underline: true });
+    pdf.moveDown(0.5);
+    pdf.fontSize(12).text(`Name: ${student.studentName}`);
+    pdf.text(`Matric Number: ${student.matricNumber}`);
+    pdf.text(`Department: ${student.department}`);
+    pdf.text(`Level: ${student.level}`);
+    pdf.text(`Email: ${student.email || "N/A"}`);
+    pdf.text(`Phone: ${student.phone || "N/A"}`);
+    pdf.moveDown();
+
+    // PASSPORT IMAGE
+    if (student.passport) {
+      pdf.fontSize(14).text("Passport", { underline: true });
+      pdf.moveDown(0.5);
+
+      try {
+        const img = await axios.get(student.passport, {
+          responseType: "arraybuffer",
+        });
+        pdf.image(img.data, { width: 120, height: 120 });
+      } catch (err) {
+        pdf.text("Could not load passport image.");
+      }
+      pdf.moveDown();
+    }
+
+    // DOCUMENTS (cloudinary urls)
+    if (student.documents && student.documents.length > 0) {
+      pdf.fontSize(14).text("Uploaded Documents", { underline: true });
+      pdf.moveDown(0.5);
+
+      student.documents.forEach((doc, index) => {
+        pdf.fontSize(12).text(`${index + 1}. ${doc.name}`);
+        pdf.fillColor("blue").text(doc.url, { link: doc.url });
+        pdf.fillColor("black");
+        pdf.moveDown();
+      });
+    }
+
+    pdf.end();
+    archive.finalize();
+  } catch (error) {
+    console.error("Download Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error generating PDF",
+    });
+  }
+});
+
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
