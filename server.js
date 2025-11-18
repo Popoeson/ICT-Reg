@@ -1577,20 +1577,12 @@ app.put("/api/students/verify/matric/:matricNo", async (req, res) => {
 });
 
 
-// =================== SINGLE STUDENT DOWNLOAD ===================
+// SINGLE STUDENT DOWNLOAD
 app.get("/api/students/:id/download", async (req, res) => {
   try {
-    const studentId = req.params.id;
-    const student = await Student.findById(studentId);
+    const student = await Student.findById(req.params.id).lean();
+    if (!student) return res.status(404).json({ success: false, message: "Student not found" });
 
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: "Student not found",
-      });
-    }
-
-    // ZIP config
     res.setHeader("Content-Type", "application/zip");
     res.setHeader(
       "Content-Disposition",
@@ -1600,17 +1592,13 @@ app.get("/api/students/:id/download", async (req, res) => {
     const archive = Archiver("zip", { zlib: { level: 9 } });
     archive.pipe(res);
 
-    // ===== PDF DOCUMENT =====
+    // Create PDF in buffer
+    const pdfStream = new streamBuffers.WritableStreamBuffer();
     const pdf = new PDFDocument({ margin: 40 });
-    archive.append(pdf, {
-      name: `${student.studentName.replace(/\s+/g, "_")}.pdf`,
-    });
+    pdf.pipe(pdfStream);
 
-    // TITLE
     pdf.fontSize(20).text("STUDENT INFORMATION REPORT", { align: "center" });
     pdf.moveDown();
-
-    // PERSONAL DETAILS
     pdf.fontSize(14).text("Personal Details", { underline: true });
     pdf.moveDown(0.5);
     pdf.fontSize(12).text(`Name: ${student.studentName}`);
@@ -1621,15 +1609,12 @@ app.get("/api/students/:id/download", async (req, res) => {
     pdf.text(`Phone: ${student.phone || "N/A"}`);
     pdf.moveDown();
 
-    // PASSPORT IMAGE
+    // Passport
     if (student.passport) {
       pdf.fontSize(14).text("Passport", { underline: true });
       pdf.moveDown(0.5);
-
       try {
-        const img = await axios.get(student.passport, {
-          responseType: "arraybuffer",
-        });
+        const img = await axios.get(student.passport, { responseType: "arraybuffer" });
         pdf.image(img.data, { width: 120, height: 120 });
       } catch (err) {
         pdf.text("Could not load passport image.");
@@ -1637,67 +1622,41 @@ app.get("/api/students/:id/download", async (req, res) => {
       pdf.moveDown();
     }
 
-    // DOCUMENTS (cloudinary urls)
-    if (student.documents && student.documents.length > 0) {
-      pdf.fontSize(14).text("Uploaded Documents", { underline: true });
-      pdf.moveDown(0.5);
-
-      student.documents.forEach((doc, index) => {
-        pdf.fontSize(12).text(`${index + 1}. ${doc.name}`);
-        pdf.fillColor("blue").text(doc.url, { link: doc.url });
-        pdf.fillColor("black");
-        pdf.moveDown();
-      });
-    }
-
     pdf.end();
-    archive.finalize();
-  } catch (error) {
-    console.error("Download Error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error generating PDF",
+
+    pdfStream.on("finish", () => {
+      const pdfBuffer = pdfStream.getContents();
+      archive.append(pdfBuffer, { name: `${student.studentName.replace(/\s+/g, "_")}.pdf` });
+      archive.finalize();
     });
+  } catch (err) {
+    console.error("Single Download Error:", err);
+    res.status(500).json({ success: false, message: "Error generating PDF" });
   }
 });
 
-// ========== BULK DOWNLOAD ROUTE (ES MODULE VERSION) ==========
+// BULK DOWNLOAD
 app.get("/api/students/download/all", async (req, res) => {
   try {
     const students = await Student.find().lean();
+    if (!students || students.length === 0)
+      return res.status(404).json({ success: false, message: "No students found." });
 
-    if (!students || students.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No students found.",
-      });
-    }
-
-    // ZIP response headers
     res.setHeader("Content-Type", "application/zip");
-    res.setHeader(
-      "Content-Disposition",
-      "attachment; filename=all_students_info.zip"
-    );
+    res.setHeader("Content-Disposition", "attachment; filename=all_students_info.zip");
 
-    const archive = archiver("zip", { zlib: { level: 9 } });
+    const archive = Archiver("zip", { zlib: { level: 9 } });
     archive.pipe(res);
 
-    // Loop through students
     for (const student of students) {
-      const pdfName = `${student.studentName.replace(/\s+/g, "_")}.pdf`;
+      const pdfStream = new streamBuffers.WritableStreamBuffer();
       const pdf = new PDFDocument({ margin: 40 });
-
-      archive.append(pdf, { name: pdfName });
-
-      // ===== PDF CONTENT =====
+      pdf.pipe(pdfStream);
 
       pdf.fontSize(20).text("STUDENT INFORMATION REPORT", { align: "center" });
       pdf.moveDown();
-
       pdf.fontSize(14).text("Personal Details", { underline: true });
       pdf.moveDown(0.5);
-
       pdf.fontSize(12).text(`Name: ${student.studentName}`);
       pdf.text(`Matric Number: ${student.matricNumber}`);
       pdf.text(`Department: ${student.department}`);
@@ -1706,59 +1665,30 @@ app.get("/api/students/download/all", async (req, res) => {
       pdf.text(`Phone: ${student.phone || "N/A"}`);
       pdf.moveDown();
 
-
       // Passport
       if (student.passport) {
         pdf.fontSize(14).text("Passport", { underline: true });
         pdf.moveDown(0.5);
-
         try {
-          const image = await axios.get(student.passport, {
-            responseType: "arraybuffer",
-          });
-          pdf.image(image.data, { width: 120, height: 120 });
+          const img = await axios.get(student.passport, { responseType: "arraybuffer" });
+          pdf.image(img.data, { width: 120, height: 120 });
         } catch (err) {
-          pdf.text("Unable to load passport image.");
+          pdf.text("Could not load passport image.");
         }
-
         pdf.moveDown();
       }
 
-      // Documents
-      if (student.documents?.length > 0) {
-        pdf.fontSize(14).text("Uploaded Documents", { underline: true });
-        pdf.moveDown(0.5);
-
-        for (let i = 0; i < student.documents.length; i++) {
-          const doc = student.documents[i];
-          pdf.fontSize(12).text(`${i + 1}. ${doc.name}`);
-          pdf.fillColor("blue").text(doc.url, { link: doc.url });
-          pdf.fillColor("black");
-          pdf.moveDown(0.5);
-        }
-      }
-
-      // Results
-      if (student.results?.length > 0) {
-        pdf.fontSize(14).text("Academic Results", { underline: true });
-        pdf.moveDown(0.5);
-
-        student.results.forEach((r, i) => {
-          pdf.fontSize(12).text(`${i + 1}. ${r.course} — Score: ${r.score}`);
-          pdf.moveDown(0.3);
-        });
-      }
-
       pdf.end();
+
+      await new Promise(resolve => pdfStream.on("finish", resolve));
+      const pdfBuffer = pdfStream.getContents();
+      archive.append(pdfBuffer, { name: `${student.studentName.replace(/\s+/g, "_")}.pdf` });
     }
 
     archive.finalize();
-  } catch (error) {
-    console.error("Bulk Download Error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error generating bulk ZIP.",
-    });
+  } catch (err) {
+    console.error("Bulk Download Error:", err);
+    res.status(500).json({ success: false, message: "Error generating bulk ZIP." });
   }
 });
 
