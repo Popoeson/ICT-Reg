@@ -27,8 +27,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
 
-// ====== CORS ======
-import cors from "cors";
+// ====== CORS ====
 
 const allowedOrigins = [
   process.env.FRONTEND_ORIGIN || "https://ict-reg.vercel.app",
