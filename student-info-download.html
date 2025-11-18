@@ -292,20 +292,29 @@ async function downloadSingleStudent(studentId,btnEl){
 }
 
 // Bulk download
-bulkDownloadBtn.addEventListener("click",async()=>{
-  if(!confirm("Bulk download all accessible students?")) return;
-  bulkDownloadBtn.disabled=true; bulkDownloadBtn.textContent="Preparing…";
-  try{
-    const res=await fetch(`${backendURL}/api/students/download/all`);
-    if(!res.ok) throw new Error(`Server returned ${res.status}`);
-    const blob=await res.blob();
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download="students_all.zip";
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
-  }catch(err){console.error(err);alert("Bulk download failed");}
-  finally{bulkDownloadBtn.disabled=false; bulkDownloadBtn.textContent="Bulk Download";}
-}
+bulkDownloadBtn.addEventListener("click", async () => {
+  if (!confirm("Bulk download all accessible students?")) return;
+  bulkDownloadBtn.disabled = true; 
+  bulkDownloadBtn.textContent = "Preparing…";
+  try {
+    const res = await fetch(`${backendURL}/api/students/download/all`);
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "students_all.zip";
+    document.body.appendChild(a); 
+    a.click(); 
+    a.remove(); 
+    URL.revokeObjectURL(a.href);
+  } catch (err) {
+    console.error(err);
+    alert("Bulk download failed");
+  } finally {
+    bulkDownloadBtn.disabled = false; 
+    bulkDownloadBtn.textContent = "Bulk Download";
+  }
+});
 
 // Escape html
 function escapeHtml(str=""){return String(str||"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));}
