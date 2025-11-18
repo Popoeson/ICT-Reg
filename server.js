@@ -6,6 +6,7 @@ import cors from "cors";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
+const Archiver = require("archiver");
 import PDFDocument from "pdfkit";
 import axios from "axios";
 import helmet from "helmet";
