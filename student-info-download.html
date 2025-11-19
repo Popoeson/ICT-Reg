@@ -291,10 +291,8 @@ function renderPaginationControls(totalPages,current){
   paginationEl.appendChild(createBtn("Next »","",()=>renderPage(current+1),current>=totalPages));
 }
 
-/* ------------------ UTILITY: Escape HTML ------------------ */
+// ------------------ UTILITY ------------------
 function escapeHtml(str=""){ return String(str||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])); }
-
-/* ------------------ UTILITY: Convert image URL -> base64 ------------------ */
 async function toDataURL(url) {
   try {
     const res = await fetch(url, { mode: 'cors' });
@@ -310,8 +308,6 @@ async function toDataURL(url) {
     return null;
   }
 }
-
-/* ------------------ FETCH O’LEVEL IMAGES FROM NEW ENDPOINT ------------------ */
 async function fetchOlevelImages(matricNumber) {
   let olevelImages = [];
   if (!matricNumber) return olevelImages;
@@ -330,28 +326,13 @@ async function fetchOlevelImages(matricNumber) {
   return olevelImages;
 }
 
-// Helper: Wait for all images inside a container to finish loading
-async function waitForImages(container) {
-  const imgs = container.querySelectorAll("img");
-  if (!imgs.length) return;
-
-  await Promise.all(
-    [...imgs].map(img => {
-      if (img.complete) return Promise.resolve();
-      return new Promise(resolve => {
-        img.onload = img.onerror = resolve;
-      });
-    })
-  );
-}
-
-/* SINGLE DOWNLOAD: build print area -> html2canvas -> jsPDF -> add doc links page */
+// ------------------ SINGLE DOWNLOAD ------------------
 async function downloadSingleStudent(studentId, btnEl) {
   try {
     btnEl.disabled = true;
     btnEl.textContent = "Generating PDF…";
 
-    // Fetch student data
+    // Fetch student
     const sRes = await fetch(`${backendURL}/api/students/${encodeURIComponent(studentId)}`);
     const sJson = await sRes.json();
     if (!sJson.success || !sJson.student) throw new Error("Student not found");
@@ -364,112 +345,114 @@ async function downloadSingleStudent(studentId, btnEl) {
       docData = (await dRes.json()).data || docData;
     } catch {}
 
-    // Fetch O'Level images
-    let oLevelImages = [];
-    try {
-      const res = await fetch(`${backendURL}/api/olevel/${encodeURIComponent(student.matricNo || student.matricNumber || "")}`);
-      const data = await res.json();
-      if (data.success && Array.isArray(data.record)) {
-        oLevelImages = data.record.flatMap(r => r.olevelData.map(d => d.fileUrl)).filter(u => u && u !== "N/A");
-      }
-    } catch(e) { console.warn(e); }
+    // Fetch O’Level images
+    const olevelImages = await fetchOlevelImages(student.matricNo || student.matricNumber);
 
     // Convert all images to base64
-    async function imgToBase64(url) {
-      try {
-        const res = await fetch(url);
-        const blob = await res.blob();
-        return await new Promise(resolve => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(blob);
-        });
-      } catch { return null; }
-    }
-
-    const passportBase64 = student.passport ? await imgToBase64(student.passport) : null;
+    const passportBase64 = student.passport ? await toDataURL(student.passport) : null;
     const fileBase64Map = {};
-    for (const [k, v] of Object.entries(docData.files || {})) {
-      fileBase64Map[k] = v ? await imgToBase64(v) : null;
-    }
-    const oLevelBase64 = [];
-    for (const url of oLevelImages) {
-      const b64 = await imgToBase64(url);
-      if (b64) oLevelBase64.push(b64);
+    for (const [k, v] of Object.entries(docData.files || {})) { fileBase64Map[k] = v ? await toDataURL(v) : null; }
+    const olevelBase64 = [];
+    for (const url of olevelImages) {
+      const b64 = await toDataURL(url);
+      if (b64) olevelBase64.push(b64);
     }
 
     // Build print area
     const printArea = document.createElement("div");
     printArea.className = "print-area";
     printArea.style.position = "absolute";
-    printArea.style.left = "-9999px"; // offscreen but visible
+    printArea.style.left = "-9999px";
+    printArea.style.top = "-9999px";
     document.body.appendChild(printArea);
 
-    const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ") || "N/A";
-    let docHtml = "";
-    for (const [k, v] of Object.entries(fileBase64Map)) {
-      docHtml += `<div><strong>${k}:</strong><br>${v ? `<img src="${v}" style="width:120px;height:90px;object-fit:cover;">` : "No Preview"}</div>`;
-    }
-    let olevelHtml = "";
-    if(oLevelBase64.length) {
-      oLevelBase64.forEach(b64 => {
-        olevelHtml += `<img src="${b64}" style="width:120px;height:90px;margin:4px;object-fit:cover;">`;
-      });
-    } else olevelHtml = "No O'Level uploaded";
+    const verifiedText = student.verified ? "Verified ✔" : "Not Verified ✘";
+    const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ") || (student.displayName || "N/A");
+    
+    // Build O'Level details HTML (details + images)
+    const olevelDetailsHtml = (docData.oLevelData && docData.oLevelData.length)
+      ? docData.oLevelData.map(o => `<div style="margin-bottom:8px;font-size:13px"><strong>${o.examType || 'O Level'}</strong><div>Serial: ${o.serialNumber || 'N/A'}</div><div>Pin: ${o.pin || 'N/A'}</div></div>`).join("")
+      : `<div class="no-file">No O'Level record found</div>`;
+    const olevelImagesHtml = olevelBase64.length
+      ? olevelBase64.map(b64 => `<img src="${b64}" style="width:120px;height:90px;margin:4px;object-fit:cover;">`).join("")
+      : "No O'Level uploaded";
+
+    // Build documents HTML
+    const docThumbsHtml = Object.entries(fileBase64Map).map(([k,v]) => {
+      return `<div class="doc-thumb"><div style="height:90px;overflow:hidden">${v?`<img src="${v}" style="width:100%;height:90px;object-fit:cover;border-radius:4px">`:"No preview"}</div><div style="margin-top:6px;font-size:12px">${k}</div></div>`;
+    }).join("") || '<div class="no-file">No documents uploaded</div>';
 
     printArea.innerHTML = `
-      <h2>Student Info</h2>
-      <div><strong>Name:</strong> ${fullName}</div>
-      <div><strong>Matric Number:</strong> ${student.matricNo || student.matricNumber || "N/A"}</div>
-      <div><strong>Department:</strong> ${student.department || "N/A"}</div>
-      <div><strong>Level:</strong> ${student.level || "N/A"}</div>
-      <div><strong>Passport:</strong><br>${passportBase64 ? `<img src="${passportBase64}" style="width:120px;height:120px;">` : "No Photo"}</div>
-      <div><strong>Documents:</strong><br>${docHtml}</div>
-      <div><strong>O'Level:</strong><br>${olevelHtml}</div>
+      <div class="print-header">
+        <img src="upload/logo.jpg" alt="Logo" onerror="this.style.display='none'">
+        <div style="font-weight:800;font-size:18px;margin-top:6px;">OWU COLLEGE OF MANAGEMENT TECHNOLOGY</div>
+        <div style="font-size:14px;margin-top:4px;">Student Information</div>
+        <div style="margin-top:6px;font-size:12px;color:${student.verified ? 'green':'#777'}">${verifiedText}</div>
+      </div>
+      <hr class="section-sep">
+      <div>
+        <div style="font-weight:700;margin-bottom:6px;">Personal Information</div>
+        <div class="personal-grid">
+          <div class="personal-left">
+            ${passportBase64 ? `<img src="${passportBase64}" alt="passport">` : `<div style="width:120px;height:120px;background:#f1f1f1;display:flex;align-items:center;justify-content:center;color:#777;border-radius:6px">No Photo</div>`}
+          </div>
+          <div class="personal-right" style="flex:1">
+            <div class="info-row"><strong>Full Name:</strong> ${escapeHtml(fullName)}</div>
+            <div class="info-row"><strong>Matric Number:</strong> ${escapeHtml(student.matricNo || student.matricNumber || "N/A")}</div>
+            <div class="info-row"><strong>Department:</strong> ${escapeHtml(student.department || "N/A")}</div>
+            <div class="info-row"><strong>Level:</strong> ${escapeHtml(student.level || "N/A")}</div>
+            <div class="info-row"><strong>Email:</strong> ${escapeHtml(student.email || "N/A")}</div>
+            <div class="info-row"><strong>Phone:</strong> ${escapeHtml(student.phone || "N/A")}</div>
+            <div class="info-row"><strong>D.O.B:</strong> ${escapeHtml(student.dob || "N/A")}</div>
+            <div class="info-row"><strong>State of Origin:</strong> ${escapeHtml(student.stateOrigin || "N/A")}</div>
+            <div class="info-row"><strong>LGA of Origin:</strong> ${escapeHtml(student.lgaOrigin || "N/A")}</div>
+            <div class="info-row"><strong>Address:</strong> ${escapeHtml(student.address || "N/A")}</div>
+          </div>
+        </div>
+        <hr class="section-sep">
+        <div style="font-weight:700;margin-bottom:6px;">Next of Kin</div>
+        <div class="info-row"><strong>Name:</strong> ${escapeHtml([student.nokSurname, student.nokFirstname].filter(Boolean).join(" ") || "N/A")}</div>
+        <div class="info-row"><strong>Relation:</strong> ${escapeHtml(student.nokRelation || "N/A")}</div>
+        <div class="info-row"><strong>Phone:</strong> ${escapeHtml(student.nokPhone || "N/A")}</div>
+        <div class="info-row"><strong>Address:</strong> ${escapeHtml(student.nokAddress || "N/A")}</div>
+        <hr class="section-sep">
+        <div style="font-weight:700;margin-bottom:6px;">Documents</div>
+        <div class="doc-grid">${docThumbsHtml}</div>
+        <div style="margin-top:12px"><strong>O'Level Details & Images</strong>
+          ${olevelDetailsHtml}
+          <div style="display:flex;flex-wrap:wrap;margin-top:6px">${olevelImagesHtml}</div>
+        </div>
+      </div>
     `;
 
-    // Wait for all images
-    await waitForImages(printArea);
-
-    // Generate PDF
+    // ------------------ PDF Generation ------------------
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF("p", "pt", "a4");
-    const canvas = await html2canvas(printArea, { scale: 2, useCORS: true });
+    const canvas = await html2canvas(printArea, { scale: 2, useCORS: true, allowTaint: false });
     const imgData = canvas.toDataURL("image/png");
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-
-    // Cleanup and save
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const imgHeight = (canvas.height * pageWidth) / canvas.width;
+    pdf.addImage(imgData, "PNG", 0, 0, pageWidth, imgHeight);
+    
+    // Cleanup
     document.body.removeChild(printArea);
     pdf.save(`student_${(student.matricNo || student._id).replace(/\s+/g,'_')}.pdf`);
-
     btnEl.disabled = false;
     btnEl.textContent = "Download";
   } catch(err) {
     console.error(err);
-    alert("PDF generation failed: " + err.message);
+    alert("PDF generation failed: " + (err.message || ""));
     btnEl.disabled = false;
     btnEl.textContent = "Download";
   }
 }
 
-/* ------------------ BULK DOWNLOAD (OPTIONAL) ------------------ */
-bulkDownloadBtn.addEventListener("click", async ()=>{
-  if(!filtered.length){alert("No students to download."); return;}
-  if(!confirm(`Download PDF for ${filtered.length} students? This may take some time.`)) return;
-  for(const s of filtered){
-    const btn = { disabled:false, textContent:"Download" }; // dummy button object
-    await downloadSingleStudent(s._id||s.id, btn);
-  }
-});
-
-/* ------------------ EVENT LISTENERS ------------------ */
+// ------------------ EVENT LISTENERS ------------------
 searchInput.addEventListener("input",()=>{currentPage=1;applyFiltersAndRender();});
 levelFilter.addEventListener("change",()=>{currentPage=1;applyFiltersAndRender();});
 deptFilter.addEventListener("change",()=>{currentPage=1;applyFiltersAndRender();});
 
-/* ------------------ INITIAL FETCH ------------------ */
+// ------------------ INITIAL FETCH ------------------
 fetchStudents();
 </script>
 </body>
