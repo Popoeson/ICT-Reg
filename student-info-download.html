@@ -358,6 +358,15 @@ async function downloadSingleStudent(studentId, btnEl) {
       if (b64) olevelBase64.push(b64);
     }
 
+    
+    // Fetch results
+    let results = [];
+    try {
+      const rRes = await fetch(`${backendURL}/api/results?matricNo=${encodeURIComponent(student.matricNo || student.matricNo || "")}`);
+      const rJson = await rRes.json();
+      results = rJson.results || [];
+    } catch (e) { console.warn("Results fetch failed", e); }
+
     // Build print area
     const printArea = document.createElement("div");
     printArea.className = "print-area";
