@@ -438,6 +438,9 @@ async function downloadSingleStudent(studentId, btnEl) {
       </div>
     `;
 
+      <div style="font-size:12px;margin-top:8px;color:#444">JAMB Info: Reg No: ${escapeHtml(docData.jambInfo?.jambRegNo || 'N/A')} — Score: ${escapeHtml(docData.jambInfo?.jambScore || 'N/A')}</div>
+        <div style="margin-top:12px"><strong>O'Level Details</strong>${olevelHtml}</div>
+
       <hr class="section-sep">
         <div style="font-weight:700;margin-bottom:6px;">Results</div>
         <div style="overflow:auto">
@@ -448,6 +451,8 @@ async function downloadSingleStudent(studentId, btnEl) {
         </div>
       </div>
     `;
+    
+     document.body.appendChild(printArea);
 
     // ------------------ PDF Generation ------------------
     const { jsPDF } = window.jspdf;
