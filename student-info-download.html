@@ -472,57 +472,32 @@ const { jsPDF } = window.jspdf;
 const pdf = new jsPDF("p", "pt", "a4");
 const pageWidth = pdf.internal.pageSize.getWidth();
 const pageHeight = pdf.internal.pageSize.getHeight();
-const margin = 20;
-let yOffset = margin;
+let yOffset = 20; // initial top margin
 
-// Function to draw a block (section) to PDF without slicing images
-async function addBlock(element, repeatHeader = false) {
+async function addBlockToPDF(element) {
     const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: false });
     const imgData = canvas.toDataURL("image/png");
-    const imgWidth = pageWidth - 2 * margin;
+    const imgWidth = pageWidth - 40; // leave side margins
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    // If block won't fit, start a new page
-    if (yOffset + imgHeight > pageHeight - margin) {
+    // If block won't fit, add new page
+    if (yOffset + imgHeight > pageHeight - 20) {
         pdf.addPage();
-        yOffset = margin;
-        if (repeatHeader) {
-            const headerCanvas = await html2canvas(printArea.children[0], { scale: 2, useCORS: true, allowTaint: false });
-            const headerImgData = headerCanvas.toDataURL("image/png");
-            const headerImgHeight = (headerCanvas.height * imgWidth) / headerCanvas.width;
-            pdf.addImage(headerImgData, "PNG", margin, yOffset, imgWidth, headerImgHeight);
-            yOffset += headerImgHeight + 10;
-        }
+        yOffset = 20;
     }
 
-    pdf.addImage(imgData, "PNG", margin, yOffset, imgWidth, imgHeight);
-    yOffset += imgHeight + 10; // spacing after block
+    pdf.addImage(imgData, "PNG", 20, yOffset, imgWidth, imgHeight);
+    yOffset += imgHeight + 10; // 10pt spacing after block
 }
 
-// Generate PDF
-(async () => {
-    if (!printArea) {
-        alert("No content to generate PDF!");
-        return;
-    }
+// Split printArea into blocks
+const blocks = Array.from(printArea.children);
+for (const block of blocks) {
+    await addBlockToPDF(block);
+}
 
-    // Treat the first child as the header
-    const headerEl = printArea.children[0];
-    const headerCanvas = await html2canvas(headerEl, { scale: 2, useCORS: true, allowTaint: false });
-    const imgData = headerCanvas.toDataURL("image/png");
-    const imgWidth = pageWidth - 2 * margin;
-    const imgHeight = (headerCanvas.height * imgWidth) / headerCanvas.width;
-    pdf.addImage(imgData, "PNG", margin, yOffset, imgWidth, imgHeight);
-    yOffset += imgHeight + 10;
-
-    // Add the rest of the content
-    const contentBlocks = Array.from(printArea.children).slice(1);
-    for (const block of contentBlocks) {
-        await addBlock(block, true); // repeat header on new page if needed
-    }
-
-    pdf.save(`student_${(student.matricNo || student._id).replace(/\s+/g,'_')}.pdf`);
-})();
+// Save PDF
+pdf.save(`student_${(student.matricNo || student._id).replace(/\s+/g,'_')}.pdf`);
 
     // Cleanup
     document.body.removeChild(printArea);
