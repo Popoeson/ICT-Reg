@@ -378,70 +378,102 @@ async function downloadSingleStudent(studentId, btnEl) {
 
     // PRINT HTML
     const printArea = document.createElement("div");
+    printArea.className = "print-area";
     printArea.style.position = "absolute";
     printArea.style.left = "-9999px";
     printArea.style.top = "-9999px";
-
-    const fullName = [student.surname, student.firstname, student.middlename]
-      .filter(Boolean).join(" ") || student.displayName;
-
-    const resultsRows = results.length
-      ? results.map(r => `
-          <tr>
-            <td>${escapeHtml(r.courseCode||"")}</td>
-            <td>${escapeHtml(r.courseTitle||"")}</td>
-            <td>${escapeHtml(r.level||"")}</td>
-            <td>${escapeHtml(r.semester||"")}</td>
-            <td>${r.score ?? ""}</td>
-            <td>${r.grade ?? ""}</td>
-          </tr>
-        `).join("")
-      : `<tr><td colspan="6">No result found</td></tr>`;
-
-    // ------------------ BUILD PDF HTML ------------------
-    printArea.innerHTML = `
-      <div style="font-size:14px;">
-        <div style="text-align:center;">
-          <h2>OWU COLLEGE OF MANAGEMENT TECHNOLOGY</h2>
-          <div>STUDENT INFORMATION</div>
-        </div>
-        <hr>
-
-        <h3>Personal Information</h3>
-        ${passportUrl ? makeImageBlock(passportUrl, passportBase64) : ""}
-
-        <div><strong>Full Name:</strong> ${escapeHtml(fullName)}</div>
-        <div><strong>Matric:</strong> ${escapeHtml(student.matricNo || student.matricNumber || "")}</div>
-        <div><strong>Department:</strong> ${escapeHtml(student.department || "")}</div>
-        <div><strong>Level:</strong> ${escapeHtml(student.level || "")}</div>
-
-        <hr>
-        <h3>Uploaded Documents</h3>
-
-        <div style="display:flex;flex-wrap:wrap;">
-          ${docImages.map(d => makeImageBlock(d.url, d.b64) + `<div style="text-align:center;width:100%;">${d.name}</div>`).join("")}
-        </div>
-
-        <hr>
-        <h3>O'Level Uploads</h3>
-        <div style="display:flex;flex-wrap:wrap;">
-          ${olevelBase64.map(o => makeImageBlock(o.url, o.b64)).join("")}
-        </div>
-
-        <hr>
-        <h3>Results</h3>
-        <table border="1" cellspacing="0" cellpadding="4" style="width:100%;font-size:12px;">
-          <thead>
-            <tr>
-              <th>Course Code</th><th>Course Title</th><th>Level</th><th>Semester</th><th>Score</th><th>Grade</th>
-            </tr>
-          </thead>
-          <tbody>${resultsRows}</tbody>
-        </table>
-      </div>
-    `;
-
     document.body.appendChild(printArea);
+
+    const verifiedText = student.verified ? "Verified ✔" : "Not Verified ✘";
+    const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ") || (student.displayName || "N/A");
+
+    // Build O'Level & document HTML
+    const olevelDetailsHtml = (docData.oLevelData && docData.oLevelData.length)
+      ? docData.oLevelData.map(o => `<div style="margin-bottom:8px;font-size:13px"><strong>${o.examType || 'O Level'}</strong><div>Serial: ${o.serialNumber || 'N/A'}</div><div>Pin: ${o.pin || 'N/A'}</div></div>`).join("")
+      : `<div class="no-file">No O'Level record found</div>`;
+    const olevelImagesHtml = olevelBase64.length
+      ? olevelBase64.map(b64 => `<img src="${b64}" style="width:120px;height:90px;margin:4px;object-fit:cover;">`).join("")
+      : "No O'Level uploaded";
+
+    const docThumbsHtml = Object.entries(fileBase64Map).map(([k,v]) => {
+      return `<div class="doc-thumb"><div style="height:90px;overflow:hidden">${v?`<img src="${v}" style="width:100%;height:90px;object-fit:cover;border-radius:4px">`:"No preview"}</div><div style="margin-top:6px;font-size:12px">${k}</div></div>`;
+    }).join("") || '<div class="no-file">No documents uploaded</div>';
+
+    const resultsRows = (results && results.length) ? results.map(r => `<tr><td>${escapeHtml(r.courseCode||"")}</td><td>${escapeHtml(r.courseTitle||"")}</td><td>${escapeHtml(r.level||"")}</td><td>${escapeHtml(r.semester||"")}</td><td>${r.score ?? ""}</td><td>${r.grade ?? ""}</td></tr>`).join("") : `<tr><td colspan="6" style="text-align:center;color:#777">No results found</td></tr>`;
+
+    // Entire HTML content
+    printArea.innerHTML = `
+      <!-- header, personal info, documents, O'Level, JAMB, results (same as your current HTML) -->
+     <div class="print-header">
+    <img src="upload/logo.jpg" alt="Logo" onerror="this.style.display='none'">
+    <div style="font-weight:800;font-size:18px;margin-top:6px;">OWU COLLEGE OF MANAGEMENT TECHNOLOGY</div>
+    <div style="font-size:14px;margin-top:4px;">Student Information</div>
+    <div style="margin-top:6px;font-size:12px;color:${student.verified ? 'green':'#777'}">${verifiedText}</div>
+  </div>
+  <hr class="section-sep">
+  <div>
+    <!-- Personal info -->
+    <div>  
+        <div style="font-weight:700;margin-bottom:6px;">Personal Information</div>  
+        <div class="personal-grid">  
+          <div class="personal-left">  
+            ${passportBase64 ? `<img src="${passportBase64}" alt="passport">` : `<div style="width:120px;height:120px;background:#f1f1f1;display:flex;align-items:center;justify-content:center;color:#777;border-radius:6px">No Photo</div>`}  
+          </div>  
+          <div class="personal-right" style="flex:1">  
+            <div class="info-row"><strong>Full Name:</strong> ${escapeHtml(fullName)}</div>  
+            <div class="info-row"><strong>Matric Number:</strong> ${escapeHtml(student.matricNo || student.matricNumber || "N/A")}</div>  
+            <div class="info-row"><strong>Department:</strong> ${escapeHtml(student.department || "N/A")}</div>  
+            <div class="info-row"><strong>Level:</strong> ${escapeHtml(student.level || "N/A")}</div>  
+            <div class="info-row"><strong>Email:</strong> ${escapeHtml(student.email || "N/A")}</div>  
+            <div class="info-row"><strong>Phone:</strong> ${escapeHtml(student.phone || "N/A")}</div>  
+            <div class="info-row"><strong>D.O.B:</strong> ${escapeHtml(student.dob || "N/A")}</div>  
+            <div class="info-row"><strong>State of Origin:</strong> ${escapeHtml(student.stateOrigin || "N/A")}</div>  
+            <div class="info-row"><strong>LGA of Origin:</strong> ${escapeHtml(student.lgaOrigin || "N/A")}</div>  
+            <div class="info-row"><strong>Address:</strong> ${escapeHtml(student.address || "N/A")}</div>  
+          </div>  
+        </div>  
+        <hr class="section-sep">  
+        <div style="font-weight:700;margin-bottom:6px;">Next of Kin</div>  
+        <div class="info-row"><strong>Name:</strong> ${escapeHtml([student.nokSurname, student.nokFirstname].filter(Boolean).join(" ") || "N/A")}</div>  
+        <div class="info-row"><strong>Relation:</strong> ${escapeHtml(student.nokRelation || "N/A")}</div>  
+        <div class="info-row"><strong>Phone:</strong> ${escapeHtml(student.nokPhone || "N/A")}</div>  
+        <div class="info-row"><strong>Address:</strong> ${escapeHtml(student.nokAddress || "N/A")}</div>  
+    <hr class="section-sep">
+
+    <!-- Documents -->
+    <div style="font-weight:700;margin-bottom:6px;">Documents</div>
+    <div class="doc-grid">${docThumbsHtml}</div>
+
+    <!-- O'Level -->
+    <div style="margin-top:12px"><strong>O'Level Details & Images</strong>
+      ${olevelDetailsHtml}
+      <div style="display:flex;flex-wrap:wrap;margin-top:6px">${olevelImagesHtml}</div>
+    </div>
+
+    <!-- JAMB -->
+    <div style="font-size:12px;margin-top:8px;color:#444">
+      JAMB Info: Reg No: ${escapeHtml(docData.jambInfo?.jambRegNo || 'N/A')} — Score: ${escapeHtml(docData.jambInfo?.jambScore || 'N/A')}
+    </div>
+
+    <!-- Results -->
+    <hr class="section-sep">
+    <div style="font-weight:700;margin-bottom:6px;">Results</div>
+    <div style="overflow:auto">
+      <table class="results">
+        <thead>
+          <tr>
+            <th>Course Code</th><th>Course Title</th><th>Level</th><th>Semester</th><th>Score</th><th>Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${resultsRows}
+        </tbody>
+      </table>
+    </div>
+  </div>
+`;
+
+     document.body.appendChild(printArea);
 
     // ------------------ PDF GENERATION ------------------
     const { jsPDF } = window.jspdf;
