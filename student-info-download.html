@@ -438,6 +438,17 @@ async function downloadSingleStudent(studentId, btnEl) {
       </div>
     `;
 
+      <hr class="section-sep">
+        <div style="font-weight:700;margin-bottom:6px;">Results</div>
+        <div style="overflow:auto">
+          <table class="results">
+            <thead><tr><th>Course Code</th><th>Course Title</th><th>Level</th><th>Semester</th><th>Score</th><th>Grade</th></tr></thead>
+            <tbody>${resultsRows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
     // ------------------ PDF Generation ------------------
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF("p", "pt", "a4");
