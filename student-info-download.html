@@ -475,27 +475,8 @@ const pageHeight = pdf.internal.pageSize.getHeight();
 const margin = 20;
 let yOffset = margin;
 
-// Function to draw header on every page
-async function drawHeader() {
-    const headerEl = document.createElement("div");
-    headerEl.innerHTML = `
-      <div style="text-align:center;font-weight:800;font-size:18px;">OWU COLLEGE OF MANAGEMENT TECHNOLOGY</div>
-      <div style="text-align:center;font-size:14px;">Student Information</div>
-      <div style="text-align:center;font-size:12px;color:${student.verified ? 'green':'#777'}">
-        ${student.verified ? "Verified ✔" : "Not Verified ✘"}
-      </div>
-      <hr>
-    `;
-    const canvas = await html2canvas(headerEl, { scale: 2, useCORS: true, allowTaint: false });
-    const imgData = canvas.toDataURL("image/png");
-    const imgWidth = pageWidth - 2 * margin;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    pdf.addImage(imgData, "PNG", margin, yOffset, imgWidth, imgHeight);
-    yOffset += imgHeight + 10;
-}
-
-// Function to add a block (section) to PDF without slicing images
-async function addBlock(element) {
+// Function to draw a block (section) to PDF without slicing images
+async function addBlock(element, repeatHeader = false) {
     const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: false });
     const imgData = canvas.toDataURL("image/png");
     const imgWidth = pageWidth - 2 * margin;
@@ -505,7 +486,13 @@ async function addBlock(element) {
     if (yOffset + imgHeight > pageHeight - margin) {
         pdf.addPage();
         yOffset = margin;
-        await drawHeader(); // repeat header on new page
+        if (repeatHeader) {
+            const headerCanvas = await html2canvas(printArea.children[0], { scale: 2, useCORS: true, allowTaint: false });
+            const headerImgData = headerCanvas.toDataURL("image/png");
+            const headerImgHeight = (headerCanvas.height * imgWidth) / headerCanvas.width;
+            pdf.addImage(headerImgData, "PNG", margin, yOffset, imgWidth, headerImgHeight);
+            yOffset += headerImgHeight + 10;
+        }
     }
 
     pdf.addImage(imgData, "PNG", margin, yOffset, imgWidth, imgHeight);
@@ -514,19 +501,24 @@ async function addBlock(element) {
 
 // Generate PDF
 (async () => {
-    await drawHeader(); // first page header
+    if (!printArea) {
+        alert("No content to generate PDF!");
+        return;
+    }
 
-    // Split content into logical blocks
-    const blocks = [
-        printArea.querySelector(".personal-grid"), // personal info
-        printArea.querySelector(".doc-grid"),      // documents
-        printArea.querySelector("div[style*='O\\'Level Details']"), // O'Level
-        printArea.querySelector("div[style*='JAMB Info']"),         // JAMB
-        printArea.querySelector(".results")        // results table
-    ].filter(Boolean);
+    // Treat the first child as the header
+    const headerEl = printArea.children[0];
+    const headerCanvas = await html2canvas(headerEl, { scale: 2, useCORS: true, allowTaint: false });
+    const imgData = headerCanvas.toDataURL("image/png");
+    const imgWidth = pageWidth - 2 * margin;
+    const imgHeight = (headerCanvas.height * imgWidth) / headerCanvas.width;
+    pdf.addImage(imgData, "PNG", margin, yOffset, imgWidth, imgHeight);
+    yOffset += imgHeight + 10;
 
-    for (const block of blocks) {
-        await addBlock(block);
+    // Add the rest of the content
+    const contentBlocks = Array.from(printArea.children).slice(1);
+    for (const block of contentBlocks) {
+        await addBlock(block, true); // repeat header on new page if needed
     }
 
     pdf.save(`student_${(student.matricNo || student._id).replace(/\s+/g,'_')}.pdf`);
