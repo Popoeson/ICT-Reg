@@ -462,47 +462,313 @@ async function downloadSingleStudent(studentId, btnEl) {
 
      document.body.appendChild(printArea);
 
-    // ------------------ PDF Generation (Option 1) ------------------
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF("p", "pt", "a4");
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 20;
+    // ------------------ PDF Generation (Option A: jsPDF layout + clickable images) ------------------
+const { jsPDF } = window.jspdf;
+const pdf = new jsPDF("p", "pt", "a4");
+const pageWidth = pdf.internal.pageSize.getWidth();
+const pageHeight = pdf.internal.pageSize.getHeight();
+const margin = 28;
+const contentWidth = pageWidth - margin * 2;
 
-    // Capture entire printArea
-    const canvas = await html2canvas(printArea, { scale: 2, useCORS: true, allowTaint: false });
-    const imgData = canvas.toDataURL("image/png");
+let y = margin;
 
-    const imgWidth = pageWidth - margin * 2;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+// small helpers
+function addPageAndHeader() {
+  if (pdf.internal.getNumberOfPages() > 0) pdf.addPage();
+  y = margin;
+  drawHeader();
+}
+function drawHeader() {
+  // Draw school name + subheading centered
+  pdf.setFontSize(14);
+  pdf.setFont("helvetica", "bold");
+  pdf.text("OWU COLLEGE OF MANAGEMENT TECHNOLOGY", pageWidth / 2, y + 5, { align: "center" });
+  pdf.setFontSize(10);
+  pdf.setFont("helvetica", "normal");
+  pdf.text("Student Information", pageWidth / 2, y + 22, { align: "center" });
+  pdf.setFontSize(9);
+  const verifiedTextSmall = student.verified ? "Verified ✔" : "Not Verified ✘";
+  pdf.text(verifiedTextSmall, pageWidth / 2, y + 36, { align: "center" });
+  y += 46;
+  // separator line
+  pdf.setDrawColor(200);
+  pdf.setLineWidth(0.5);
+  pdf.line(margin, y, pageWidth - margin, y);
+  y += 10;
+}
 
-    if (imgHeight <= pageHeight - margin * 2) {
-      // Fits on one page
-      pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight);
-    } else {
-      // Split across multiple pages
-      let remainingHeight = canvas.height;
-      let offsetY = 0;
+// layout sizes
+const passportW = 110;
+const passportH = 110;
+const smallGap = 8;
+const labelW = 120;
+const infoLineHeight = 14;
+const docThumbW = 110;
+const docThumbH = 82;
 
-      while (remainingHeight > 0) {
-        const pageCanvasHeight = Math.min(remainingHeight, ((pageHeight - margin * 2) * canvas.width) / imgWidth);
-        const pageCanvas = document.createElement("canvas");
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = pageCanvasHeight;
+// Start pdf with header on first page
+drawHeader();
 
-        const ctx = pageCanvas.getContext("2d");
-        ctx.drawImage(canvas, 0, offsetY, canvas.width, pageCanvasHeight, 0, 0, canvas.width, pageCanvasHeight);
+// --- PERSONAL INFO ---
+function ensureSpace(h) {
+  if (y + h > pageHeight - margin) {
+    addPageAndHeader();
+  }
+}
 
-        const pageImgData = pageCanvas.toDataURL("image/png");
-        if (pdf.internal.getNumberOfPages() > 0) pdf.addPage();
-        pdf.addImage(pageImgData, "PNG", margin, margin, imgWidth, (pageCanvasHeight * imgWidth) / canvas.width);
+// personal info block: passport + fields
+ensureSpace(passportH + 10);
+const leftX = margin;
+const rightX = margin + passportW + smallGap;
 
-        offsetY += pageCanvasHeight;
-        remainingHeight -= pageCanvasHeight;
-      }
+// passport image
+if (passportBase64) {
+  try {
+    pdf.addImage(passportBase64, "PNG", leftX, y, passportW, passportH);
+    // add clickable link if original URL present
+    if (student.passport && student.passport.startsWith("http")) {
+      pdf.link(leftX, y, passportW, passportH, { url: student.passport });
     }
+  } catch (e) {
+    // fallback: nothing
+  }
+} else {
+  // draw placeholder rectangle
+  pdf.setDrawColor(200);
+  pdf.rect(leftX, y, passportW, passportH);
+  pdf.setFontSize(9);
+  pdf.text("No Photo", leftX + passportW / 2, y + passportH / 2, { align: "center", baseline: "middle" });
+}
 
-    pdf.save(`student_${(student.matricNo || student._id).replace(/\s+/g,'_')}.pdf`);
+// details on right column
+pdf.setFontSize(10);
+pdf.setFont("helvetica", "bold");
+pdf.text("Full Name:", rightX, y + 12);
+pdf.setFont("helvetica", "normal");
+pdf.text(`${fullName}`, rightX + labelW - 20, y + 12);
+
+const infoFields = [
+  ["Matric Number:", student.matricNo || student.matricNumber || "N/A"],
+  ["Department:", student.department || "N/A"],
+  ["Level:", student.level || "N/A"],
+  ["Email:", student.email || "N/A"],
+  ["Phone:", student.phone || "N/A"],
+  ["D.O.B:", student.dob || "N/A"],
+  ["State of Origin:", student.stateOrigin || "N/A"],
+  ["LGA of Origin:", student.lgaOrigin || "N/A"],
+  ["Address:", student.address || "N/A"]
+];
+
+let curY = y + infoLineHeight + 4;
+pdf.setFontSize(9);
+for (let i = 0; i < infoFields.length; i++) {
+  const [label, val] = infoFields[i];
+  ensureSpace(infoLineHeight);
+  pdf.setFont("helvetica", "bold");
+  pdf.text(label, rightX, curY);
+  pdf.setFont("helvetica", "normal");
+  // wrap long values within remaining width
+  const wrapped = pdf.splitTextToSize(String(val), contentWidth - (passportW + smallGap) - 10);
+  pdf.text(wrapped, rightX + labelW - 20, curY);
+  curY += wrapped.length * 10 + 2;
+}
+y = Math.max(y + passportH, curY) + 10;
+
+// Next of Kin block
+ensureSpace(60);
+pdf.setFont("helvetica", "bold"); pdf.setFontSize(10);
+pdf.text("Next of Kin", margin, y);
+y += 14;
+pdf.setFontSize(9);
+pdf.setFont("helvetica", "normal");
+pdf.text(`Name: ${( [student.nokSurname, student.nokFirstname].filter(Boolean).join(" ") || "N/A")}`, margin, y);
+y += 12;
+pdf.text(`Relation: ${student.nokRelation || "N/A"}`, margin, y);
+y += 12;
+pdf.text(`Phone: ${student.nokPhone || "N/A"}`, margin, y);
+y += 12;
+pdf.text(`Address: ${student.nokAddress || "N/A"}`, margin, y);
+y += 14;
+
+// separator
+ensureSpace(20);
+pdf.setDrawColor(200);
+pdf.setLineWidth(0.5);
+pdf.line(margin, y, pageWidth - margin, y);
+y += 12;
+
+// --- DOCUMENTS THUMBS ---
+pdf.setFont("helvetica", "bold");
+pdf.setFontSize(10);
+pdf.text("Documents", margin, y);
+y += 12;
+pdf.setFont("helvetica", "normal");
+const docsPerRow = Math.floor((contentWidth + smallGap) / (docThumbW + smallGap));
+let docIndex = 0;
+let rowX = margin;
+let rowTop = y;
+for (const [k, b64] of Object.entries(fileBase64Map)) {
+  ensureSpace(docThumbH + 30); // thumb plus label
+  if (docIndex > 0 && (docIndex % docsPerRow) === 0) {
+    // move to next row
+    rowTop += docThumbH + 30;
+    rowX = margin;
+    // if next row would overflow, new page
+    ensureSpace((rowTop - y) + docThumbH + 30);
+  }
+  // draw thumb box
+  if (b64) {
+    try {
+      pdf.addImage(b64, "PNG", rowX, rowTop, docThumbW, docThumbH);
+      // clickable link if original URL exists
+      const originalUrl = fileUrlMap[k];
+      if (originalUrl && originalUrl.startsWith("http")) {
+        pdf.link(rowX, rowTop, docThumbW, docThumbH, { url: originalUrl });
+      }
+    } catch (e) {
+      // ignore
+    }
+  } else {
+    pdf.setDrawColor(200);
+    pdf.rect(rowX, rowTop, docThumbW, docThumbH);
+    pdf.setFontSize(9);
+    pdf.text("No preview", rowX + docThumbW / 2, rowTop + docThumbH / 2, { align: "center", baseline: "middle" });
+  }
+  // label under thumb
+  pdf.setFontSize(9);
+  pdf.text(String(k), rowX, rowTop + docThumbH + 12, { maxWidth: docThumbW });
+  rowX += docThumbW + smallGap;
+  docIndex++;
+}
+y = rowTop + docThumbH + 30;
+
+// --- O'LEVEL DETAILS & IMAGES ---
+ensureSpace(30);
+pdf.setFont("helvetica", "bold");
+pdf.setFontSize(10);
+pdf.text("O'Level Details & Images", margin, y);
+y += 14;
+pdf.setFontSize(9);
+pdf.setFont("helvetica", "normal");
+
+// show O'Level textual details
+if (docData.oLevelData && docData.oLevelData.length) {
+  docData.oLevelData.forEach(o => {
+    ensureSpace(36);
+    pdf.text(`${o.examType || "O Level"} — Serial: ${o.serialNumber || "N/A"} — Pin: ${o.pin || "N/A"}`, margin, y);
+    y += 12;
+  });
+} else {
+  pdf.text("No O'Level record found", margin, y);
+  y += 12;
+}
+
+// O'Level images row(s)
+y += 6;
+const olePerRow = Math.floor((contentWidth + smallGap) / (docThumbW + smallGap));
+let oleX = margin;
+let oleTop = y;
+for (let i = 0; i < olevelBase64.length; i++) {
+  ensureSpace(docThumbH + 18);
+  if (i > 0 && (i % olePerRow) === 0) {
+    oleTop += docThumbH + 18;
+    oleX = margin;
+    ensureSpace((oleTop - y) + docThumbH + 18);
+  }
+  const b64 = olevelBase64[i];
+  const url = olevelUrlMap[i];
+  if (b64) {
+    try {
+      pdf.addImage(b64, "PNG", oleX, oleTop, docThumbW, docThumbH);
+      if (url && url.startsWith("http")) pdf.link(oleX, oleTop, docThumbW, docThumbH, { url });
+    } catch (e) {}
+  } else {
+    pdf.setDrawColor(200);
+    pdf.rect(oleX, oleTop, docThumbW, docThumbH);
+    pdf.text("No preview", oleX + docThumbW / 2, oleTop + docThumbH / 2, { align: "center", baseline: "middle" });
+  }
+  oleX += docThumbW + smallGap;
+}
+y = oleTop + docThumbH + 18;
+
+// --- JAMB INFO ---
+ensureSpace(24);
+pdf.setFontSize(9);
+pdf.text(`JAMB Info: Reg No: ${escapeHtml(docData.jambInfo?.jambRegNo || 'N/A')} — Score: ${escapeHtml(docData.jambInfo?.jambScore || 'N/A')}`, margin, y);
+y += 18;
+
+// separator before results
+ensureSpace(18);
+pdf.setDrawColor(200);
+pdf.setLineWidth(0.5);
+pdf.line(margin, y, pageWidth - margin, y);
+y += 12;
+
+// --- RESULTS TABLE ---
+const tableX = margin;
+const tableW = contentWidth;
+const colWidths = [80, 180, 50, 50, 50, 50]; // adjust to contentWidth if needed
+// normalize widths to tableW
+const totalCols = colWidths.reduce((a,b)=>a+b,0);
+const scale = tableW/totalCols;
+for (let i=0;i<colWidths.length;i++) colWidths[i] = colWidths[i]*scale;
+
+function drawTableHeader() {
+  ensureSpace(24);
+  pdf.setFont("helvetica", "bold"); pdf.setFontSize(9);
+  let cx = tableX;
+  const headers = ["Course Code","Course Title","Level","Semester","Score","Grade"];
+  for (let i=0;i<headers.length;i++){
+    pdf.text(headers[i], cx + 4, y + 10);
+    cx += colWidths[i];
+  }
+  y += 18;
+  pdf.setDrawColor(220); pdf.setLineWidth(0.4);
+  pdf.line(tableX, y-8, tableX + tableW, y-8);
+  pdf.setFont("helvetica", "normal");
+}
+
+drawTableHeader();
+
+const rowHeight = 14;
+for (let i=0;i<results.length;i++){
+  const r = results[i];
+  // if not enough space for row, add new page and redraw header
+  if (y + rowHeight > pageHeight - margin) {
+    addPageAndHeader();
+    drawTableHeader();
+  }
+  let cx = tableX;
+  const cells = [
+    r.courseCode || "",
+    r.courseTitle || "",
+    r.level || "",
+    r.semester || "",
+    (r.score==null?"":String(r.score)),
+    r.grade || ""
+  ];
+  pdf.setFontSize(9);
+  for (let c=0;c<cells.length;c++){
+    // wrap cell text if long
+    const txt = String(cells[c]);
+    const wrapped = pdf.splitTextToSize(txt, colWidths[c]-6);
+    pdf.text(wrapped, cx + 4, y + 10);
+    cx += colWidths[c];
+  }
+  y += Math.max(rowHeight, (pdf.splitTextToSize(String(cells[1]), colWidths[1]-6).length * 10) + 4);
+}
+
+// If there were zero results, show fallback message
+if (!results.length) {
+  ensureSpace(24);
+  pdf.setFontSize(9);
+  pdf.text("No results found", tableX + 4, y);
+  y += 18;
+}
+
+// Save PDF
+const outName = `student_${(student.matricNo || student._id || "student").replace(/\s+/g,'_')}.pdf`;
+pdf.save(outName);
 
     // Cleanup
     document.body.removeChild(printArea);
