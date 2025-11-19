@@ -468,14 +468,38 @@ async function downloadSingleStudent(studentId, btnEl) {
      document.body.appendChild(printArea);
 
     // ------------------ PDF Generation ------------------
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF("p", "pt", "a4");
-    const canvas = await html2canvas(printArea, { scale: 2, useCORS: true, allowTaint: false });
+const { jsPDF } = window.jspdf;
+const pdf = new jsPDF("p", "pt", "a4");
+const pageWidth = pdf.internal.pageSize.getWidth();
+const pageHeight = pdf.internal.pageSize.getHeight();
+let yOffset = 20; // initial top margin
+
+async function addBlockToPDF(element) {
+    const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: false });
     const imgData = canvas.toDataURL("image/png");
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const imgHeight = (canvas.height * pageWidth) / canvas.width;
-    pdf.addImage(imgData, "PNG", 0, 0, pageWidth, imgHeight);
-    
+    const imgWidth = pageWidth - 40; // leave side margins
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    // If block won't fit, add new page
+    if (yOffset + imgHeight > pageHeight - 20) {
+        pdf.addPage();
+        yOffset = 20;
+    }
+
+    pdf.addImage(imgData, "PNG", 20, yOffset, imgWidth, imgHeight);
+    yOffset += imgHeight + 10; // 10pt spacing after block
+}
+
+// Split printArea into blocks
+const blocks = Array.from(printArea.children);
+for (const block of blocks) {
+    await addBlockToPDF(block);
+}
+
+// Save PDF
+pdf.save(`student_${(student.matricNo || student._id).replace(/\s+/g,'_')}.pdf`);
+
+
     // Cleanup
     document.body.removeChild(printArea);
     pdf.save(`student_${(student.matricNo || student._id).replace(/\s+/g,'_')}.pdf`);
