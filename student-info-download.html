@@ -391,6 +391,10 @@ async function downloadSingleStudent(studentId, btnEl) {
       return `<div class="doc-thumb"><div style="height:90px;overflow:hidden">${v?`<img src="${v}" style="width:100%;height:90px;object-fit:cover;border-radius:4px">`:"No preview"}</div><div style="margin-top:6px;font-size:12px">${k}</div></div>`;
     }).join("") || '<div class="no-file">No documents uploaded</div>';
 
+
+       // results table html
+    const resultsRows = (results && results.length) ? results.map(r => `<tr><td>${escapeHtml(r.courseCode||"")}</td><td>${escapeHtml(r.courseTitle||"")}</td><td>${escapeHtml(r.level||"")}</td><td>${escapeHtml(r.semester||"")}</td><td>${r.score ?? ""}</td><td>${r.grade ?? ""}</td></tr>`).join("") : `<tr><td colspan="6" style="text-align:center;color:#777">No results found</td></tr>`;
+
     printArea.innerHTML = `
       <div class="print-header">
         <img src="upload/logo.jpg" alt="Logo" onerror="this.style.display='none'">
