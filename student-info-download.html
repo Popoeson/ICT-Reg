@@ -167,7 +167,8 @@
   <footer style="text-align:center;padding:14px;background:#fff;border-top:1px solid #eee">
     © 2025 ICT Registration Portal – All Rights Reserved.
   </footer>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script>
 const backendURL = "https://ict-reg.onrender.com";
 const PAGE_SIZE = 200;
@@ -472,6 +473,117 @@ async function downloadSingleStudent(studentId, btnEl) {
 
     // append printArea to DOM (already appended above)
 
+     /* ------------------ BULK ZIP DOWNLOAD ------------------ */
+
+bulkDownloadBtn.addEventListener("click", async () => {
+    if (!filtered.length) {
+        alert("No students to download.");
+        return;
+    }
+
+    const total = filtered.length;
+    if (!confirm(`Generate ZIP file for ${total} students?\nThis may take a while.`)) return;
+
+    // Create ZIP instance
+    const zip = new JSZip();
+
+    // Track success/failure
+    let successCount = 0;
+    let failedCount = 0;
+
+    // Build progress bar container
+    let progressContainer = document.createElement("div");
+    progressContainer.style.position = "fixed";
+    progressContainer.style.top = "20px";
+    progressContainer.style.left = "50%";
+    progressContainer.style.transform = "translateX(-50%)";
+    progressContainer.style.width = "300px";
+    progressContainer.style.background = "#222";
+    progressContainer.style.color = "#fff";
+    progressContainer.style.padding = "15px";
+    progressContainer.style.borderRadius = "10px";
+    progressContainer.style.boxShadow = "0 0 10px rgba(0,0,0,0.4)";
+    progressContainer.style.zIndex = "999999";
+
+    progressContainer.innerHTML = `
+        <div id="bulkProgressText" style="font-size:14px;margin-bottom:8px;">
+            Starting…
+        </div>
+        <div style="width:100%;background:#555;height:10px;border-radius:6px;">
+            <div id="bulkProgressBar" style="width:0%;height:10px;background:#28a745;border-radius:6px;transition:0.3s;"></div>
+        </div>
+    `;
+    document.body.appendChild(progressContainer);
+
+    const progressText = document.getElementById("bulkProgressText");
+    const progressBar = document.getElementById("bulkProgressBar");
+
+    bulkDownloadBtn.disabled = true;
+    bulkDownloadBtn.textContent = "Generating ZIP…";
+
+    for (let i = 0; i < total; i++) {
+        const student = filtered[i];
+
+        progressText.textContent = `Generating PDF ${i + 1} of ${total}…`;
+        progressBar.style.width = `${((i + 1) / total) * 100}%`;
+
+        try {
+            // Capture PDF as Blob instead of saving it
+            const pdfBlob = await generatePDFBlob(student._id || student.id);
+
+            // Add it into ZIP
+            const fileNameSafe = (student.matricNo || student._id || `student_${i}`).replace(/\s+/g, "_");
+            zip.file(`${fileNameSafe}.pdf`, pdfBlob);
+
+            successCount++;
+        } catch (err) {
+            console.error("Failed PDF:", err);
+            failedCount++;
+        }
+
+        // Small delay to prevent freezing
+        await new Promise(res => setTimeout(res, 200));
+    }
+
+    progressText.textContent = "Compressing ZIP…";
+
+    // Generate ZIP file
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+
+    // Download ZIP
+    saveAs(zipBlob, `students_batch_${Date.now()}.zip`);
+
+    // Cleanup progress bar
+    progressContainer.remove();
+
+    bulkDownloadBtn.disabled = false;
+    bulkDownloadBtn.textContent = "Bulk Download";
+
+    // Show summary popup
+    alert(
+        `Bulk Download Completed!\n\n` +
+        `Successfully generated: ${successCount}\n` +
+        `Failed: ${failedCount}\n\n` +
+        `ZIP file has been downloaded.`
+    );
+});
+
+
+/* ------------------ MODIFIED SINGLE PDF FOR BULK: RETURN BLOB ------------------ */
+async function generatePDFBlob(studentId) {
+
+    return new Promise(async (resolve, reject) => {
+        try {
+            // Instead of saving PDF inside downloadSingleStudent(),
+            // we REUSE your exact logic but return pdf.output("blob")
+            const pdfBlob = await downloadSingleStudent(studentId, null, true);
+            resolve(pdfBlob);
+        } catch (err) {
+            reject(err);
+        }
+    });
+
+}
     // ------------------ CAPTURE PDF CONTENT ------------------
 const { jsPDF } = window.jspdf;
 const pdf = new jsPDF("p", "pt", "a4");
@@ -606,7 +718,12 @@ const outName = `student_${(student.matricNo || student._id || "student")
   .toString()
   .replace(/\s+/g,'_')}.pdf`;
 
-pdf.save(outName);
+if (returnBlob) {
+    // return the PDF as Blob to bulk ZIP builder
+    return pdf.output("blob");
+} else {
+    pdf.save(outName);
+}
 
     
     // remove printArea from DOM
@@ -619,6 +736,7 @@ pdf.save(outName);
     try { btnEl.disabled = false; btnEl.textContent = "Download"; } catch(e){}
   }
 }
+
 
 // ------------------ EVENT LISTENERS ------------------
 searchInput.addEventListener("input",()=>{currentPage=1;applyFiltersAndRender();});
