@@ -596,8 +596,12 @@ async function downloadSingleStudent(studentId, btnEl = null, returnBlob = false
 
 // ------------------ BULK DOWNLOAD ------------------
 async function handleBulkDownload() {
+  const bulkButton = document.getElementById("bulkDownloadBtn"); // make sure your button has this ID
   if (!filtered.length) { alert("No students to download."); return; }
   if (!confirm(`Download PDF for ${filtered.length} students?`)) return;
+
+  bulkButton.textContent = "Downloading...";  // show downloading state
+  bulkButton.disabled = true;
 
   const progressContainer = document.getElementById("bulkProgressContainer");
   const progressBar = document.getElementById("bulkProgressBar");
@@ -613,12 +617,13 @@ async function handleBulkDownload() {
   for (let i = 0; i < filtered.length; i++) {
     const student = filtered[i];
     try {
-      const pdfBlob = await downloadSingleStudent(student._id || student.id, null, true);
+      // Pass true to ignore missing details, if your downloadSingleStudent supports it
+      const pdfBlob = await downloadSingleStudent(student._id || student.id, null, true, true); 
       const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ") || (student.displayName || "Student");
       zip.file(`${fullName}.pdf`, pdfBlob);
       successCount++;
     } catch(err) {
-      console.error(err);
+      console.warn(`Skipped student ${student._id || student.id}:`, err);
       failedCount++;
     }
     progressBar.style.width = `${Math.round(((i+1)/filtered.length)*100)}%`;
@@ -630,6 +635,9 @@ async function handleBulkDownload() {
   progressContainer.style.display = "none";
   summaryText.textContent = `Successful: ${successCount}\nFailed: ${failedCount}`;
   summaryPopup.style.display = "block";
+
+  bulkButton.textContent = "Download PDFs";  // reset button text
+  bulkButton.disabled = false;
 }
 
 // ------------------ EVENT LISTENERS ------------------
