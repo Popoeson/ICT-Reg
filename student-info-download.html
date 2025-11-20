@@ -331,10 +331,12 @@ async function fetchOlevelImages(matricNumber) {
 }
 
 // ------------------ SINGLE DOWNLOAD (MERGED: layout + URLs visible + clickable links at end) ------------------
-async function downloadSingleStudent(studentId, btnEl) {
+async function downloadSingleStudent(studentId, btnEl = null, returnBlob = false) {
   try {
-    btnEl.disabled = true;
-    btnEl.textContent = "Generating PDF…";
+    if (btnEl) {
+      btnEl.disabled = true;
+      btnEl.textContent = "Generating PDF…";
+    }
 
     // ===== FETCH STUDENT =====
     const sRes = await fetch(`${backendURL}/api/students/${encodeURIComponent(studentId)}`);
@@ -343,7 +345,7 @@ async function downloadSingleStudent(studentId, btnEl) {
     const student = sJson.student;
 
     // ===== FETCH DOCUMENTS =====
-    let docData = { files: {}, oLevelData: [] };
+    let docData = { files: {}, oLevelData: [], jambInfo: {} };
     try {
       const dRes = await fetch(`${backendURL}/api/documents/${encodeURIComponent(student._id)}`);
       docData = (await dRes.json()).data || docData;
@@ -351,7 +353,7 @@ async function downloadSingleStudent(studentId, btnEl) {
 
     // ===== OLEVEL IMAGES =====
     const olevelUrls = await fetchOlevelImages(student.matricNo || student.matricNumber);
-    const olevelImages = []; // array of { url, b64 }
+    const olevelImages = [];
     for (const url of olevelUrls) {
       const b64 = url ? await toDataURL(url) : null;
       olevelImages.push({ url, b64 });
@@ -362,7 +364,7 @@ async function downloadSingleStudent(studentId, btnEl) {
     const passportBase64 = passportUrl ? await toDataURL(passportUrl) : null;
 
     // ===== DOCUMENT IMAGES (convert to base64) =====
-    const docImages = []; // array of { name, url, b64 }
+    const docImages = [];
     for (const [name, url] of Object.entries(docData.files || {})) {
       const b64 = url ? await toDataURL(url) : null;
       docImages.push({ name, url, b64 });
@@ -376,22 +378,21 @@ async function downloadSingleStudent(studentId, btnEl) {
       results = rJson.results || [];
     } catch (e) { console.warn("Results fetch failed", e); }
 
-    // ====== BUILD PRINT AREA HTML (layout preserved) ======
+    // ====== BUILD PRINT AREA HTML ======
     const printArea = document.createElement("div");
     printArea.className = "print-area";
     printArea.style.position = "absolute";
     printArea.style.left = "-9999px";
     printArea.style.top = "-9999px";
-    // minimal styles so printed layout looks correct; if you have external CSS for .print-area, that will apply when appended
     document.body.appendChild(printArea);
 
     const verifiedText = student.verified ? "Verified ✔" : "Not Verified ✘";
     const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ") || (student.displayName || "N/A");
 
-    // Documents thumbnails HTML (with visible URL under each image)
+    // Documents thumbnails HTML
     const docThumbsHtml = docImages.length
       ? docImages.map(d => `
-        <div class="doc-thumb" style="margin:6px;">
+        <div style="margin:6px;">
           <div style="height:90px;overflow:hidden">
             ${d.b64 ? `<img src="${d.b64}" style="width:100%;height:90px;object-fit:cover;border-radius:4px">` : `<div style="width:100%;height:90px;background:#f1f1f1;display:flex;align-items:center;justify-content:center;color:#777">No preview</div>`}
           </div>
@@ -399,11 +400,11 @@ async function downloadSingleStudent(studentId, btnEl) {
           <div style="font-size:10px;color:#1a73e8;word-break:break-all;margin-top:4px">${d.url ? escapeHtml(d.url) : ""}</div>
         </div>
       `).join("")
-      : '<div class="no-file">No documents uploaded</div>';
+      : '<div>No documents uploaded</div>';
 
-    // O'level images HTML (with visible URL under each)
+    // O'level images HTML
     const olevelImagesHtml = olevelImages.length
-      ? olevelImages.map(o => `
+      ? olevelImages.map((o, i) => `
          <div style="margin:4px;text-align:center;font-size:10px;">
            ${o.b64 ? `<img src="${o.b64}" style="width:120px;height:90px;object-fit:cover;border-radius:4px">` : `<div style="width:120px;height:90px;background:#f1f1f1;display:flex;align-items:center;justify-content:center;color:#777">No preview</div>`}
            <div style="color:#1a73e8;word-break:break-all;margin-top:4px;font-size:10px">${o.url ? escapeHtml(o.url) : ""}</div>
@@ -414,50 +415,50 @@ async function downloadSingleStudent(studentId, btnEl) {
     // O'Level textual details
     const olevelDetailsHtml = (docData.oLevelData && docData.oLevelData.length)
       ? docData.oLevelData.map(o => `<div style="margin-bottom:8px;font-size:13px"><strong>${escapeHtml(o.examType || 'O Level')}</strong><div>Serial: ${escapeHtml(o.serialNumber || 'N/A')}</div><div>Pin: ${escapeHtml(o.pin || 'N/A')}</div></div>`).join("")
-      : `<div class="no-file">No O'Level record found</div>`;
+      : `<div>No O'Level record found</div>`;
 
     // Results rows
-    const resultsRows = (results && results.length) ? results.map(r => `<tr><td>${escapeHtml(r.courseCode||"")}</td><td>${escapeHtml(r.courseTitle||"")}</td><td>${escapeHtml(r.level||"")}</td><td>${escapeHtml(r.semester||"")}</td><td>${escapeHtml(String(r.score ?? ""))}</td><td>${escapeHtml(r.grade ?? "")}</td></tr>`).join("") : `<tr><td colspan="6" style="text-align:center;color:#777">No results found</td></tr>`;
+    const resultsRows = (results && results.length)
+      ? results.map(r => `<tr><td>${escapeHtml(r.courseCode||"")}</td><td>${escapeHtml(r.courseTitle||"")}</td><td>${escapeHtml(r.level||"")}</td><td>${escapeHtml(r.semester||"")}</td><td>${escapeHtml(String(r.score ?? ""))}</td><td>${escapeHtml(r.grade ?? "")}</td></tr>`).join("")
+      : `<tr><td colspan="6" style="text-align:center;color:#777">No results found</td></tr>`;
 
-    // Entire HTML content (keeps your layout; small inserts added to show URLs)
     printArea.innerHTML = `
-      <div class="print-header" style="text-align:center;">
+      <div style="text-align:center;">
         <img src="upload/logo.jpg" alt="Logo" onerror="this.style.display='none'">
         <div style="font-weight:800;font-size:18px;margin-top:6px;">OWU COLLEGE OF MANAGEMENT TECHNOLOGY</div>
         <div style="font-size:14px;margin-top:4px;">Student Information</div>
         <div style="margin-top:6px;font-size:12px;color:${student.verified ? 'green':'#777'}">${verifiedText}</div>
       </div>
-      <hr class="section-sep">
+      <hr>
       <div>
         <div style="font-weight:700;margin-bottom:6px;">Personal Information</div>
-        <div class="personal-grid" style="display:flex;gap:14px;">
-          <div class="personal-left">
+        <div style="display:flex;gap:14px;">
+          <div>
             ${passportBase64 ? `<img src="${passportBase64}" alt="passport" style="width:120px;height:120px;object-fit:cover;border-radius:6px">` : `<div style="width:120px;height:120px;background:#f1f1f1;display:flex;align-items:center;justify-content:center;color:#777;border-radius:6px">No Photo</div>`}
             <div style="font-size:10px;color:#1a73e8;word-break:break-all;margin-top:6px">${passportUrl ? escapeHtml(passportUrl) : ""}</div>
           </div>
-          <div class="personal-right" style="flex:1">
-            <div class="info-row"><strong>Full Name:</strong> ${escapeHtml(fullName)}</div>
-            <div class="info-row"><strong>Matric Number:</strong> ${escapeHtml(student.matricNo || student.matricNumber || "N/A")}</div>
-            <div class="info-row"><strong>Department:</strong> ${escapeHtml(student.department || "N/A")}</div>
-            <div class="info-row"><strong>Level:</strong> ${escapeHtml(student.level || "N/A")}</div>
-            <div class="info-row"><strong>Email:</strong> ${escapeHtml(student.email || "N/A")}</div>
-            <div class="info-row"><strong>Phone:</strong> ${escapeHtml(student.phone || "N/A")}</div>
-            <div class="info-row"><strong>D.O.B:</strong> ${escapeHtml(student.dob || "N/A")}</div>
-            <div class="info-row"><strong>State of Origin:</strong> ${escapeHtml(student.stateOrigin || "N/A")}</div>
-            <div class="info-row"><strong>LGA of Origin:</strong> ${escapeHtml(student.lgaOrigin || "N/A")}</div>
-            <div class="info-row"><strong>Address:</strong> ${escapeHtml(student.address || "N/A")}</div>
+          <div style="flex:1">
+            <div><strong>Full Name:</strong> ${escapeHtml(fullName)}</div>
+            <div><strong>Matric Number:</strong> ${escapeHtml(student.matricNo || student.matricNumber || "N/A")}</div>
+            <div><strong>Department:</strong> ${escapeHtml(student.department || "N/A")}</div>
+            <div><strong>Level:</strong> ${escapeHtml(student.level || "N/A")}</div>
+            <div><strong>Email:</strong> ${escapeHtml(student.email || "N/A")}</div>
+            <div><strong>Phone:</strong> ${escapeHtml(student.phone || "N/A")}</div>
+            <div><strong>D.O.B:</strong> ${escapeHtml(student.dob || "N/A")}</div>
+            <div><strong>State of Origin:</strong> ${escapeHtml(student.stateOrigin || "N/A")}</div>
+            <div><strong>LGA of Origin:</strong> ${escapeHtml(student.lgaOrigin || "N/A")}</div>
+            <div><strong>Address:</strong> ${escapeHtml(student.address || "N/A")}</div>
           </div>
         </div>
-        <hr class="section-sep">
+        <hr>
         <div style="font-weight:700;margin-bottom:6px;">Next of Kin</div>
-        <div class="info-row"><strong>Name:</strong> ${escapeHtml([student.nokSurname, student.nokFirstname].filter(Boolean).join(" ") || "N/A")}</div>
-        <div class="info-row"><strong>Relation:</strong> ${escapeHtml(student.nokRelation || "N/A")}</div>
-        <div class="info-row"><strong>Phone:</strong> ${escapeHtml(student.nokPhone || "N/A")}</div>
-        <div class="info-row"><strong>Address:</strong> ${escapeHtml(student.nokAddress || "N/A")}</div>
-        <hr class="section-sep">
-
+        <div><strong>Name:</strong> ${escapeHtml([student.nokSurname, student.nokFirstname].filter(Boolean).join(" ") || "N/A")}</div>
+        <div><strong>Relation:</strong> ${escapeHtml(student.nokRelation || "N/A")}</div>
+        <div><strong>Phone:</strong> ${escapeHtml(student.nokPhone || "N/A")}</div>
+        <div><strong>Address:</strong> ${escapeHtml(student.nokAddress || "N/A")}</div>
+        <hr>
         <div style="font-weight:700;margin-bottom:6px;">Documents</div>
-        <div class="doc-grid" style="display:flex;flex-wrap:wrap;gap:8px;">${docThumbsHtml}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">${docThumbsHtml}</div>
 
         <div style="margin-top:12px"><strong>O'Level Details & Images</strong>
           ${olevelDetailsHtml}
@@ -468,10 +469,10 @@ async function downloadSingleStudent(studentId, btnEl) {
           JAMB Info: Reg No: ${escapeHtml(docData.jambInfo?.jambRegNo || 'N/A')} — Score: ${escapeHtml(String(docData.jambInfo?.jambScore || 'N/A'))}
         </div>
 
-        <hr class="section-sep">
+        <hr>
         <div style="font-weight:700;margin-bottom:6px;">Results</div>
         <div style="overflow:auto">
-          <table class="results" style="width:100%;border-collapse:collapse;">
+          <table style="width:100%;border-collapse:collapse;">
             <thead>
               <tr>
                 <th style="text-align:left;padding:6px;border-bottom:1px solid #ddd">Course Code</th>
@@ -490,238 +491,146 @@ async function downloadSingleStudent(studentId, btnEl) {
       </div>
     `;
 
-    // append printArea to DOM (already appended above)
+    // ------------------ GENERATE PDF ------------------
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "pt", "a4");
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
 
-  
+    const canvas = await html2canvas(printArea, { scale: 2, useCORS: true, allowTaint: false });
+    const imgData = canvas.toDataURL("image/png");
+    const imgWidth = pageWidth - margin * 2;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-/* ------------------ MODIFIED SINGLE PDF FOR BULK: RETURN BLOB ------------------ */
-async function generatePDFBlob(studentId) {
+    if (imgHeight <= pageHeight - margin * 2) {
+      pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight);
+    } else {
+      // Multi-page
+      let remainingHeight = canvas.height;
+      let offsetY = 0;
+      while (remainingHeight > 0) {
+        const sliceHeight = Math.min(
+          remainingHeight,
+          Math.floor(((pageHeight - margin * 2) * canvas.width) / imgWidth)
+        );
 
-    return new Promise(async (resolve, reject) => {
-        try {
-            // Instead of saving PDF inside downloadSingleStudent(),
-            // we REUSE your exact logic but return pdf.output("blob")
-            const pdfBlob = await downloadSingleStudent(studentId, null, true);
-            resolve(pdfBlob);
-        } catch (err) {
-            reject(err);
-        }
-    });
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeight;
 
-}
-    // ------------------ CAPTURE PDF CONTENT ------------------
-const { jsPDF } = window.jspdf;
-const pdf = new jsPDF("p", "pt", "a4");
-const pageWidth = pdf.internal.pageSize.getWidth();
-const pageHeight = pdf.internal.pageSize.getHeight();
-const margin = 20;
+        const ctx = pageCanvas.getContext("2d");
+        ctx.drawImage(
+          canvas,
+          0, offsetY,
+          canvas.width, sliceHeight,
+          0, 0,
+          canvas.width, sliceHeight
+        );
 
-// Capture the HTML area
-const canvas = await html2canvas(printArea, {
-  scale: 2,
-  useCORS: true,
-  allowTaint: false
-});
+        const pageImg = pageCanvas.toDataURL("image/png");
 
-const imgData = canvas.toDataURL("image/png");
-const imgWidth = pageWidth - margin * 2;
-const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        if (pdf.internal.getNumberOfPages() > 0) pdf.addPage();
 
-// If content fits 1 page
-if (imgHeight <= pageHeight - margin * 2) {
-  pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight);
-} 
-else {
-  // Multi-page splitting
-  let remainingHeight = canvas.height;
-  let offsetY = 0;
-  while (remainingHeight > 0) {
-    const sliceHeight = Math.min(
-      remainingHeight,
-      Math.floor(((pageHeight - margin * 2) * canvas.width) / imgWidth)
-    );
+        pdf.addImage(pageImg, "PNG", margin, margin, imgWidth, (sliceHeight * imgWidth) / canvas.width);
 
-    const pageCanvas = document.createElement("canvas");
-    pageCanvas.width = canvas.width;
-    pageCanvas.height = sliceHeight;
-
-    const ctx = pageCanvas.getContext("2d");
-    ctx.drawImage(
-      canvas,
-      0, offsetY,
-      canvas.width, sliceHeight,
-      0, 0,
-      canvas.width, sliceHeight
-    );
-
-    const pageImg = pageCanvas.toDataURL("image/png");
-
-    if (pdf.internal.getNumberOfPages() > 0) {
-      pdf.addPage();
+        offsetY += sliceHeight;
+        remainingHeight -= sliceHeight;
+      }
     }
 
-    pdf.addImage(pageImg, "PNG", margin, margin, imgWidth, (sliceHeight * imgWidth) / canvas.width);
+    // ------------------ CLICKABLE URL LIST ------------------
+    const linkItems = [];
 
-    offsetY += sliceHeight;
-    remainingHeight -= sliceHeight;
-  }
-}
+    if (passportUrl) linkItems.push({ label: "Passport", url: passportUrl });
+    for (const d of docImages) if (d.url) linkItems.push({ label: d.name, url: d.url });
+    olevelImages.forEach((o, i) => { if (o.url) linkItems.push({ label: `O'Level Image ${i+1}`, url: o.url }); });
 
-// ------------------ CLICKABLE URL LIST (ONLY AT END) ------------------
-const linkItems = [];
-
-// passport
-if (passportUrl)
-  linkItems.push({ label: "Passport", url: passportUrl });
-
-// documents
-for (const d of docImages) {
-  if (d.url) linkItems.push({ label: d.name, url: d.url });
-}
-
-// olevel images
-olevelImages.forEach((o, i) => {
-  if (o.url) linkItems.push({ label: `O'Level Image ${i+1}`, url: o.url });
-});
-
-if (linkItems.length) {
-  pdf.addPage();
-  let y = margin;
-
-  pdf.setFontSize(14);
-  pdf.setFont("helvetica", "bold");
-  pdf.text("Clickable Image URLs", margin, y);
-  y += 25;
-
-  pdf.setFontSize(11);
-  pdf.setFont("helvetica", "normal");
-
-  const lineHeight = 15;
-  const textMaxWidth = pageWidth - margin * 2;
-
-  linkItems.forEach(item => {
-    // New page if needed
-    if (y + lineHeight > pageHeight - margin) {
+    if (linkItems.length) {
       pdf.addPage();
-      y = margin;
+      let y = margin;
+      pdf.setFontSize(14);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Clickable Image URLs", margin, y);
+      y += 25;
+      pdf.setFontSize(11);
+      pdf.setFont("helvetica", "normal");
+      const lineHeight = 15;
+      const textMaxWidth = pageWidth - margin * 2;
+
+      linkItems.forEach(item => {
+        if (y + lineHeight > pageHeight - margin) { pdf.addPage(); y = margin; }
+        pdf.setTextColor(0,0,0);
+        pdf.text(item.label + ":", margin, y); y += 12;
+        const wrapped = pdf.splitTextToSize(item.url, textMaxWidth);
+        wrapped.forEach((line, i) => {
+          if (y + lineHeight > pageHeight - margin) { pdf.addPage(); y = margin; }
+          pdf.setTextColor(10, 85, 175);
+          pdf.text(line, margin + 10, y);
+          if (i === 0) pdf.link(margin + 10, y - 8, pdf.getTextWidth(line), lineHeight, { url: item.url });
+          y += lineHeight;
+        });
+        y += 8;
+      });
+      pdf.setTextColor(0,0,0);
     }
 
-    // Label
-    pdf.setTextColor(0,0,0);
-    pdf.text(item.label + ":", margin, y);
-    y += 12;
+    const outName = `student_${(student.matricNo || student._id || "student").toString().replace(/\s+/g,'_')}.pdf`;
 
-    // URL (wrapped)
-    const wrapped = pdf.splitTextToSize(item.url, textMaxWidth);
+    if (returnBlob) {
+      document.body.removeChild(printArea);
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = "Download"; }
+      return pdf.output("blob");
+    } else {
+      pdf.save(outName);
+      document.body.removeChild(printArea);
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = "Download"; }
+    }
 
-    wrapped.forEach((line, i) => {
-      if (y + lineHeight > pageHeight - margin) {
-        pdf.addPage();
-        y = margin;
-      }
-
-      pdf.setTextColor(10, 85, 175);
-      pdf.text(line, margin + 10, y);
-
-      if (i === 0) {
-        // Make first line clickable
-        const w = pdf.getTextWidth(line);
-        pdf.link(margin + 10, y - 8, w, lineHeight, { url: item.url });
-      }
-
-      y += lineHeight;
-    });
-
-    y += 8;
-  });
-
-  pdf.setTextColor(0,0,0);
-}
-
-// ------------------ SAVE ------------------
-const outName = `student_${(student.matricNo || student._id || "student")
-  .toString()
-  .replace(/\s+/g,'_')}.pdf`;
-
-if (returnBlob) {
-    // return the PDF as Blob to bulk ZIP builder
-    return pdf.output("blob");
-} else {
-    pdf.save(outName);
-}
-
-    
-    // remove printArea from DOM
-    try { document.body.removeChild(printArea); } catch(e){/* ignore */ }
-    btnEl.disabled = false;
-    btnEl.textContent = "Download";
   } catch(err) {
     console.error(err);
     alert("PDF generation failed: " + (err.message || err));
-    try { btnEl.disabled = false; btnEl.textContent = "Download"; } catch(e){}
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = "Download"; }
   }
 }
 
-/* ------------------ BULK DOWNLOAD WITH ZIP + PROGRESS + SUMMARY ------------------ */
-bulkDownloadBtn.addEventListener("click", async () => {
-    if (!filtered.length) {
-        alert("No students to download.");
-        return;
+// ------------------ BULK DOWNLOAD ------------------
+async function handleBulkDownload() {
+  if (!filtered.length) { alert("No students to download."); return; }
+  if (!confirm(`Download PDF for ${filtered.length} students?`)) return;
+
+  const progressContainer = document.getElementById("bulkProgressContainer");
+  const progressBar = document.getElementById("bulkProgressBar");
+  const summaryPopup = document.getElementById("bulkSummaryPopup");
+  const summaryText = document.getElementById("bulkSummaryText");
+
+  progressContainer.style.display = "block";
+  progressBar.style.width = "0%";
+
+  const zip = new JSZip();
+  let successCount = 0, failedCount = 0;
+
+  for (let i = 0; i < filtered.length; i++) {
+    const student = filtered[i];
+    try {
+      const pdfBlob = await downloadSingleStudent(student._id || student.id, null, true);
+      const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ") || (student.displayName || "Student");
+      zip.file(`${fullName}.pdf`, pdfBlob);
+      successCount++;
+    } catch(err) {
+      console.error(err);
+      failedCount++;
     }
+    progressBar.style.width = `${Math.round(((i+1)/filtered.length)*100)}%`;
+  }
 
-    if (!confirm(`Download PDF for ${filtered.length} students?`)) return;
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  saveAs(zipBlob, `Student_PDFs_${Date.now()}.zip`);
 
-    // UI elements
-    const progressContainer = document.getElementById("bulkProgressContainer");
-    const progressBar = document.getElementById("bulkProgressBar");
-    const summaryPopup = document.getElementById("bulkSummaryPopup");
-    const summaryText = document.getElementById("bulkSummaryText");
-
-    progressContainer.style.display = "block";
-    progressBar.style.width = "0%";
-
-    const zip = new JSZip();
-
-    let successCount = 0;
-    let failedCount = 0;
-
-    for (let i = 0; i < filtered.length; i++) {
-        const student = filtered[i];
-
-        try {
-            // Generate PDF (re-use your existing function)
-            const pdfBlob = await downloadSingleStudent(student._id || student.id, null, true);
-
-            // Add PDF to ZIP
-            zip.file(`${student.fullName || student.name}.pdf`, pdfBlob);
-
-            successCount++;
-        } catch (err) {
-            console.error(err);
-            failedCount++;
-        }
-
-        // Update progress bar
-        const percent = Math.round(((i + 1) / filtered.length) * 100);
-        progressBar.style.width = percent + "%";
-    }
-
-    // Generate zip file
-    const zipBlob = await zip.generateAsync({ type: "blob" });
-
-    // Save the zip file
-    saveAs(zipBlob, `Student_PDFs_${Date.now()}.zip`);
-
-    // Hide progress bar
-    progressContainer.style.display = "none";
-
-    // Show summary popup
-    summaryText.textContent = `
-        Successful: ${successCount}
-        Failed: ${failedCount}
-    `;
-    summaryPopup.style.display = "block";
-});
+  progressContainer.style.display = "none";
+  summaryText.textContent = `Successful: ${successCount}\nFailed: ${failedCount}`;
+  summaryPopup.style.display = "block";
+}
 
 // ------------------ EVENT LISTENERS ------------------
 searchInput.addEventListener("input",()=>{currentPage=1;applyFiltersAndRender();});
