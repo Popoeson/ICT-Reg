@@ -271,18 +271,12 @@ function renderPage(pageNum){
       fragment.appendChild(card);
     });
     studentsContainer.appendChild(fragment);
-    document.querySelectorAll(".download-btn")
-        .forEach(btn=>btn.addEventListener("click",()=>downloadSingleStudent(btn.dataset.id,btn)));
+    document.querySelectorAll(".download-btn").forEach(btn=>btn.addEventListener("click",(e)=>downloadSingleStudent(btn.dataset.id,btn)));
   }
 }
 
 // ------------------ UTILITY ------------------
-function escapeHtml(str=""){ 
-  return String(str||"").replace(/[&<>"']/g, m => 
-    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])
-  ); 
-}
-
+function escapeHtml(str=""){ return String(str||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])); }
 async function toDataURL(url) {
   try {
     const res = await fetch(url, { mode: 'cors' });
@@ -298,7 +292,6 @@ async function toDataURL(url) {
     return null;
   }
 }
-
 async function fetchOlevelImages(matricNumber) {
   let olevelImages = [];
   if (!matricNumber) return olevelImages;
@@ -317,20 +310,7 @@ async function fetchOlevelImages(matricNumber) {
   return olevelImages;
 }
 
-// ------------------ NEW: IMAGE + CLICKABLE URL BLOCK ------------------
-function makeImageBlock(url, base64) {
-  if (!url) return "";
-  return `
-    <div style="margin:10px;text-align:center;">
-      ${base64 ? `<img src="${base64}" style="width:120px;height:90px;object-fit:cover;border-radius:5px;">` : ""}
-      <div style="font-size:10px;margin-top:4px;word-break:break-all;">
-        <a href="${url}" target="_blank">${url}</a>
-      </div>
-    </div>
-  `;
-}
-
-// ------------------ SINGLE DOWNLOAD ------------------
+// ------------------ SINGLE DOWNLOAD (MERGED: layout + URLs visible + clickable links at end) ------------------
 async function downloadSingleStudent(studentId, btnEl) {
   try {
     btnEl.disabled = true;
@@ -351,10 +331,10 @@ async function downloadSingleStudent(studentId, btnEl) {
 
     // ===== OLEVEL IMAGES =====
     const olevelUrls = await fetchOlevelImages(student.matricNo || student.matricNumber);
-    const olevelBase64 = [];
+    const olevelImages = []; // array of { url, b64 }
     for (const url of olevelUrls) {
-      const b64 = await toDataURL(url);
-      olevelBase64.push({ url, b64 });
+      const b64 = url ? await toDataURL(url) : null;
+      olevelImages.push({ url, b64 });
     }
 
     // ===== PASSPORT =====
@@ -362,7 +342,7 @@ async function downloadSingleStudent(studentId, btnEl) {
     const passportBase64 = passportUrl ? await toDataURL(passportUrl) : null;
 
     // ===== DOCUMENT IMAGES (convert to base64) =====
-    const docImages = [];
+    const docImages = []; // array of { name, url, b64 }
     for (const [name, url] of Object.entries(docData.files || {})) {
       const b64 = url ? await toDataURL(url) : null;
       docImages.push({ name, url, b64 });
@@ -374,143 +354,238 @@ async function downloadSingleStudent(studentId, btnEl) {
       const rRes = await fetch(`${backendURL}/api/results?matricNo=${encodeURIComponent(student.matricNo || student.matricNumber || "")}`);
       const rJson = await rRes.json();
       results = rJson.results || [];
-    } catch {}
+    } catch (e) { console.warn("Results fetch failed", e); }
 
-    // ====== PRINT AREA ======
+    // ====== BUILD PRINT AREA HTML (layout preserved) ======
     const printArea = document.createElement("div");
     printArea.className = "print-area";
     printArea.style.position = "absolute";
     printArea.style.left = "-9999px";
     printArea.style.top = "-9999px";
+    // minimal styles so printed layout looks correct; if you have external CSS for .print-area, that will apply when appended
     document.body.appendChild(printArea);
 
     const verifiedText = student.verified ? "Verified ✔" : "Not Verified ✘";
-    const fullName = [student.surname, student.firstname, student.middlename]
-      .filter(Boolean).join(" ") || (student.displayName || "N/A");
+    const fullName = [student.surname, student.firstname, student.middlename].filter(Boolean).join(" ") || (student.displayName || "N/A");
 
-    // ========== BUILD DOCUMENT THUMBS + URL BELOW EACH ==========
+    // Documents thumbnails HTML (with visible URL under each image)
     const docThumbsHtml = docImages.length
       ? docImages.map(d => `
-        <div class="doc-thumb">
+        <div class="doc-thumb" style="margin:6px;">
           <div style="height:90px;overflow:hidden">
-            ${d.b64 ? `<img src="${d.b64}" style="width:100%;height:90px;object-fit:cover;border-radius:4px">`
-                    : "No preview"}
+            ${d.b64 ? `<img src="${d.b64}" style="width:100%;height:90px;object-fit:cover;border-radius:4px">` : `<div style="width:100%;height:90px;background:#f1f1f1;display:flex;align-items:center;justify-content:center;color:#777">No preview</div>`}
           </div>
-          <div style="margin-top:6px;font-size:12px">${d.name}</div>
-          <div style="font-size:10px;word-break:break-all;color:blue;">
-            ${d.url ? d.url : ""}
-          </div>
+          <div style="margin-top:6px;font-size:12px">${escapeHtml(d.name)}</div>
+          <div style="font-size:10px;color:#1a73e8;word-break:break-all;margin-top:4px">${d.url ? escapeHtml(d.url) : ""}</div>
         </div>
       `).join("")
       : '<div class="no-file">No documents uploaded</div>';
 
-    // ========== OLEVEL IMAGES + URL UNDER EACH ==========
-    const olevelImagesHtml = olevelBase64.length
-      ? olevelBase64.map(o => `
+    // O'level images HTML (with visible URL under each)
+    const olevelImagesHtml = olevelImages.length
+      ? olevelImages.map(o => `
          <div style="margin:4px;text-align:center;font-size:10px;">
-           <img src="${o.b64}" style="width:120px;height:90px;object-fit:cover;">
-           <div style="color:blue;word-break:break-all;">${o.url}</div>
+           ${o.b64 ? `<img src="${o.b64}" style="width:120px;height:90px;object-fit:cover;border-radius:4px">` : `<div style="width:120px;height:90px;background:#f1f1f1;display:flex;align-items:center;justify-content:center;color:#777">No preview</div>`}
+           <div style="color:#1a73e8;word-break:break-all;margin-top:4px;font-size:10px">${o.url ? escapeHtml(o.url) : ""}</div>
          </div>
       `).join("")
       : "No O'Level uploaded";
 
-    // OLEVEL DETAILS
+    // O'Level textual details
     const olevelDetailsHtml = (docData.oLevelData && docData.oLevelData.length)
-      ? docData.oLevelData.map(o => `<div style="margin-bottom:8px;font-size:13px"><strong>${o.examType || 'O Level'}</strong><div>Serial: ${o.serialNumber || 'N/A'}</div><div>Pin: ${o.pin || 'N/A'}</div></div>`).join("")
+      ? docData.oLevelData.map(o => `<div style="margin-bottom:8px;font-size:13px"><strong>${escapeHtml(o.examType || 'O Level')}</strong><div>Serial: ${escapeHtml(o.serialNumber || 'N/A')}</div><div>Pin: ${escapeHtml(o.pin || 'N/A')}</div></div>`).join("")
       : `<div class="no-file">No O'Level record found</div>`;
 
-    // RESULTS TABLE
-    const resultsRows = results.length
-      ? results.map(r => `
-          <tr>
-            <td>${escapeHtml(r.courseCode||"")}</td>
-            <td>${escapeHtml(r.courseTitle||"")}</td>
-            <td>${escapeHtml(r.level||"")}</td>
-            <td>${escapeHtml(r.semester||"")}</td>
-            <td>${r.score ?? ""}</td>
-            <td>${r.grade ?? ""}</td>
-          </tr>
-      `).join("")
-      : `<tr><td colspan="6" style="text-align:center;color:#777">No results found</td></tr>`;
+    // Results rows
+    const resultsRows = (results && results.length) ? results.map(r => `<tr><td>${escapeHtml(r.courseCode||"")}</td><td>${escapeHtml(r.courseTitle||"")}</td><td>${escapeHtml(r.level||"")}</td><td>${escapeHtml(r.semester||"")}</td><td>${escapeHtml(String(r.score ?? ""))}</td><td>${escapeHtml(r.grade ?? "")}</td></tr>`).join("") : `<tr><td colspan="6" style="text-align:center;color:#777">No results found</td></tr>`;
 
-    // ========== INSERT HTML LAYOUT (unchanged, except doc/olevel urls added) ==========
+    // Entire HTML content (keeps your layout; small inserts added to show URLs)
     printArea.innerHTML = `
-      <div class="print-header">
+      <div class="print-header" style="text-align:center;">
         <img src="upload/logo.jpg" alt="Logo" onerror="this.style.display='none'">
         <div style="font-weight:800;font-size:18px;margin-top:6px;">OWU COLLEGE OF MANAGEMENT TECHNOLOGY</div>
         <div style="font-size:14px;margin-top:4px;">Student Information</div>
         <div style="margin-top:6px;font-size:12px;color:${student.verified ? 'green':'#777'}">${verifiedText}</div>
       </div>
-
       <hr class="section-sep">
+      <div>
+        <div style="font-weight:700;margin-bottom:6px;">Personal Information</div>
+        <div class="personal-grid" style="display:flex;gap:14px;">
+          <div class="personal-left">
+            ${passportBase64 ? `<img src="${passportBase64}" alt="passport" style="width:120px;height:120px;object-fit:cover;border-radius:6px">` : `<div style="width:120px;height:120px;background:#f1f1f1;display:flex;align-items:center;justify-content:center;color:#777;border-radius:6px">No Photo</div>`}
+            <div style="font-size:10px;color:#1a73e8;word-break:break-all;margin-top:6px">${passportUrl ? escapeHtml(passportUrl) : ""}</div>
+          </div>
+          <div class="personal-right" style="flex:1">
+            <div class="info-row"><strong>Full Name:</strong> ${escapeHtml(fullName)}</div>
+            <div class="info-row"><strong>Matric Number:</strong> ${escapeHtml(student.matricNo || student.matricNumber || "N/A")}</div>
+            <div class="info-row"><strong>Department:</strong> ${escapeHtml(student.department || "N/A")}</div>
+            <div class="info-row"><strong>Level:</strong> ${escapeHtml(student.level || "N/A")}</div>
+            <div class="info-row"><strong>Email:</strong> ${escapeHtml(student.email || "N/A")}</div>
+            <div class="info-row"><strong>Phone:</strong> ${escapeHtml(student.phone || "N/A")}</div>
+            <div class="info-row"><strong>D.O.B:</strong> ${escapeHtml(student.dob || "N/A")}</div>
+            <div class="info-row"><strong>State of Origin:</strong> ${escapeHtml(student.stateOrigin || "N/A")}</div>
+            <div class="info-row"><strong>LGA of Origin:</strong> ${escapeHtml(student.lgaOrigin || "N/A")}</div>
+            <div class="info-row"><strong>Address:</strong> ${escapeHtml(student.address || "N/A")}</div>
+          </div>
+        </div>
+        <hr class="section-sep">
+        <div style="font-weight:700;margin-bottom:6px;">Next of Kin</div>
+        <div class="info-row"><strong>Name:</strong> ${escapeHtml([student.nokSurname, student.nokFirstname].filter(Boolean).join(" ") || "N/A")}</div>
+        <div class="info-row"><strong>Relation:</strong> ${escapeHtml(student.nokRelation || "N/A")}</div>
+        <div class="info-row"><strong>Phone:</strong> ${escapeHtml(student.nokPhone || "N/A")}</div>
+        <div class="info-row"><strong>Address:</strong> ${escapeHtml(student.nokAddress || "N/A")}</div>
+        <hr class="section-sep">
 
-      <!-- Personal Information -->
-      ... (your HTML unchanged) ...
+        <div style="font-weight:700;margin-bottom:6px;">Documents</div>
+        <div class="doc-grid" style="display:flex;flex-wrap:wrap;gap:8px;">${docThumbsHtml}</div>
 
-      <!-- DOCUMENTS -->
-      <div style="font-weight:700;margin-bottom:6px;">Documents</div>
-      <div class="doc-grid">${docThumbsHtml}</div>
+        <div style="margin-top:12px"><strong>O'Level Details & Images</strong>
+          ${olevelDetailsHtml}
+          <div style="display:flex;flex-wrap:wrap;margin-top:6px;gap:8px">${olevelImagesHtml}</div>
+        </div>
 
-      <!-- OLEVEL -->
-      <div style="margin-top:12px">
-        <strong>O'Level Details & Images</strong>
-        ${olevelDetailsHtml}
-        <div style="display:flex;flex-wrap:wrap;margin-top:6px">${olevelImagesHtml}</div>
+        <div style="font-size:12px;margin-top:8px;color:#444">
+          JAMB Info: Reg No: ${escapeHtml(docData.jambInfo?.jambRegNo || 'N/A')} — Score: ${escapeHtml(String(docData.jambInfo?.jambScore || 'N/A'))}
+        </div>
+
+        <hr class="section-sep">
+        <div style="font-weight:700;margin-bottom:6px;">Results</div>
+        <div style="overflow:auto">
+          <table class="results" style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding:6px;border-bottom:1px solid #ddd">Course Code</th>
+                <th style="text-align:left;padding:6px;border-bottom:1px solid #ddd">Course Title</th>
+                <th style="text-align:left;padding:6px;border-bottom:1px solid #ddd">Level</th>
+                <th style="text-align:left;padding:6px;border-bottom:1px solid #ddd">Semester</th>
+                <th style="text-align:left;padding:6px;border-bottom:1px solid #ddd">Score</th>
+                <th style="text-align:left;padding:6px;border-bottom:1px solid #ddd">Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${resultsRows}
+            </tbody>
+          </table>
+        </div>
       </div>
-
-      <!-- RESULTS -->
-      ... (unchanged)
     `;
 
-    // ========== GENERATE PDF WITH CLICKABLE LINKS ==========
+    // append printArea to DOM (already appended above)
+
+    // ------------------ RASTERIZE + PDF SPLIT PAGES ------------------
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF("p", "pt", "a4");
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
 
-    // Rasterize the entire HTML first
-    const canvas = await html2canvas(printArea, { scale: 2, useCORS: true });
-    const img = canvas.toDataURL("image/png");
+    // capture the full printArea as a single canvas
+    const canvas = await html2canvas(printArea, { scale: 2, useCORS: true, allowTaint: false });
+    const imgData = canvas.toDataURL("image/png");
 
-    const width = pdf.internal.pageSize.getWidth();
-    const height = (canvas.height * width) / canvas.width;
-    pdf.addImage(img, "PNG", 0, 0, width, height);
+    const imgWidth = pageWidth - margin * 2;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    // ---- ADD CLICKABLE LINKS FOR DOCUMENT IMAGES ----
-    let linkY = height + 20;
-    pdf.setFontSize(12);
+    if (imgHeight <= pageHeight - margin * 2) {
+      // single page
+      pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight);
+    } else {
+      // split into multiple pages
+      let remainingHeight = canvas.height;
+      let offsetY = 0;
+      while (remainingHeight > 0) {
+        const pageCanvasHeight = Math.min(remainingHeight, Math.floor(((pageHeight - margin * 2) * canvas.width) / imgWidth));
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = pageCanvasHeight;
+        const ctx = pageCanvas.getContext("2d");
+        ctx.drawImage(canvas, 0, offsetY, canvas.width, pageCanvasHeight, 0, 0, canvas.width, pageCanvasHeight);
+        const pageImgData = pageCanvas.toDataURL("image/png");
+        if (pdf.internal.getNumberOfPages() > 0) pdf.addPage();
+        pdf.addImage(pageImgData, "PNG", margin, margin, imgWidth, (pageCanvasHeight * imgWidth) / canvas.width);
+        offsetY += pageCanvasHeight;
+        remainingHeight -= pageCanvasHeight;
+      }
+    }
 
-    docImages.forEach(d => {
-      if (!d.url) return;
-      pdf.textWithLink(`Document: ${d.name}`, 20, linkY, { url: d.url });
-      linkY += 15;
-    });
+    // ------------------ APPEND CLICKABLE LINK PAGES AT THE END ------------------
+    // Gather the list of links to add: passport (if any), documents, olevel
+    const linkItems = [];
 
-    // ---- ADD CLICKABLE LINKS FOR OLEVEL ----
-    olevelBase64.forEach(o => {
-      if (!o.url) return;
-      pdf.textWithLink(`O'Level Image`, 20, linkY, { url: o.url });
-      linkY += 15;
-    });
+    if (passportUrl) linkItems.push({ label: "Passport Image", url: passportUrl });
+    for (const d of docImages) {
+      if (d.url) linkItems.push({ label: `Document: ${d.name}`, url: d.url });
+    }
+    for (let i = 0; i < olevelImages.length; i++) {
+      const o = olevelImages[i];
+      if (o.url) linkItems.push({ label: `O'Level Image ${i+1}`, url: o.url });
+    }
 
-    pdf.save("student_" + (student.matricNo || student._id) + ".pdf");
+    if (linkItems.length) {
+      // create pages as needed; we'll write links in a simple list
+      const lineHeight = 14;
+      let curY = margin;
+      pdf.addPage();
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Image URLs (click to open)", margin, curY);
+      curY += 20;
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "normal");
 
-  } catch (e) {
-    console.error(e);
-    alert("Error generating PDF");
-  } finally {
+      for (let i = 0; i < linkItems.length; i++) {
+        const item = linkItems[i];
+        // wrap the display label + URL if long using splitTextToSize
+        const label = `${item.label}:`;
+        const url = item.url;
+        // print label
+        if (curY + lineHeight > pageHeight - margin) {
+          pdf.addPage();
+          curY = margin;
+        }
+        pdf.text(label, margin, curY);
+        curY += 12;
+
+        // split url into wrapped lines to fit page width
+        const maxWidth = pageWidth - margin * 2;
+        const wrapped = pdf.splitTextToSize(url, maxWidth);
+        // For each wrapped line, print and add clickable area for whole line (first line will be clickable)
+        for (let li = 0; li < wrapped.length; li++) {
+          if (curY + lineHeight > pageHeight - margin) {
+            pdf.addPage();
+            curY = margin;
+          }
+          pdf.setTextColor(10, 85, 175); // blue-ish
+          pdf.text(wrapped[li], margin + 10, curY);
+          // Add link rectangle for the first wrapped line that points to url.
+          // jsPDF's textWithLink doesn't wrap; instead add link for the full expected width on that line.
+          if (li === 0) {
+            const textWidth = pdf.getTextWidth(wrapped[li]);
+            // create clickable area over the first wrapped line; if there are multiple wrapped lines, the first is clickable
+            pdf.link(margin + 10, curY - 8, textWidth, lineHeight, { url });
+          }
+          curY += lineHeight;
+        }
+
+        // spacing between items
+        curY += 6;
+        pdf.setTextColor(0,0,0);
+      }
+    }
+
+    // ------------------ SAVE AND CLEANUP ------------------
+    const outName = `student_${(student.matricNo || student._id || "student").toString().replace(/\s+/g,'_')}.pdf`;
+    pdf.save(outName);
+
+    
+    // remove printArea from DOM
+    try { document.body.removeChild(printArea); } catch(e){/* ignore */ }
     btnEl.disabled = false;
     btnEl.textContent = "Download";
-  }
-}
-    // CLEANUP
-    document.body.removeChild(printArea);
-    btnEl.disabled = false;
-    btnEl.textContent = "Download";
-
-  } catch (err) {
+  } catch(err) {
     console.error(err);
-    alert("PDF generation failed: " + err.message);
-    btnEl.disabled = false;
-    btnEl.textContent = "Download";
+    alert("PDF generation failed: " + (err.message || err));
+    try { btnEl.disabled = false; btnEl.textContent = "Download"; } catch(e){}
   }
 }
 
@@ -522,5 +597,6 @@ deptFilter.addEventListener("change",()=>{currentPage=1;applyFiltersAndRender();
 // ------------------ INITIAL FETCH ------------------
 fetchStudents();
 </script>
+
 </body>
 </html>
