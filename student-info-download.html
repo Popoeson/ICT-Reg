@@ -742,6 +742,7 @@ if (returnBlob) {
 searchInput.addEventListener("input",()=>{currentPage=1;applyFiltersAndRender();});
 levelFilter.addEventListener("change",()=>{currentPage=1;applyFiltersAndRender();});
 deptFilter.addEventListener("change",()=>{currentPage=1;applyFiltersAndRender();});
+bulkDownloadBtn.addEventListener("click", handleBulkDownload);
 
 // ------------------ INITIAL FETCH ------------------
 fetchStudents();
