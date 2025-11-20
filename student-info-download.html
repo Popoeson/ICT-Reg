@@ -161,6 +161,25 @@
 
     <div id="studentsContainer" class="students-container" aria-live="polite"></div>
 
+<!-- Progress Container -->
+<div id="bulkProgressContainer" style="display:none; width:100%; background:#ddd; margin-top:20px; border-radius:6px;">
+  <div id="bulkProgressBar" style="width:0%; height:20px; background:green; border-radius:6px;"></div>
+</div>
+
+<!-- Summary Popup -->
+<div id="bulkSummaryPopup" style="
+    display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
+    background:#fff; padding:20px; border-radius:10px; width:300px; text-align:center;
+    box-shadow:0px 0px 20px rgba(0,0,0,0.3);
+">
+    <h3>Download Complete</h3>
+    <p id="bulkSummaryText"></p>
+    <button onclick="document.getElementById('bulkSummaryPopup').style.display='none'"
+        style="margin-top:10px; padding:10px; width:100%; border:none; background:green; color:white; border-radius:6px;">
+        OK
+    </button>
+</div>
+
     <div id="pagination" class="pagination" aria-label="Pagination"></div>
   </main>
 
@@ -473,101 +492,7 @@ async function downloadSingleStudent(studentId, btnEl) {
 
     // append printArea to DOM (already appended above)
 
-     /* ------------------ BULK ZIP DOWNLOAD ------------------ */
-
-bulkDownloadBtn.addEventListener("click", async () => {
-    if (!filtered.length) {
-        alert("No students to download.");
-        return;
-    }
-
-    const total = filtered.length;
-    if (!confirm(`Generate ZIP file for ${total} students?\nThis may take a while.`)) return;
-
-    // Create ZIP instance
-    const zip = new JSZip();
-
-    // Track success/failure
-    let successCount = 0;
-    let failedCount = 0;
-
-    // Build progress bar container
-    let progressContainer = document.createElement("div");
-    progressContainer.style.position = "fixed";
-    progressContainer.style.top = "20px";
-    progressContainer.style.left = "50%";
-    progressContainer.style.transform = "translateX(-50%)";
-    progressContainer.style.width = "300px";
-    progressContainer.style.background = "#222";
-    progressContainer.style.color = "#fff";
-    progressContainer.style.padding = "15px";
-    progressContainer.style.borderRadius = "10px";
-    progressContainer.style.boxShadow = "0 0 10px rgba(0,0,0,0.4)";
-    progressContainer.style.zIndex = "999999";
-
-    progressContainer.innerHTML = `
-        <div id="bulkProgressText" style="font-size:14px;margin-bottom:8px;">
-            Starting…
-        </div>
-        <div style="width:100%;background:#555;height:10px;border-radius:6px;">
-            <div id="bulkProgressBar" style="width:0%;height:10px;background:#28a745;border-radius:6px;transition:0.3s;"></div>
-        </div>
-    `;
-    document.body.appendChild(progressContainer);
-
-    const progressText = document.getElementById("bulkProgressText");
-    const progressBar = document.getElementById("bulkProgressBar");
-
-    bulkDownloadBtn.disabled = true;
-    bulkDownloadBtn.textContent = "Generating ZIP…";
-
-    for (let i = 0; i < total; i++) {
-        const student = filtered[i];
-
-        progressText.textContent = `Generating PDF ${i + 1} of ${total}…`;
-        progressBar.style.width = `${((i + 1) / total) * 100}%`;
-
-        try {
-            // Capture PDF as Blob instead of saving it
-            const pdfBlob = await generatePDFBlob(student._id || student.id);
-
-            // Add it into ZIP
-            const fileNameSafe = (student.matricNo || student._id || `student_${i}`).replace(/\s+/g, "_");
-            zip.file(`${fileNameSafe}.pdf`, pdfBlob);
-
-            successCount++;
-        } catch (err) {
-            console.error("Failed PDF:", err);
-            failedCount++;
-        }
-
-        // Small delay to prevent freezing
-        await new Promise(res => setTimeout(res, 200));
-    }
-
-    progressText.textContent = "Compressing ZIP…";
-
-    // Generate ZIP file
-    const zipBlob = await zip.generateAsync({ type: "blob" });
-
-    // Download ZIP
-    saveAs(zipBlob, `students_batch_${Date.now()}.zip`);
-
-    // Cleanup progress bar
-    progressContainer.remove();
-
-    bulkDownloadBtn.disabled = false;
-    bulkDownloadBtn.textContent = "Bulk Download";
-
-    // Show summary popup
-    alert(
-        `Bulk Download Completed!\n\n` +
-        `Successfully generated: ${successCount}\n` +
-        `Failed: ${failedCount}\n\n` +
-        `ZIP file has been downloaded.`
-    );
-});
-
+  
 
 /* ------------------ MODIFIED SINGLE PDF FOR BULK: RETURN BLOB ------------------ */
 async function generatePDFBlob(studentId) {
@@ -737,6 +662,66 @@ if (returnBlob) {
   }
 }
 
+/* ------------------ BULK DOWNLOAD WITH ZIP + PROGRESS + SUMMARY ------------------ */
+bulkDownloadBtn.addEventListener("click", async () => {
+    if (!filtered.length) {
+        alert("No students to download.");
+        return;
+    }
+
+    if (!confirm(`Download PDF for ${filtered.length} students?`)) return;
+
+    // UI elements
+    const progressContainer = document.getElementById("bulkProgressContainer");
+    const progressBar = document.getElementById("bulkProgressBar");
+    const summaryPopup = document.getElementById("bulkSummaryPopup");
+    const summaryText = document.getElementById("bulkSummaryText");
+
+    progressContainer.style.display = "block";
+    progressBar.style.width = "0%";
+
+    const zip = new JSZip();
+
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (let i = 0; i < filtered.length; i++) {
+        const student = filtered[i];
+
+        try {
+            // Generate PDF (re-use your existing function)
+            const pdfBlob = await downloadSingleStudent(student._id || student.id, null, true);
+
+            // Add PDF to ZIP
+            zip.file(`${student.fullName || student.name}.pdf`, pdfBlob);
+
+            successCount++;
+        } catch (err) {
+            console.error(err);
+            failedCount++;
+        }
+
+        // Update progress bar
+        const percent = Math.round(((i + 1) / filtered.length) * 100);
+        progressBar.style.width = percent + "%";
+    }
+
+    // Generate zip file
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+
+    // Save the zip file
+    saveAs(zipBlob, `Student_PDFs_${Date.now()}.zip`);
+
+    // Hide progress bar
+    progressContainer.style.display = "none";
+
+    // Show summary popup
+    summaryText.textContent = `
+        Successful: ${successCount}
+        Failed: ${failedCount}
+    `;
+    summaryPopup.style.display = "block";
+});
 
 // ------------------ EVENT LISTENERS ------------------
 searchInput.addEventListener("input",()=>{currentPage=1;applyFiltersAndRender();});
