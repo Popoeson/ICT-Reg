@@ -4,27 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Portal | Welcome</title>
+
   <style>
     body {
       margin: 0;
       padding: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(to bottom right, #000000, #0a0f14, #0f181f);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      animation: fadeIn 1s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #ffffff;
+      color: #003366;
     }
 
     header {
       text-align: center;
-      margin-top: 40px;
+      padding: 40px 20px 10px;
     }
 
     header img {
@@ -32,75 +24,79 @@
       height: 120px;
       border-radius: 50%;
       object-fit: cover;
-      border: 3px solid #1d9a4f;
+      border: 4px solid #004aad;
     }
 
     h1 {
-      margin: 20px 0 10px;
+      margin: 15px 0 5px;
       font-size: 28px;
-      font-weight: bold;
+      font-weight: 700;
+      color: #004aad;
     }
 
     .intro {
-      width: 90%;
-      max-width: 700px;
+      max-width: 750px;
+      margin: 0 auto;
+      padding: 0 20px;
       text-align: center;
-      margin-top: 20px;
-      line-height: 1.5;
       font-size: 16px;
-      color: #cfcfcf;
+      line-height: 1.6;
+      color: #333;
     }
 
     .section-container {
-      margin-top: 40px;
-      width: 90%;
+      margin: 50px auto;
       max-width: 900px;
+      padding: 0 20px;
       display: grid;
-      gap: 20px;
+      gap: 25px;
     }
 
     .card {
-      background: rgba(255,255,255,0.06);
-      padding: 20px;
-      border-radius: 15px;
-      border: 1px solid rgba(255,255,255,0.1);
-      backdrop-filter: blur(4px);
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
-      transition: 0.3s;
+      background: #f6f9ff;
+      border-left: 5px solid #004aad;
+      padding: 20px 25px;
+      border-radius: 10px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+      transition: 0.3s ease;
     }
 
     .card:hover {
       transform: translateY(-4px);
-      border-color: #1d9a4f;
-      box-shadow: 0 0 25px rgba(29,154,79,0.4);
+      box-shadow: 0 5px 16px rgba(0,0,0,0.15);
     }
 
     .card h2 {
-      margin-bottom: 10px;
-      font-size: 22px;
-      color: #1d9a4f;
+      margin-bottom: 8px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #004aad;
     }
 
     .login-btn {
-      margin: 50px auto;
-      padding: 12px 30px;
-      background: #1d9a4f;
+      display: block;
+      margin: 40px auto 60px;
+      padding: 14px 35px;
+      background: #004aad;
+      color: #ffffff;
       border: none;
-      color: white;
-      font-size: 18px;
       border-radius: 30px;
+      font-size: 18px;
       cursor: pointer;
-      transition: 0.3s;
+      font-weight: 600;
+      transition: 0.3s ease;
     }
 
     .login-btn:hover {
-      background: #157a3d;
+      background: #00337a;
+      transform: translateY(-2px);
     }
 
     footer {
-      margin: 40px 0 20px;
+      text-align: center;
+      padding: 20px;
       font-size: 12px;
-      color: #aaa;
+      color: #555;
     }
 
     @media (min-width: 768px) {
@@ -114,34 +110,34 @@
 <body>
 
   <header>
-    <img src="school-logo.png" alt="School Logo">
+    <img src="upload/logo.png" alt="School Logo">
     <h1>Welcome to Our School Portal</h1>
   </header>
 
   <p class="intro">
-    Empowering students with seamless access to academic resources, learning tools, and school information.
-    Our portal is designed to make your education journey smoother, smarter, and more connected.
+    Access your academic information, exam resources, and school updates all in one place.  
+    Our portal is built to give students and staff a seamless digital experience.
   </p>
 
   <div class="section-container">
+
     <div class="card">
       <h2>Our Mission</h2>
       <p>
-        To provide quality education, foster innovation, and nurture students into responsible and globally 
-        competitive individuals.
+        To provide world-class education, support every learner, and promote excellence through innovation and integrity.
       </p>
     </div>
 
     <div class="card">
       <h2>Our Vision</h2>
       <p>
-        To be a leading institution recognized for academic excellence, integrity, and impactful contributions 
-        to society.
+        To become a leading academic institution recognized for quality learning, character building, and global impact.
       </p>
     </div>
+
   </div>
 
-  <button class="login-btn" onclick="location.href='login.html'">
+  <button class="login-btn" onclick="window.location.href='login.html'">
     Enter Portal
   </button>
 
