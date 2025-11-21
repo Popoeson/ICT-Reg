@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>School Portal | Welcome</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom right, #000000, #0a0f14, #0f181f);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    header {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    header img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #1d9a4f;
+    }
+
+    h1 {
+      margin: 20px 0 10px;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .intro {
+      width: 90%;
+      max-width: 700px;
+      text-align: center;
+      margin-top: 20px;
+      line-height: 1.5;
+      font-size: 16px;
+      color: #cfcfcf;
+    }
+
+    .section-container {
+      margin-top: 40px;
+      width: 90%;
+      max-width: 900px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.06);
+      padding: 20px;
+      border-radius: 15px;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(4px);
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: #1d9a4f;
+      box-shadow: 0 0 25px rgba(29,154,79,0.4);
+    }
+
+    .card h2 {
+      margin-bottom: 10px;
+      font-size: 22px;
+      color: #1d9a4f;
+    }
+
+    .login-btn {
+      margin: 50px auto;
+      padding: 12px 30px;
+      background: #1d9a4f;
+      border: none;
+      color: white;
+      font-size: 18px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .login-btn:hover {
+      background: #157a3d;
+    }
+
+    footer {
+      margin: 40px 0 20px;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    @media (min-width: 768px) {
+      .section-container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <img src="school-logo.png" alt="School Logo">
+    <h1>Welcome to Our School Portal</h1>
+  </header>
+
+  <p class="intro">
+    Empowering students with seamless access to academic resources, learning tools, and school information.
+    Our portal is designed to make your education journey smoother, smarter, and more connected.
+  </p>
+
+  <div class="section-container">
+    <div class="card">
+      <h2>Our Mission</h2>
+      <p>
+        To provide quality education, foster innovation, and nurture students into responsible and globally 
+        competitive individuals.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Our Vision</h2>
+      <p>
+        To be a leading institution recognized for academic excellence, integrity, and impactful contributions 
+        to society.
+      </p>
+    </div>
+  </div>
+
+  <button class="login-btn" onclick="location.href='login.html'">
+    Enter Portal
+  </button>
+
+  <footer>
+    © 2025 School Portal. All Rights Reserved.
+  </footer>
+
+</body>
+</html>
