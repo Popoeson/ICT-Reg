@@ -14,6 +14,59 @@
       color: #003366;
     }
 
+    /* ---------------- HERO SECTION ---------------- */
+    .hero {
+      width: 100%;
+      height: 280px;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(to bottom, #004aad, #002f66);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      text-align: center;
+      animation: fadeInHero 1.2s ease-in-out;
+    }
+
+    @keyframes fadeInHero {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 0;
+      padding: 0 20px;
+    }
+
+    /* ---------------- SLIDESHOW SECTION ---------------- */
+    .slideshow-container {
+      width: 100%;
+      max-width: 1100px;
+      height: 260px;
+      margin: 25px auto;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      position: relative;
+    }
+
+    .slide {
+      width: 100%;
+      height: 260px;
+      position: absolute;
+      opacity: 0;
+      transition: opacity 1.2s ease-in-out;
+      object-fit: cover;
+    }
+
+    .slide.active {
+      opacity: 1;
+    }
+
+    /* ---------------- HEADER SECTION ---------------- */
     header {
       text-align: center;
       padding: 40px 20px 10px;
@@ -29,7 +82,7 @@
 
     h1 {
       margin: 15px 0 5px;
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 700;
       color: #004aad;
     }
@@ -44,6 +97,7 @@
       color: #333;
     }
 
+    /* ---------------- INFO CARDS ---------------- */
     .section-container {
       margin: 50px auto;
       max-width: 900px;
@@ -73,6 +127,7 @@
       color: #004aad;
     }
 
+    /* ---------------- LOGIN BUTTON ---------------- */
     .login-btn {
       display: block;
       margin: 40px auto 60px;
@@ -109,9 +164,21 @@
 
 <body>
 
+  <!-- HERO SECTION -->
+  <div class="hero">
+    <h1>Welcome to Owu College of Management Technology Portal</h1>
+  </div>
+
+  <!-- SLIDESHOW -->
+  <div class="slideshow-container">
+    <img class="slide active" src="upload/slide1.jpg" alt="Campus View">
+    <img class="slide" src="upload/slide2.jpg" alt="Students Activity">
+    <img class="slide" src="upload/slide3.jpg" alt="School Environment">
+  </div>
+
+  <!-- LOGO + INTRO SECTION -->
   <header>
     <img src="upload/logo.jpg" alt="School Logo">
-    <h1>Welcome to Owu College of Management Technology School Portal</h1>
   </header>
 
   <p class="intro">
@@ -119,24 +186,20 @@
     Our portal is built to give students and staff a seamless digital experience.
   </p>
 
+  <!-- MISSION & VISION -->
   <div class="section-container">
-
     <div class="card">
       <h2>Our Mission</h2>
-      <p>
-        To provide world-class education, support every learner, and promote excellence through innovation and integrity.
-      </p>
+      <p>To provide world-class education, support every learner, and promote excellence through innovation and integrity.</p>
     </div>
 
     <div class="card">
       <h2>Our Vision</h2>
-      <p>
-        To become a leading academic institution recognized for quality learning, character building, and global impact.
-      </p>
+      <p>To become a leading academic institution recognized for quality learning, character building, and global impact.</p>
     </div>
-
   </div>
 
+  <!-- LOGIN BUTTON -->
   <button class="login-btn" onclick="window.location.href='login.html'">
     Enter Portal
   </button>
@@ -144,6 +207,20 @@
   <footer>
     © 2025 School Portal. All Rights Reserved.
   </footer>
+
+  <script>
+    /* ---------------- SLIDESHOW SCRIPT ---------------- */
+    let slideIndex = 0;
+    const slides = document.querySelectorAll(".slide");
+
+    function showSlides() {
+      slides.forEach(s => s.classList.remove("active"));
+      slideIndex = (slideIndex + 1) % slides.length;
+      slides[slideIndex].classList.add("active");
+    }
+
+    setInterval(showSlides, 5000); // Change slide every 5 seconds
+  </script>
 
 </body>
 </html>
