@@ -1748,6 +1748,55 @@ app.get("/api/students/download/all", async (req, res) => {
     res.status(500).json({ success: false, message: "Error generating bulk ZIP" });
   }
 });
+
+// Live search students by name or matric number
+app.get("/api/students/search", async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.json({ students: [] });
+
+    // Find matching profiles
+    const profiles = await StudentProfile.find({
+      $or: [
+        { firstname: { $regex: q, $options: "i" } },
+        { middlename: { $regex: q, $options: "i" } },
+        { surname: { $regex: q, $options: "i" } },
+        { matricNo: { $regex: q, $options: "i" } }
+      ]
+    }).limit(10); // limit results for dropdown
+
+    res.json({ students: profiles });
+  } catch (err) {
+    console.error("❌ search students error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ---------------- Reset Student Password ----------------
+app.patch("/api/students/reset-password", async (req, res) => {
+  try {
+    const { studentId, newPassword } = req.body;
+
+    if (!studentId || !newPassword) {
+      return res.status(400).json({ success: false, message: "Student ID and new password are required" });
+    }
+
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
+
+    // Save new password directly
+    student.password = newPassword;
+    await student.save();
+
+    res.json({ success: true, message: "Password updated successfully" });
+
+  } catch (err) {
+    console.error("❌ Reset password error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
