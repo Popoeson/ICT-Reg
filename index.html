@@ -3,224 +3,243 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>School Portal | Welcome</title>
-
+  <title>School Portal Homepage</title>
   <style>
     body {
       margin: 0;
-      padding: 0;
-      font-family: "Segoe UI", Arial, sans-serif;
+      font-family: "Poppins", sans-serif;
       background: #ffffff;
       color: #003366;
+      overflow-x: hidden;
     }
 
-    /* ---------------- HERO SECTION ---------------- */
+    /* ================= HERO SECTION ================= */
     .hero {
       width: 100%;
-      height: 280px;
+      height: 360px;
       position: relative;
       overflow: hidden;
-      background: linear-gradient(to bottom, #004aad, #002f66);
+      background: linear-gradient(to bottom right, #005bda, #003366);
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: #fff;
       text-align: center;
-      animation: fadeInHero 1.2s ease-in-out;
+      color: white;
+      animation: fadeIn 1.5s ease-in-out;
     }
 
-    @keyframes fadeInHero {
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Floating particles */
+    .particle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: rgba(255,255,255,0.45);
+      border-radius: 50%;
+      animation: float 7s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0) translateX(0); opacity: 0.3; }
+      50% { transform: translateY(-60px) translateX(20px); opacity: 1; }
+      100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+    }
+
+    .hero img {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      border: 4px solid #ffffff;
+      margin-bottom: 15px;
+      object-fit: cover;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+      animation: pop 1.3s ease-out;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .hero h1 {
+      font-size: 35px;
+      font-weight: 800;
+      text-shadow: 0 0 10px rgba(255,255,255,0.8);
+      animation: slideDown 1.4s ease-out;
+    }
+
+    @keyframes slideDown {
       from { opacity: 0; transform: translateY(-20px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .hero h1 {
-      font-size: 32px;
-      font-weight: 700;
-      margin: 0;
-      padding: 0 20px;
-    }
-
-    /* ---------------- SLIDESHOW SECTION ---------------- */
-    .slideshow-container {
-      width: 100%;
-      max-width: 1100px;
-      height: 260px;
-      margin: 25px auto;
-      overflow: hidden;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    /* Wave divider */
+    .wave {
       position: relative;
-    }
-
-    .slide {
       width: 100%;
-      height: 260px;
-      position: absolute;
-      opacity: 0;
-      transition: opacity 1.2s ease-in-out;
-      object-fit: cover;
+      height: 80px;
+      margin-top: -1px;
     }
 
-    .slide.active {
-      opacity: 1;
+    /* ================= NEWS TICKER ================= */
+    .news-ticker {
+      background: #f0f6ff;
+      padding: 10px 0;
+      width: 100%;
+      border-top: 2px solid #00336622;
+      border-bottom: 2px solid #00336622;
+      overflow: hidden;
     }
 
-    /* ---------------- HEADER SECTION ---------------- */
-    header {
+    .ticker {
+      white-space: nowrap;
+      animation: scroll-left 10s linear infinite;
+      font-weight: 600;
+      color: #003366;
+    }
+
+    @keyframes scroll-left {
+      from { transform: translateX(100%); }
+      to { transform: translateX(-100%); }
+    }
+
+    /* ================= SECTIONS ================= */
+    .section {
+      padding: 40px 20px;
       text-align: center;
-      padding: 40px 20px 10px;
+      animation: fadeUp 1.2s ease-in-out;
     }
 
-    header img {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 4px solid #004aad;
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    h1 {
-      margin: 15px 0 5px;
+    .section h2 {
       font-size: 26px;
-      font-weight: 700;
-      color: #004aad;
+      color: #003366;
+      margin-bottom: 20px;
     }
 
-    .intro {
-      max-width: 750px;
-      margin: 0 auto;
-      padding: 0 20px;
-      text-align: center;
-      font-size: 16px;
-      line-height: 1.6;
-      color: #333;
-    }
-
-    /* ---------------- INFO CARDS ---------------- */
-    .section-container {
-      margin: 50px auto;
-      max-width: 900px;
-      padding: 0 20px;
+    .cards {
       display: grid;
-      gap: 25px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      padding: 20px;
     }
 
     .card {
-      background: #f6f9ff;
-      border-left: 5px solid #004aad;
-      padding: 20px 25px;
-      border-radius: 10px;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-      transition: 0.3s ease;
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      border-left: 5px solid #005bda;
+      animation: floatCard 2s infinite ease-in-out;
     }
 
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 5px 16px rgba(0,0,0,0.15);
+    @keyframes floatCard {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+      100% { transform: translateY(0); }
     }
 
-    .card h2 {
-      margin-bottom: 8px;
+    .card h3 {
+      margin-top: 0;
+      color: #003366;
       font-size: 20px;
-      font-weight: 700;
-      color: #004aad;
     }
 
-    /* ---------------- LOGIN BUTTON ---------------- */
+    /* ================= LOGIN BUTTON ================= */
     .login-btn {
-      display: block;
-      margin: 40px auto 60px;
-      padding: 14px 35px;
-      background: #004aad;
+      display: inline-block;
+      margin: 35px auto;
+      padding: 14px 28px;
+      background: #005bda;
       color: #ffffff;
-      border: none;
-      border-radius: 30px;
+      text-decoration: none;
       font-size: 18px;
-      cursor: pointer;
       font-weight: 600;
+      border-radius: 8px;
       transition: 0.3s ease;
     }
 
     .login-btn:hover {
-      background: #00337a;
-      transform: translateY(-2px);
+      background: #003fb4;
     }
 
+    /* ================= FOOTER ================= */
     footer {
-      text-align: center;
+      background: #003366;
       padding: 20px;
-      font-size: 12px;
-      color: #555;
-    }
-
-    @media (min-width: 768px) {
-      .section-container {
-        grid-template-columns: 1fr 1fr;
-      }
+      text-align: center;
+      color: white;
+      margin-top: 20px;
     }
   </style>
 </head>
-
 <body>
 
   <!-- HERO SECTION -->
   <div class="hero">
-    <h1>Welcome to Owu College of Management Technology Portal</h1>
-  </div>
+    <!-- floating particles -->
+    <div class="particle" style="top:20%; left:15%; animation-delay:1s;"></div>
+    <div class="particle" style="top:60%; left:70%; animation-delay:3s;"></div>
+    <div class="particle" style="top:40%; left:40%; animation-delay:2s;"></div>
 
-  <!-- SLIDESHOW -->
-  <div class="slideshow-container">
-    <img class="slide active" src="upload/slide1.jpg" alt="Campus View">
-    <img class="slide" src="upload/slide2.jpg" alt="Students Activity">
-    <img class="slide" src="upload/slide3.jpg" alt="School Environment">
-  </div>
-
-  <!-- LOGO + INTRO SECTION -->
-  <header>
     <img src="upload/logo.jpg" alt="School Logo">
-  </header>
+    <h1>Welcome to Owu College of Management Technology</h1>
+  </div>
 
-  <p class="intro">
-    Access your academic information, exam resources, and school updates all in one place.  
-    Our portal is built to give students and staff a seamless digital experience.
-  </p>
+  <!-- WAVE -->
+  <svg class="wave" viewBox="0 0 1440 320">
+    <path fill="#ffffff" fill-opacity="1"
+      d="M0,288L60,272C120,256,240,224,360,208C480,192,600,192,720,202.7C840,213,960,235,1080,224C1200,213,1320,171,1380,149.3L1440,128L1440,320L1380,320 
+      C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z">
+    </path>
+  </svg>
 
-  <!-- MISSION & VISION -->
-  <div class="section-container">
-    <div class="card">
-      <h2>Our Mission</h2>
-      <p>To provide world-class education, support every learner, and promote excellence through innovation and integrity.</p>
+  <!-- NEWS TICKER -->
+  <div class="news-ticker">
+    <div class="ticker">
+      🔔 Latest Update: 2025 Academic Session Enrollment Now Open • CBT Portal Updated • New Courses Added • New Student Resources Available!
     </div>
+  </div>
 
-    <div class="card">
-      <h2>Our Vision</h2>
-      <p>To become a leading academic institution recognized for quality learning, character building, and global impact.</p>
+  <!-- MISSION / VISION -->
+  <div class="section">
+    <h2>Our Core Values</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>Our Mission</h3>
+        <p>To provide world-class education empowering students with skills, discipline, and innovation to thrive in a digital world.</p>
+      </div>
+
+      <div class="card">
+        <h3>Our Vision</h3>
+        <p>To be a leading institution recognized globally for excellence in training, research, and technological advancement.</p>
+      </div>
+
+      <div class="card">
+        <h3>Our Commitment</h3>
+        <p>We are committed to producing graduates who are competent, confident, and ready for today's competitive workforce.</p>
+      </div>
     </div>
   </div>
 
   <!-- LOGIN BUTTON -->
-  <button class="login-btn" onclick="window.location.href='login.html'">
-    Enter Portal
-  </button>
+  <center>
+    <a href="login.html" class="login-btn">Login to Portal</a>
+  </center>
 
+  <!-- FOOTER -->
   <footer>
-    © 2025 School Portal. All Rights Reserved.
+    © 2025 Owu College of Management Technology — All Rights Reserved
   </footer>
-
-  <script>
-    /* ---------------- SLIDESHOW SCRIPT ---------------- */
-    let slideIndex = 0;
-    const slides = document.querySelectorAll(".slide");
-
-    function showSlides() {
-      slides.forEach(s => s.classList.remove("active"));
-      slideIndex = (slideIndex + 1) % slides.length;
-      slides[slideIndex].classList.add("active");
-    }
-
-    setInterval(showSlides, 5000); // Change slide every 5 seconds
-  </script>
 
 </body>
 </html>
