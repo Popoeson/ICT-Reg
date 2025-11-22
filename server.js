@@ -1755,20 +1755,21 @@ app.get("/api/students/search", async (req, res) => {
     const { q } = req.query;
     if (!q) return res.json({ students: [] });
 
-    // Find matching profiles
+    const regex = new RegExp(q, "i"); // case-insensitive
+
     const profiles = await StudentProfile.find({
       $or: [
-        { firstname: { $regex: q, $options: "i" } },
-        { middlename: { $regex: q, $options: "i" } },
-        { surname: { $regex: q, $options: "i" } },
-        { matricNo: { $regex: q, $options: "i" } }
+        { firstname: { $exists: true, $regex: regex } },
+        { middlename: { $exists: true, $regex: regex } },
+        { surname: { $exists: true, $regex: regex } },
+        { matricNo: { $exists: true, $regex: regex } }
       ]
-    }).limit(10); // limit results for dropdown
+    }).limit(10);
 
     res.json({ students: profiles });
   } catch (err) {
     console.error("❌ search students error:", err);
-    res.json({ students: [] }); // return empty array on error
+    res.status(500).json({ message: err.message });
   }
 });
 
