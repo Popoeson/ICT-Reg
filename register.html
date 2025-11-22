@@ -17,11 +17,13 @@
     }
 
     body {
-      background-color: #f5f8ff;
+      background: linear-gradient(to bottom right, #007bff, #0056b3);
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
+      padding: 20px;
+      color: #333;
       transition: filter 0.3s ease;
     }
 
@@ -32,19 +34,26 @@
     }
 
     .container {
-      background: #fff;
-      padding: 40px 35px;
+      background: #ffffff;
+      padding: 35px;
       border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-      width: 90%;
-      max-width: 500px;
-      z-index: 1;
+      width: 95%;
+      max-width: 450px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     h2 {
-      color: #1e73be;
       text-align: center;
-      margin-bottom: 25px;
+      color: #0056b3;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 20px;
     }
 
     form {
@@ -54,63 +63,39 @@
     }
 
     label {
-      font-weight: 500;
       font-size: 14px;
-      color: #333;
+      font-weight: 500;
+      color: #222;
     }
 
-    input[type="text"],
-    input[type="email"],
-    input[type="tel"],
-    input[type="password"],
-    input[type="file"] {
-      padding: 10px 12px;
-      border: 1.5px solid #ddd;
+    input {
+      width: 100%;
+      padding: 11px;
+      border: 1.4px solid #ccc;
       border-radius: 8px;
       font-size: 14px;
-      outline: none;
-      transition: border 0.2s;
-      width: 100%;
+      transition: border-color 0.3s;
     }
 
     input:focus {
-      border-color: #1e73be;
+      border-color: #007bff;
+      outline: none;
     }
 
     button {
-      background: #1e73be;
-      color: #fff;
-      padding: 12px;
+      margin-top: 10px;
+      background: #007bff;
       border: none;
+      padding: 12px;
+      font-size: 16px;
+      color: #fff;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 15px;
-      font-weight: 500;
       transition: background 0.3s;
     }
 
     button:hover {
-      background: #165f9a;
-    }
-
-    .preview {
-      text-align: center;
-      margin-top: 10px;
-    }
-
-    .preview img {
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #1e73be;
-    }
-
-    .note {
-      text-align: center;
-      font-size: 13px;
-      color: #555;
-      margin-top: 10px;
+      background: #0056b3;
     }
 
     .password-wrapper {
@@ -122,26 +107,59 @@
     .password-wrapper i {
       position: absolute;
       right: 12px;
-      cursor: pointer;
-      color: #666;
       font-size: 18px;
+      color: #555;
+      cursor: pointer;
     }
 
-    /* Spinner overlay */
+    .preview {
+      text-align: center;
+      margin-top: 5px;
+    }
+
+    .preview img {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #007bff;
+    }
+
+    .login-link {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .login-link a {
+      color: #0056b3;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+
+    .note {
+      text-align: center;
+      color: #555;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    /* Spinner */
     .spinner-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.7);
+      inset: 0;
+      background: rgba(255,255,255,0.7);
       display: flex;
       justify-content: center;
       align-items: center;
-      z-index: 9999;
       visibility: hidden;
       opacity: 0;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
+      z-index: 1000;
+      transition: 0.3s;
     }
 
     .spinner-overlay.active {
@@ -150,70 +168,70 @@
     }
 
     .spinner {
-      border: 5px solid #f3f3f3;
-      border-top: 5px solid #1e73be;
-      border-radius: 50%;
       width: 55px;
       height: 55px;
+      border: 5px solid #eee;
+      border-top: 5px solid #007bff;
+      border-radius: 50%;
       animation: spin 1s linear infinite;
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
+
   <div class="spinner-overlay" id="spinnerOverlay">
     <div class="spinner"></div>
   </div>
 
   <div class="container">
-    <h2>Student Registration</h2>
+    <h2>Create Student Account</h2>
 
     <form id="registerForm">
       <div>
-        <label for="surname">Surname</label>
-        <input type="text" id="surname" required />
+        <label>Surname</label>
+        <input type="text" id="surname" required>
       </div>
 
       <div>
-        <label for="firstname">First Name</label>
-        <input type="text" id="firstname" required />
+        <label>First Name</label>
+        <input type="text" id="firstname" required>
       </div>
 
       <div>
-        <label for="middlename">Middle Name</label>
-        <input type="text" id="middlename" />
+        <label>Middle Name</label>
+        <input type="text" id="middlename">
       </div>
 
       <div>
-        <label for="phone">Phone Number</label>
-        <input type="tel" id="phone" required />
+        <label>Phone Number</label>
+        <input type="tel" id="phone" required>
       </div>
 
       <div>
-        <label for="email">Email</label>
-        <input type="email" id="email" required />
+        <label>Email</label>
+        <input type="email" id="email" required>
       </div>
 
       <div>
-        <label for="password">Password</label>
+        <label>Password</label>
         <div class="password-wrapper">
-          <input type="password" id="password" required />
+          <input type="password" id="password" required>
           <i class="ri-eye-off-line" id="togglePassword"></i>
         </div>
       </div>
 
       <div>
-        <label for="confirmPassword">Confirm Password</label>
-        <input type="password" id="confirmPassword" required />
+        <label>Confirm Password</label>
+        <input type="password" id="confirmPassword" required>
       </div>
 
       <div>
-        <label for="passport">Passport Photo</label>
-        <input type="file" id="passport" accept="image/*" required />
+        <label>Passport Photo</label>
+        <input type="file" id="passport" accept="image/*" required>
       </div>
 
       <div class="preview" id="preview"></div>
@@ -221,113 +239,87 @@
       <button type="submit">Register</button>
     </form>
 
+    <p class="login-link">
+      Already have an account?
+      <a href="login.html">Login here</a>
+    </p>
+
     <p class="note">Provide your correct information.</p>
   </div>
 
   <script>
     const form = document.getElementById("registerForm");
-const passportInput = document.getElementById("passport");
-const previewDiv = document.getElementById("preview");
-const spinnerOverlay = document.getElementById("spinnerOverlay");
-const togglePassword = document.getElementById("togglePassword");
-const passwordInput = document.getElementById("password");
+    const passportInput = document.getElementById("passport");
+    const previewDiv = document.getElementById("preview");
+    const spinnerOverlay = document.getElementById("spinnerOverlay");
+    const togglePassword = document.getElementById("togglePassword");
+    const passwordInput = document.getElementById("password");
 
-// 🔹 Preview passport
-passportInput.addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      previewDiv.innerHTML = `<img src="${reader.result}" alt="Preview" />`;
-    };
-    reader.readAsDataURL(file);
-  }
-});
-
-// 🔹 Toggle password visibility
-togglePassword.addEventListener("click", () => {
-  const type = passwordInput.type === "password" ? "text" : "password";
-  passwordInput.type = type;
-  togglePassword.className = type === "password" ? "ri-eye-off-line" : "ri-eye-line";
-});
-
-// 🔹 Submit form
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const password = passwordInput.value.trim();
-  const confirmPassword = document.getElementById("confirmPassword").value.trim();
-
-  if (password !== confirmPassword) {
-    alert("Passwords do not match!");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("surname", document.getElementById("surname").value.trim());
-  formData.append("firstname", document.getElementById("firstname").value.trim());
-  formData.append("middlename", document.getElementById("middlename").value.trim());
-  formData.append("phone", document.getElementById("phone").value.trim());
-  formData.append("email", document.getElementById("email").value.trim());
-  formData.append("password", password);
-  formData.append("confirmPassword", confirmPassword);
-  formData.append("passport", passportInput.files[0]);
-
-  try {
-    // Show spinner
-    document.body.classList.add("blur");
-    spinnerOverlay.classList.add("active");
-
-    const res = await fetch("https://ict-reg.onrender.com/api/students/register", {
-      method: "POST",
-      body: formData,
+    // Preview passport
+    passportInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          previewDiv.innerHTML = `<img src="${reader.result}" alt="Preview">`;
+        };
+        reader.readAsDataURL(file);
+      }
     });
 
-    const result = await res.json();
+    // Toggle password visibility
+    togglePassword.addEventListener("click", () => {
+      const type = passwordInput.type === "password" ? "text" : "password";
+      passwordInput.type = type;
+      togglePassword.className = type === "password"
+        ? "ri-eye-off-line"
+        : "ri-eye-line";
+    });
 
-    // Hide spinner
-    document.body.classList.remove("blur");
-    spinnerOverlay.classList.remove("active");
+    // Submit form
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    if (res.ok) {
-      const student = result.student;
+      const password = document.getElementById("password").value.trim();
+      const confirmPassword = document.getElementById("confirmPassword").value.trim();
 
-      if (student) {
-        // 🔹 Save all essential info in localStorage
-        localStorage.setItem(
-          "studentData",
-          JSON.stringify({
-            _id: student._id,
-            surname: student.surname,
-            firstname: student.firstname,
-            middlename: student.middlename || "",
-            email: student.email,
-            phone: student.phone || "",
-            passport: student.passport,
-            matric: student.matric || "",      // empty until profile updated
-            level: student.level || "",        // empty until profile updated
-            department: student.department || "",
-            regNo: student.regNo || "",
-          })
-        );
-
-        localStorage.setItem("studentId", student._id); // convenience
+      if (password !== confirmPassword) {
+        alert("Passwords do not match!");
+        return;
       }
 
-      alert("Registration successful!");
-      form.reset();
-      previewDiv.innerHTML = "";
-      window.location.href = "dashboard.html";
-    } else {
-      alert(result.message || "Registration failed.");
-    }
-  } catch (err) {
-    document.body.classList.remove("blur");
-    spinnerOverlay.classList.remove("active");
-    console.error(err);
-    alert("Error submitting registration form.");
-  }
-});
+      const formData = new FormData();
+      formData.append("surname", document.getElementById("surname").value.trim());
+      formData.append("firstname", document.getElementById("firstname").value.trim());
+      formData.append("middlename", document.getElementById("middlename").value.trim());
+      formData.append("phone", document.getElementById("phone").value.trim());
+      formData.append("email", document.getElementById("email").value.trim());
+      formData.append("password", password);
+      formData.append("confirmPassword", confirmPassword);
+      formData.append("passport", passportInput.files[0]);
+
+      try {
+        spinnerOverlay.classList.add("active");
+
+        const res = await fetch("https://ict-reg.onrender.com/api/students/register", {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await res.json();
+        spinnerOverlay.classList.remove("active");
+
+        if (res.ok) {
+          alert("Registration successful!");
+          window.location.href = "dashboard.html";
+        } else {
+          alert(result.message || "Registration failed.");
+        }
+      } catch (err) {
+        spinnerOverlay.classList.remove("active");
+        alert("Error submitting registration form.");
+      }
+    });
   </script>
 </body>
 </html>
