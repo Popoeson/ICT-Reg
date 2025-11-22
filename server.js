@@ -1768,7 +1768,7 @@ app.get("/api/students/search", async (req, res) => {
     res.json({ students: profiles });
   } catch (err) {
     console.error("❌ search students error:", err);
-    res.status(500).json({ message: "Server error" });
+    res.json({ students: [] }); // return empty array on error
   }
 });
 
