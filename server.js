@@ -726,6 +726,30 @@ app.get("/api/students", async (req, res) => {
   }
 });
 
+// Live search students by name or matric number
+app.get("/api/students/search", async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.json({ students: [] });
+
+    const regex = new RegExp(q, "i"); // case-insensitive
+
+    const profiles = await StudentProfile.find({
+      $or: [
+        { firstname: { $exists: true, $regex: regex } },
+        { middlename: { $exists: true, $regex: regex } },
+        { surname: { $exists: true, $regex: regex } },
+        { matricNo: { $exists: true, $regex: regex } }
+      ]
+    }).limit(10);
+
+    res.json({ students: profiles });
+  } catch (err) {
+    console.error("❌ search students error:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Get combined student + profile (merge all fields)
 app.get("/api/students/:id", async (req, res) => {
   try {
@@ -1746,30 +1770,6 @@ app.get("/api/students/download/all", async (req, res) => {
   } catch (error) {
     console.error("Bulk Download Error:", error);
     res.status(500).json({ success: false, message: "Error generating bulk ZIP" });
-  }
-});
-
-// Live search students by name or matric number
-app.get("/api/students/search", async (req, res) => {
-  try {
-    const { q } = req.query;
-    if (!q) return res.json({ students: [] });
-
-    const regex = new RegExp(q, "i"); // case-insensitive
-
-    const profiles = await StudentProfile.find({
-      $or: [
-        { firstname: { $exists: true, $regex: regex } },
-        { middlename: { $exists: true, $regex: regex } },
-        { surname: { $exists: true, $regex: regex } },
-        { matricNo: { $exists: true, $regex: regex } }
-      ]
-    }).limit(10);
-
-    res.json({ students: profiles });
-  } catch (err) {
-    console.error("❌ search students error:", err);
-    res.status(500).json({ message: err.message });
   }
 });
 
