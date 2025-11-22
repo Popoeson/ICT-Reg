@@ -23,6 +23,12 @@
       width: 95%;
       max-width: 400px;
       padding: 30px 25px;
+      animation: fadeIn 0.6s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     h2 {
@@ -80,6 +86,27 @@
       display: none;
     }
 
+    /* Register text */
+    .register-text {
+      text-align: center;
+      margin-top: 18px;
+      color: #444;
+      font-size: 14px;
+    }
+
+    .register-text a {
+      color: #007bff;
+      font-weight: 600;
+      text-decoration: none;
+      transition: 0.3s ease;
+    }
+
+    .register-text a:hover {
+      color: #0056b3;
+      text-decoration: underline;
+    }
+
+    /* Spinner overlay */
     #spinnerOverlay {
       position: fixed;
       inset: 0;
@@ -106,8 +133,10 @@
   </style>
 </head>
 <body>
+
   <div class="login-container">
     <h2>Login Portal</h2>
+
     <div id="errorBox" class="error"></div>
 
     <form id="loginForm">
@@ -119,11 +148,15 @@
 
       <button type="submit" id="loginBtn">Login</button>
     </form>
+
+    <p class="register-text">
+      Don't have an account? <a href="register.html">Register here</a>
+    </p>
   </div>
 
   <div id="spinnerOverlay"><div class="spinner"></div></div>
 
-  <script>
+<script>
 const backendURL = "https://ict-reg.onrender.com";
 const form = document.getElementById("loginForm");
 const errorBox = document.getElementById("errorBox");
@@ -165,7 +198,7 @@ form.addEventListener("submit", async (e) => {
       localStorage.setItem("studentId", user._id);
       window.location.href = "dashboard.html";
 
-    // Admin logins: Super Admin, Head Admin, Cashier
+    // Admin logins
     } else if (["superadmin", "headadmin", "admin", "cashier"].includes(normalizedRole)) {
       localStorage.setItem("adminName", user.fullname);
       localStorage.setItem("adminRole", role);
@@ -175,7 +208,6 @@ form.addEventListener("submit", async (e) => {
       window.location.href = "admin-dashboard.html";
 
     } else {
-      console.warn("Unexpected role:", role);
       errorBox.style.display = "block";
       errorBox.textContent = "Your account role is not recognized.";
     }
@@ -190,5 +222,6 @@ form.addEventListener("submit", async (e) => {
   }
 });
 </script>
+
 </body>
 </html>
