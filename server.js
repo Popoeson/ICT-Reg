@@ -750,6 +750,29 @@ app.get("/api/students/search", async (req, res) => {
   }
 });
 
+//===== Get Student by Email For Live Search===
+app.get("/api/students/by-email", async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    const student = await Student.findOne({ email });
+    const profile = await StudentProfile.findOne({ email });
+
+    if (!student && !profile)
+      return res.status(404).json({ success: false, message: "Not found" });
+
+    const full = {
+      ...profile?.toObject(),
+      ...student?.toObject(),
+    };
+
+    res.json({ success: true, student: full });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Get combined student + profile (merge all fields)
 app.get("/api/students/:id", async (req, res) => {
   try {
@@ -1774,30 +1797,25 @@ app.get("/api/students/download/all", async (req, res) => {
 });
 
 // ---------------- Reset Student Password ----------------
-app.patch("/api/students/reset-password", async (req, res) => {
+app.patch("/api/students/reset-password-email", async (req, res) => {
   try {
-    const { studentId, newPassword } = req.body;
+    const { email, newPassword } = req.body;
 
-    if (!studentId || !newPassword) {
-      return res.status(400).json({ success: false, message: "Student ID and new password are required" });
-    }
+    const student = await Student.findOneAndUpdate(
+      { email },
+      { password: newPassword },
+      { new: true }
+    );
 
-    const student = await Student.findById(studentId);
-    if (!student) {
+    if (!student)
       return res.status(404).json({ success: false, message: "Student not found" });
-    }
 
-    // Save new password directly
-    student.password = newPassword;
-    await student.save();
-
-    res.json({ success: true, message: "Password updated successfully" });
-
+    res.json({ success: true });
   } catch (err) {
-    console.error("❌ Reset password error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
+
 // ===== Start server =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
