@@ -51,32 +51,22 @@
     }
 
     .hero img {
-      width: 140px;
-      height: 140px;
-      border-radius: 50%;
-      border: 4px solid #ffffff;
-      margin-bottom: 15px;
-      object-fit: cover;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-      animation: pop 1.3s ease-out;
-    }
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  /* Removed border so logo edges show fully */
+  margin-bottom: 15px;
+  object-fit: cover;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  animation: pop 1.3s ease-out;
+}
 
-    @keyframes pop {
-      0% { transform: scale(0.5); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    .hero h1 {
-      font-size: 35px;
-      font-weight: 800;
-      text-shadow: 0 0 10px rgba(255,255,255,0.8);
-      animation: slideDown 1.4s ease-out;
-    }
-
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+.hero h1 {
+  font-size: 35px;
+  font-weight: 800;
+  /* Removed text-shadow for sharp text */
+  animation: slideDown 1.4s ease-out;
+}
 
     /* Wave divider */
     .wave {
@@ -185,23 +175,26 @@
 <body>
 
   <!-- HERO SECTION -->
-  <div class="hero">
-    <!-- floating particles -->
-    <div class="particle" style="top:20%; left:15%; animation-delay:1s;"></div>
-    <div class="particle" style="top:60%; left:70%; animation-delay:3s;"></div>
-    <div class="particle" style="top:40%; left:40%; animation-delay:2s;"></div>
+<div class="hero">
+  <!-- floating particles -->
+  <div class="particle" style="top:20%; left:15%; animation-delay:1s;"></div>
+  <div class="particle" style="top:60%; left:70%; animation-delay:3s;"></div>
+  <div class="particle" style="top:40%; left:40%; animation-delay:2s;"></div>
 
-    <img src="upload/logo.jpg" alt="School Logo">
-    <h1>Welcome to Owu College of Management Technology</h1>
-  </div>
+  <img src="upload/logo.jpg" alt="School Logo">
+  <h1>Welcome to Owu College of Management Technology</h1>
 
-  <!-- WAVE -->
-  <svg class="wave" viewBox="0 0 1440 320">
-    <path fill="#ffffff" fill-opacity="1"
-      d="M0,288L60,272C120,256,240,224,360,208C480,192,600,192,720,202.7C840,213,960,235,1080,224C1200,213,1320,171,1380,149.3L1440,128L1440,320L1380,320 
-      C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z">
-    </path>
-  </svg>
+  <!-- LOGIN BUTTON MOVED HERE -->
+  <a href="login.html" class="login-btn">Login to Portal</a>
+</div>
+
+<!-- WAVE -->
+<svg class="wave" viewBox="0 0 1440 320">
+  <path fill="#ffffff" fill-opacity="1"
+    d="M0,288L60,272C120,256,240,224,360,208C480,192,600,192,720,202.7C840,213,960,235,1080,224C1200,213,1320,171,1380,149.3L1440,128L1440,320L1380,320 
+    C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z">
+  </path>
+</svg>
 
   <!-- NEWS TICKER -->
   <div class="news-ticker">
